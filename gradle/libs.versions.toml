@@ -9,6 +9,8 @@ minSdk = "26"
 compileSdk = "37"
 targetSdk = "37"
 jvmTarget = "17"
+# MuPDF version pinned by the third-party/mupdf/libmupdf submodule; the build checks they match.
+mupdf = "1.28.6"
 # NDK used to build MuPDF: the version Artifex builds and tests mupdf-android-fitz 1.28 with.
 ndk = "28.2.13676358"
 

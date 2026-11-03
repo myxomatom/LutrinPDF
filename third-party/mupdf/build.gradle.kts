@@ -47,6 +47,23 @@ android {
     }
 }
 
+// The submodule must be checked out at the version declared in libs.versions.toml: the app
+// publishes the exact MuPDF version it ships (AGPL, SPEC.md §7).
+val verifyMupdfVersion =
+    tasks.register("verifyMupdfVersion") {
+        description = "Fails if the MuPDF submodule is not at the version of libs.versions.toml."
+        val versionHeader = mupdfDir.file("include/mupdf/fitz/version.h")
+        val expected = libs.versions.mupdf.get()
+        inputs.file(versionHeader)
+        inputs.property("expected", expected)
+        doLast {
+            val found = Regex("#define FZ_VERSION \"([^\"]+)\"").find(versionHeader.asFile.readText())?.groupValues?.get(1)
+            check(found == expected) {
+                "MuPDF submodule is at version $found, expected $expected. Run ./scripts/init-mupdf.sh, or update both."
+            }
+        }
+    }
+
 // MuPDF embeds fonts, CMaps and ICC profiles as generated C sources (generated/, ignored by its Git).
 val generateMupdfResources =
     tasks.register<Exec>("generateMupdfResources") {
@@ -55,7 +72,7 @@ val generateMupdfResources =
         commandLine("make", "-j$buildJobs", "generate")
         outputs.dir(mupdfDir.dir("generated"))
     }
-tasks.named("preBuild") { dependsOn(generateMupdfResources) }
+tasks.named("preBuild") { dependsOn(generateMupdfResources, verifyMupdfVersion) }
 
 // Desktop (Linux x86_64) build of the same JNI library, so that core:pdf can test the engine
 // on the JVM without an emulator.
@@ -63,7 +80,7 @@ val hostJniDir = layout.buildDirectory.dir("host-jni")
 val buildMupdfHostJni =
     tasks.register<Exec>("buildMupdfHostJni") {
         description = "Builds libmupdf_java64.so for the build machine, used by JVM unit tests."
-        dependsOn(generateMupdfResources)
+        dependsOn(generateMupdfResources, verifyMupdfVersion)
         inputs.file("build-host-jni.sh")
         inputs.dir(mupdfDir.dir("source"))
         inputs.dir(mupdfDir.dir("include"))
