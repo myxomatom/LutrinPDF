@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <!-- surface (design-tokens.json, color.light) -->
+    <color name="window_background">#FFF8F9FC</color>
+    <!-- primary (design-tokens.json, color.light) -->
+    <color name="ic_launcher_background">#FF2A5B8C</color>
+</resources>

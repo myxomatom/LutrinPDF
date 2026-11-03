@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="welcome_tagline">Lecteur PDF libre. Sans publicité, sans traqueur, entièrement hors ligne.</string>
+    <string name="welcome_status">En construction : bientôt disponible.</string>
+</resources>
