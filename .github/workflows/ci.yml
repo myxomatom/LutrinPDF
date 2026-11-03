@@ -87,6 +87,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: Install the Android emulator (needed by Gradle Managed Devices)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install emulator > /dev/null
+
       - name: Run instrumented tests on Gradle Managed Devices
         run: >
           ./gradlew :app:ciGroupDebugAndroidTest :core:pdf:ciGroupDebugAndroidTest
