@@ -41,7 +41,7 @@ espresso = "3.7.0"
 # Quality
 detekt = "1.23.8"
 # Last compose-rules release built for detekt 1.23 (0.5+ targets detekt 2.0 alpha).
-composeRulesDetekt = "0.4.27"
+composeRulesDetekt = "0.6.8"
 # Version of the Kotlin compiler embedded in detekt 1.23.8; detekt's own classpath must stay on it.
 detektKotlin = "2.0.21"
 ktlintGradle = "14.2.0"
