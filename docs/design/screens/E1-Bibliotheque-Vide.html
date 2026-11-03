@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Bibliothèque vide</title>
+<style>
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:700;src:url(../assets/fonts/roboto-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:400;src:url(../assets/fonts/roboto-mono-latin-400-normal.woff2) format("woff2")}
+</style>
+<style>
+body{margin:0}
+a{color:#2A5B8C}a:hover{color:#1C4470}
+button{font-family:inherit;cursor:pointer}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#43474E;padding:0}
+</style>
+<style>html{background:#DADCE0}body{display:flex;justify-content:center;padding:40px 0}body>div{border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}</style>
+</head>
+<body>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F8F9FC;color:#191C20;font-family:Roboto,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden">
+  <header style="height:64px;display:flex;align-items:center;padding:0 4px 0 16px;gap:4px;flex:none">
+    <h1 style="margin:0;flex:1;font-size:22px;font-weight:500">Lutrin</h1>
+    <button class="ib" aria-label="Outils PDF"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"></path></svg></button>
+    <button class="ib" aria-label="Paramètres"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></button>
+  </header>
+
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 80px;text-align:center;gap:16px">
+    <svg viewBox="0 0 160 140" style="width:160px;height:140px" aria-hidden="true">
+      <rect x="20" y="118" width="120" height="6" rx="3" fill="#D3E4FF"></rect>
+      <path d="M80 118V70" stroke="#2A5B8C" stroke-width="5" stroke-linecap="round" fill="none"></path>
+      <path d="M58 118h44" stroke="#2A5B8C" stroke-width="5" stroke-linecap="round" fill="none"></path>
+      <path d="M34 64l46-14 46 14-6 12-40-10-40 10z" fill="#2A5B8C"></path>
+      <path d="M44 58l36-46 36 46" fill="#FFFFFF" stroke="#C3C6CF" stroke-width="2"></path>
+      <path d="M62 38h12M62 46h16M86 38h12M86 46h10" stroke="#D9DCE2" stroke-width="3" stroke-linecap="round"></path>
+    </svg>
+    <h2 style="margin:8px 0 0;font-size:22px;font-weight:400;line-height:28px">Aucun document récent</h2>
+    <p style="margin:0;font-size:14px;line-height:20px;color:#43474E">Ouvrez un PDF depuis vos fichiers, ou depuis une autre application avec « Ouvrir avec » ou « Partager ».</p>
+    <button style="margin-top:12px;height:48px;padding:0 24px 0 16px;border:0;border-radius:24px;background:#2A5B8C;color:#FFFFFF;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500">
+      <svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+      Ouvrir un fichier
+    </button>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:0 24px 32px;color:#43474E;font-size:12px">
+    <svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+    Fonctionne entièrement hors ligne. Aucune donnée collectée.
+  </div>
+</div>
+</body>
+</html>

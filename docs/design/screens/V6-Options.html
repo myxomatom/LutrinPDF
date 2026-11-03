@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Options d'affichage</title>
+<style>
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:700;src:url(../assets/fonts/roboto-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:400;src:url(../assets/fonts/roboto-mono-latin-400-normal.woff2) format("woff2")}
+</style>
+<style>
+body{margin:0}
+a{color:#2A5B8C}a:hover{color:#1C4470}
+button{font-family:inherit;cursor:pointer}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+</style>
+<style>html{background:#DADCE0}body{display:flex;justify-content:center;padding:40px 0}body>div{border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}</style>
+</head>
+<body>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#E6E8ED;color:#191C20;font-family:Roboto,system-ui,sans-serif;overflow:hidden;position:relative">
+  <div aria-hidden="true" style="height:64px;background:#F8F9FC"></div>
+  <div aria-hidden="true" style="position:absolute;left:24px;top:80px;width:342px;height:484px;background:#F4ECD8"></div>
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgba(0,0,0,0.32)"></div>
+
+  <section role="dialog" aria-modal="true" aria-labelledby="opt-title" style="position:absolute;left:0;right:0;bottom:0;background:#F2F3F8;border-radius:28px 28px 0 0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
+    <div aria-hidden="true" style="width:32px;height:4px;border-radius:2px;background:#73777F;align-self:center;margin-top:16px"></div>
+    <h2 id="opt-title" style="margin:0;font-size:22px;font-weight:400">Affichage</h2>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:500;color:#43474E">Défilement</span>
+      <div style="display:flex;height:40px;border:1px solid #73777F;border-radius:20px;overflow:hidden">
+        <button aria-pressed="true" style="flex:1;border:0;border-right:1px solid #73777F;background:#D7E3F7;color:#101C2B;font-size:14px;font-weight:500">✓ Continu</button>
+        <button aria-pressed="false" style="flex:1;border:0;background:transparent;color:#191C20;font-size:14px;font-weight:500">Page par page</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:500;color:#43474E">Ajustement</span>
+      <div style="display:flex;height:40px;border:1px solid #73777F;border-radius:20px;overflow:hidden">
+        <button aria-pressed="true" style="flex:1;border:0;border-right:1px solid #73777F;background:#D7E3F7;color:#101C2B;font-size:14px;font-weight:500">✓ Largeur</button>
+        <button aria-pressed="false" style="flex:1;border:0;background:transparent;color:#191C20;font-size:14px;font-weight:500">Page entière</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:14px;font-weight:500;color:#43474E">Couleurs du document</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+        <button aria-pressed="false" style="height:72px;border:1px solid #C3C6CF;border-radius:12px;background:#FFFFFF;color:#191C20;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><span aria-hidden="true" style="width:28px;height:4px;background:#5C6068;border-radius:2px"></span>Normal</button>
+        <button aria-pressed="false" style="height:72px;border:1px solid #C3C6CF;border-radius:12px;background:#16181C;color:#E1E2E8;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><span aria-hidden="true" style="width:28px;height:4px;background:#9EA2AA;border-radius:2px"></span>Nuit</button>
+        <button aria-pressed="true" style="height:72px;border:3px solid #2A5B8C;border-radius:12px;background:#F4ECD8;color:#3D2E14;font-size:14px;font-weight:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><span aria-hidden="true" style="width:28px;height:4px;background:#7A6340;border-radius:2px"></span>Sépia</button>
+      </div>
+    </div>
+
+    <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px">
+      <span style="font-size:16px">Plein écran</span>
+      <input type="checkbox" style="position:absolute;right:0;width:52px;height:32px;margin:0;opacity:0">
+      <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#E1E2E8;border:2px solid #73777F;flex:none;display:flex;align-items:center;padding:0 6px;box-sizing:border-box"><span style="width:16px;height:16px;border-radius:8px;background:#73777F"></span></span>
+    </label>
+    <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px">
+      <span style="font-size:16px">Verrouiller l’orientation</span>
+      <input type="checkbox" checked="" style="position:absolute;right:0;width:52px;height:32px;margin:0;opacity:0">
+      <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#2A5B8C;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 4px;box-sizing:border-box"><span style="width:24px;height:24px;border-radius:12px;background:#FFFFFF"></span></span>
+    </label>
+  </section>
+</div>
+</body>
+</html>

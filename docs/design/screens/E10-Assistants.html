@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Assistants IA</title>
+<style>
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:700;src:url(../assets/fonts/roboto-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:400;src:url(../assets/fonts/roboto-mono-latin-400-normal.woff2) format("woff2")}
+</style>
+<style>
+body{margin:0}
+a{color:#2A5B8C}a:hover{color:#1C4470}
+button{font-family:inherit;cursor:pointer}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#43474E;padding:0}
+</style>
+<style>html{background:#DADCE0}body{display:flex;justify-content:center;padding:40px 0}body>div{border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}</style>
+</head>
+<body>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F8F9FC;color:#191C20;font-family:Roboto,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden">
+  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none">
+    <button class="ib" aria-label="Retour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
+    <h1 style="margin:0 0 0 4px;font-size:22px;font-weight:500">Assistants IA</h1>
+  </header>
+
+  <p style="margin:0;padding:0 24px 8px;font-size:14px;line-height:20px;color:#43474E">Permet à un assistant (par exemple Gemini) d’ouvrir vos documents, de naviguer et d’utiliser les outils PDF.</p>
+
+  <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px">
+    <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px">Autoriser les assistants</span><span style="font-size:14px;line-height:20px;color:#43474E">Navigation et outils : ouvrir, aller à la page, fusionner, convertir</span></span>
+    <input type="checkbox" checked="" style="position:absolute;right:24px;width:52px;height:32px;margin:0;opacity:0">
+    <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#2A5B8C;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 4px;box-sizing:border-box"><span style="width:24px;height:24px;border-radius:12px;background:#FFFFFF"></span></span>
+  </label>
+  <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px">
+    <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px">Autoriser la lecture du contenu</span><span style="font-size:14px;line-height:20px;color:#43474E">Lire et rechercher le texte des documents</span></span>
+    <input type="checkbox" style="position:absolute;right:24px;width:52px;height:32px;margin:0;opacity:0">
+    <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#E1E2E8;border:2px solid #73777F;flex:none;display:flex;align-items:center;padding:0 6px;box-sizing:border-box"><span style="width:16px;height:16px;border-radius:8px;background:#73777F"></span></span>
+  </label>
+  <div style="margin:0 16px 8px;padding:12px 16px;border-radius:12px;background:#FFDAD6;color:#410002;display:flex;gap:12px;font-size:14px;line-height:20px">
+    <svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18v.01"></path></svg>
+    <span>Si vous l’activez, l’assistant peut transmettre le texte de vos documents à un service en ligne. Désactivé par défaut.</span>
+  </div>
+
+  <div style="height:1px;background:#E1E2E8;margin:8px 0"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px 4px 24px">
+    <h2 style="margin:0;font-size:14px;font-weight:500;color:#2A5B8C">Historique des actions</h2>
+    <button style="height:40px;padding:0 12px;border:0;background:transparent;color:#2A5B8C;font-size:14px;font-weight:500;border-radius:20px">Effacer</button>
+  </div>
+  <ul style="list-style:none;margin:0;padding:0">
+    
+      <li style="display:flex;align-items:center;gap:16px;padding:10px 24px">
+        <span style="width:36px;height:36px;border-radius:18px;background:#D3E4FF;color:#001C38;display:flex;align-items:center;justify-content:center;flex:none">
+          <svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px" role="img" aria-label="Réussi"><path d="M5 12l5 5 9-10"></path></svg>
+          
+        </span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:14px;font-family:'Roboto Mono',ui-monospace,monospace">goToPage</span>
+          <span style="font-size:12px;color:#43474E">Gemini · Aujourd’hui, 20:41</span>
+        </span>
+      </li>
+    
+      <li style="display:flex;align-items:center;gap:16px;padding:10px 24px">
+        <span style="width:36px;height:36px;border-radius:18px;background:#D3E4FF;color:#001C38;display:flex;align-items:center;justify-content:center;flex:none">
+          <svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px" role="img" aria-label="Réussi"><path d="M5 12l5 5 9-10"></path></svg>
+          
+        </span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:14px;font-family:'Roboto Mono',ui-monospace,monospace">openDocument</span>
+          <span style="font-size:12px;color:#43474E">Gemini · Aujourd’hui, 20:40</span>
+        </span>
+      </li>
+    
+      <li style="display:flex;align-items:center;gap:16px;padding:10px 24px">
+        <span style="width:36px;height:36px;border-radius:18px;background:#FFDAD6;color:#410002;display:flex;align-items:center;justify-content:center;flex:none">
+          
+          <svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px" role="img" aria-label="Refusé"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:14px;font-family:'Roboto Mono',ui-monospace,monospace">readPages</span>
+          <span style="font-size:12px;color:#43474E">Gemini · Hier · CONTENT_ACCESS_DISABLED</span>
+        </span>
+      </li>
+    
+      <li style="display:flex;align-items:center;gap:16px;padding:10px 24px">
+        <span style="width:36px;height:36px;border-radius:18px;background:#D3E4FF;color:#001C38;display:flex;align-items:center;justify-content:center;flex:none">
+          <svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px" role="img" aria-label="Réussi"><path d="M5 12l5 5 9-10"></path></svg>
+          
+        </span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:14px;font-family:'Roboto Mono',ui-monospace,monospace">mergePdfs</span>
+          <span style="font-size:12px;color:#43474E">Gemini · Hier · 13 pages créées</span>
+        </span>
+      </li>
+    
+  </ul>
+  <p style="margin:auto 24px 24px;font-size:12px;line-height:16px;color:#43474E">L’historique reste sur l’appareil et ne contient jamais le contenu de vos documents.</p>
+</div>
+</body>
+</html>

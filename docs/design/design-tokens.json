@@ -1,0 +1,89 @@
+{
+  "$description": "Jetons de design des maquettes Lutrin. Rôles Material 3 ; schéma de repli quand les couleurs dynamiques sont indisponibles. Unités : dp pour les dimensions, sp pour les textes.",
+  "color": {
+    "light": {
+      "primary": "#2A5B8C",
+      "onPrimary": "#FFFFFF",
+      "primaryContainer": "#D3E4FF",
+      "onPrimaryContainer": "#001C38",
+      "secondaryContainer": "#D7E3F7",
+      "onSecondaryContainer": "#101C2B",
+      "error": "#BA1A1A",
+      "errorContainer": "#FFDAD6",
+      "onErrorContainer": "#410002",
+      "surface": "#F8F9FC",
+      "surfaceContainerLow": "#F2F3F8",
+      "surfaceContainer": "#ECEEF3",
+      "surfaceContainerHigh": "#E6E8ED",
+      "surfaceVariant": "#E1E2E8",
+      "onSurface": "#191C20",
+      "onSurfaceVariant": "#43474E",
+      "outline": "#73777F",
+      "outlineVariant": "#C3C6CF",
+      "inverseSurface": "#2E3135",
+      "inverseOnSurface": "#EFF0F7",
+      "scrim": "rgba(0,0,0,0.32)"
+    },
+    "dark": {
+      "$note": "Esquisse : seule la vue E2-Lecteur-Nuit l'utilise. À compléter avec un schéma M3 sombre généré depuis primary.",
+      "primary": "#A3C9FF",
+      "surface": "#0B0D10",
+      "surfaceContainer": "#282B30",
+      "onSurface": "#E1E2E8",
+      "onSurfaceVariant": "#C3C6CF"
+    },
+    "reader": {
+      "$note": "Couleurs de rendu du document (F13), appliquées par le moteur, pas par le thème.",
+      "background": "#E6E8ED",
+      "pageNormal": "#FFFFFF",
+      "pageNight": "#16181C",
+      "backgroundNight": "#0B0D10",
+      "pageSepia": "#F4ECD8",
+      "textSepia": "#3D2E14",
+      "searchHit": "rgba(255,214,90,0.70)",
+      "searchHitCurrent": "rgba(245,166,35,0.75)",
+      "searchHitCurrentOutline": "#B06A00"
+    }
+  },
+  "typography": {
+    "fontFamily": "Roboto (police système Android) ; Roboto Mono pour les noms de fonctions",
+    "titleLarge": { "size": 22, "lineHeight": 28, "weight": 400, "usage": "Titres de barre et de feuille" },
+    "headlineSmall": { "size": 24, "lineHeight": 32, "weight": 400, "usage": "Titres de dialogue" },
+    "titleMedium": { "size": 16, "lineHeight": 24, "weight": 500, "usage": "Titres de carte" },
+    "bodyLarge": { "size": 16, "lineHeight": 22, "weight": 400, "usage": "Libellés de liste" },
+    "bodyMedium": { "size": 14, "lineHeight": 20, "weight": 400, "usage": "Descriptions, métadonnées" },
+    "labelLarge": { "size": 14, "lineHeight": 20, "weight": 500, "usage": "Boutons, en-têtes de section" },
+    "bodySmall": { "size": 12, "lineHeight": 16, "weight": 400, "usage": "Aides, mentions" }
+  },
+  "shape": {
+    "extraSmall": 4,
+    "small": 8,
+    "medium": 12,
+    "large": 16,
+    "extraLarge": 28,
+    "full": "50%",
+    "usage": {
+      "textField": 4,
+      "chip": 8,
+      "banner": 12,
+      "card": 16,
+      "fab": 16,
+      "dialog": 28,
+      "bottomSheetTop": 28,
+      "button": "full"
+    }
+  },
+  "spacing": {
+    "screenGutter": 16,
+    "listItemInset": 24,
+    "touchTargetMin": 48,
+    "topAppBarHeight": 64,
+    "buttonHeight": 48,
+    "listThumbnail": { "width": 44, "height": 58 }
+  },
+  "elevation": {
+    "page": "0 1px 3px rgba(0,0,0,0.18)",
+    "fab": "0 3px 8px rgba(0,0,0,0.18)",
+    "dragged": "0 4px 12px rgba(0,0,0,0.18)"
+  }
+}

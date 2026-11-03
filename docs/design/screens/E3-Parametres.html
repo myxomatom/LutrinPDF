@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Paramètres</title>
+<style>
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:700;src:url(../assets/fonts/roboto-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Roboto Mono";font-weight:400;src:url(../assets/fonts/roboto-mono-latin-400-normal.woff2) format("woff2")}
+</style>
+<style>
+body{margin:0}
+a{color:#2A5B8C}a:hover{color:#1C4470}
+button{font-family:inherit;cursor:pointer}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#43474E;padding:0}
+</style>
+<style>html{background:#DADCE0}body{display:flex;justify-content:center;padding:40px 0}body>div{border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}</style>
+</head>
+<body>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F8F9FC;color:#191C20;font-family:Roboto,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden">
+  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none">
+    <button class="ib" aria-label="Retour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
+    <h1 style="margin:0 0 0 4px;font-size:22px;font-weight:500">Paramètres</h1>
+  </header>
+
+  <h2 style="margin:8px 24px 8px;font-size:14px;font-weight:500;color:#2A5B8C">Apparence</h2>
+  <div style="padding:4px 24px 12px;display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:16px">Thème de l’application</span>
+    <div style="display:flex;height:40px;border:1px solid #73777F;border-radius:20px;overflow:hidden">
+      <button aria-pressed="false" style="flex:1;border:0;border-right:1px solid #73777F;background:transparent;font-size:14px;font-weight:500;color:#191C20">Clair</button>
+      <button aria-pressed="false" style="flex:1;border:0;border-right:1px solid #73777F;background:transparent;font-size:14px;font-weight:500;color:#191C20">Sombre</button>
+      <button aria-pressed="true" style="flex:1;border:0;background:#D7E3F7;font-size:14px;font-weight:500;color:#101C2B">✓ Système</button>
+    </div>
+  </div>
+  <div style="padding:4px 24px 12px;display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:16px">Rendu du document</span>
+    <div style="display:flex;height:40px;border:1px solid #73777F;border-radius:20px;overflow:hidden">
+      <button aria-pressed="true" style="flex:1;border:0;border-right:1px solid #73777F;background:#D7E3F7;font-size:14px;font-weight:500;color:#101C2B">✓ Normal</button>
+      <button aria-pressed="false" style="flex:1;border:0;border-right:1px solid #73777F;background:transparent;font-size:14px;font-weight:500;color:#191C20">Nuit</button>
+      <button aria-pressed="false" style="flex:1;border:0;background:transparent;font-size:14px;font-weight:500;color:#191C20">Sépia</button>
+    </div>
+  </div>
+
+  <div style="height:1px;background:#E1E2E8;margin:8px 0"></div>
+  <h2 style="margin:8px 24px 4px;font-size:14px;font-weight:500;color:#2A5B8C">Lecture</h2>
+  <button style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;background:transparent;padding:12px 24px;text-align:left">
+    <span style="font-size:16px;color:#191C20">Mode de défilement</span>
+    <span style="font-size:14px;color:#43474E">Continu vertical</span>
+  </button>
+  <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;min-height:48px">
+    <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px">Garder l’écran allumé</span><span style="font-size:14px;color:#43474E">Pendant la lecture d’un document</span></span>
+    <input type="checkbox" checked="" style="position:absolute;right:24px;width:52px;height:32px;margin:0;opacity:0">
+    <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#2A5B8C;flex:none;display:flex;align-items:center;justify-content:flex-end;padding:0 4px;box-sizing:border-box"><span style="width:24px;height:24px;border-radius:12px;background:#FFFFFF"></span></span>
+  </label>
+  <label style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;min-height:48px">
+    <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px">Verrouiller l’orientation</span><span style="font-size:14px;color:#43474E">Sinon, rotation automatique</span></span>
+    <input type="checkbox" style="position:absolute;right:24px;width:52px;height:32px;margin:0;opacity:0">
+    <span aria-hidden="true" style="width:52px;height:32px;border-radius:16px;background:#E1E2E8;border:2px solid #73777F;flex:none;display:flex;align-items:center;padding:0 6px;box-sizing:border-box"><span style="width:16px;height:16px;border-radius:8px;background:#73777F"></span></span>
+  </label>
+  <button style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:0;background:transparent;padding:12px 24px;text-align:left">
+    <span style="font-size:16px;color:#191C20">Langue</span>
+    <span style="font-size:14px;color:#43474E">Langue du système (Français)</span>
+  </button>
+
+  <div style="height:1px;background:#E1E2E8;margin:8px 0"></div>
+  <h2 style="margin:8px 24px 4px;font-size:14px;font-weight:500;color:#2A5B8C">Données et confidentialité</h2>
+  <button style="display:flex;align-items:center;gap:16px;border:0;background:transparent;padding:12px 24px;text-align:left;color:#191C20;font-size:16px">
+    <svg class="i" viewBox="0 0 24 24" style="color:#43474E" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>Vider les récents
+  </button>
+  <button style="display:flex;align-items:center;gap:16px;border:0;background:transparent;padding:12px 24px;text-align:left;color:#191C20;font-size:16px">
+    <svg class="i" viewBox="0 0 24 24" style="color:#43474E" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path></svg>
+    <span style="flex:1">Assistants IA</span><span style="font-size:12px;color:#43474E">v1.1</span>
+  </button>
+  <button style="display:flex;align-items:center;gap:16px;border:0;background:transparent;padding:12px 24px;text-align:left;color:#191C20;font-size:16px">
+    <svg class="i" viewBox="0 0 24 24" style="color:#43474E" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.01"></path></svg>À propos et licences
+  </button>
+</div>
+</body>
+</html>

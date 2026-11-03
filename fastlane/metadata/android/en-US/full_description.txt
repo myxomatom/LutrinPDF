@@ -1,0 +1,11 @@
+<p><b>Lutrin</b> is a free and open-source PDF reader for Android: fast and private.</p>
+<ul>
+<li>No ads, no trackers, no telemetry.</li>
+<li>No network permission: everything works offline, on your device.</li>
+<li>Sharp rendering at any zoom level, continuous or page-by-page scrolling.</li>
+<li>Table of contents, search, text selection and copy, links.</li>
+<li>Password-protected PDFs (the password is never stored).</li>
+<li>Recent documents and resume reading.</li>
+<li>Light and dark themes, night and sepia document modes, full screen.</li>
+</ul>
+<p>Source code licensed under GPL v3 or later; the app is distributed under the terms of the AGPL v3 (MuPDF engine).</p>
