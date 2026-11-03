@@ -22,15 +22,60 @@
       "outlineVariant": "#C3C6CF",
       "inverseSurface": "#2E3135",
       "inverseOnSurface": "#EFF0F7",
-      "scrim": "rgba(0,0,0,0.32)"
+      "scrim": "rgba(0,0,0,0.32)",
+      "secondary": "#535F70",
+      "onSecondary": "#FFFFFF",
+      "tertiary": "#6B5778",
+      "onTertiary": "#FFFFFF",
+      "tertiaryContainer": "#F3DAFF",
+      "onTertiaryContainer": "#523F5F",
+      "onError": "#FFFFFF",
+      "background": "#F8F9FF",
+      "onBackground": "#191C20",
+      "inversePrimary": "#A1CAFD",
+      "surfaceDim": "#D8DAE0",
+      "surfaceBright": "#F8F9FF",
+      "surfaceContainerLowest": "#FFFFFF",
+      "surfaceContainerHighest": "#E1E2E8",
+      "$note": "Valeurs des maquettes ; les rôles absents des maquettes sont complétés depuis le schéma généré à partir de la même graine (#2A5B8C)."
     },
     "dark": {
-      "$note": "Esquisse : seule la vue E2-Lecteur-Nuit l'utilise. À compléter avec un schéma M3 sombre généré depuis primary.",
-      "primary": "#A3C9FF",
-      "surface": "#0B0D10",
-      "surfaceContainer": "#282B30",
+      "$note": "Schéma M3 complet généré (Material Color Utilities 0.3.0, SchemeTonalSpot, contraste standard) à partir de la graine #2A5B8C ; remplace l'esquisse initiale. Les couleurs de la page en mode nuit restent dans « reader ».",
+      "primary": "#A1CAFD",
+      "onPrimary": "#003259",
+      "primaryContainer": "#1A4975",
+      "onPrimaryContainer": "#D1E4FF",
+      "secondary": "#BBC7DB",
+      "onSecondary": "#253140",
+      "secondaryContainer": "#3B4858",
+      "onSecondaryContainer": "#D7E3F8",
+      "tertiary": "#D7BEE4",
+      "onTertiary": "#3B2948",
+      "tertiaryContainer": "#523F5F",
+      "onTertiaryContainer": "#F3DAFF",
+      "error": "#FFB4AB",
+      "onError": "#690005",
+      "errorContainer": "#93000A",
+      "onErrorContainer": "#FFDAD6",
+      "background": "#111418",
+      "onBackground": "#E1E2E8",
+      "surface": "#111418",
       "onSurface": "#E1E2E8",
-      "onSurfaceVariant": "#C3C6CF"
+      "surfaceVariant": "#43474E",
+      "onSurfaceVariant": "#C3C6CF",
+      "outline": "#8D9199",
+      "outlineVariant": "#43474E",
+      "inverseSurface": "#E1E2E8",
+      "inverseOnSurface": "#2E3135",
+      "inversePrimary": "#36618E",
+      "surfaceDim": "#111418",
+      "surfaceBright": "#36393E",
+      "surfaceContainerLowest": "#0B0E13",
+      "surfaceContainerLow": "#191C20",
+      "surfaceContainer": "#1D2024",
+      "surfaceContainerHigh": "#272A2F",
+      "surfaceContainerHighest": "#32353A",
+      "scrim": "rgba(0,0,0,0.32)"
     },
     "reader": {
       "$note": "Couleurs de rendu du document (F13), appliquées par le moteur, pas par le thème.",
@@ -47,13 +92,48 @@
   },
   "typography": {
     "fontFamily": "Roboto (police système Android) ; Roboto Mono pour les noms de fonctions",
-    "titleLarge": { "size": 22, "lineHeight": 28, "weight": 400, "usage": "Titres de barre et de feuille" },
-    "headlineSmall": { "size": 24, "lineHeight": 32, "weight": 400, "usage": "Titres de dialogue" },
-    "titleMedium": { "size": 16, "lineHeight": 24, "weight": 500, "usage": "Titres de carte" },
-    "bodyLarge": { "size": 16, "lineHeight": 22, "weight": 400, "usage": "Libellés de liste" },
-    "bodyMedium": { "size": 14, "lineHeight": 20, "weight": 400, "usage": "Descriptions, métadonnées" },
-    "labelLarge": { "size": 14, "lineHeight": 20, "weight": 500, "usage": "Boutons, en-têtes de section" },
-    "bodySmall": { "size": 12, "lineHeight": 16, "weight": 400, "usage": "Aides, mentions" }
+    "titleLarge": {
+      "size": 22,
+      "lineHeight": 28,
+      "weight": 400,
+      "usage": "Titres de barre et de feuille"
+    },
+    "headlineSmall": {
+      "size": 24,
+      "lineHeight": 32,
+      "weight": 400,
+      "usage": "Titres de dialogue"
+    },
+    "titleMedium": {
+      "size": 16,
+      "lineHeight": 24,
+      "weight": 500,
+      "usage": "Titres de carte"
+    },
+    "bodyLarge": {
+      "size": 16,
+      "lineHeight": 22,
+      "weight": 400,
+      "usage": "Libellés de liste"
+    },
+    "bodyMedium": {
+      "size": 14,
+      "lineHeight": 20,
+      "weight": 400,
+      "usage": "Descriptions, métadonnées"
+    },
+    "labelLarge": {
+      "size": 14,
+      "lineHeight": 20,
+      "weight": 500,
+      "usage": "Boutons, en-têtes de section"
+    },
+    "bodySmall": {
+      "size": 12,
+      "lineHeight": 16,
+      "weight": 400,
+      "usage": "Aides, mentions"
+    }
   },
   "shape": {
     "extraSmall": 4,
@@ -79,7 +159,10 @@
     "touchTargetMin": 48,
     "topAppBarHeight": 64,
     "buttonHeight": 48,
-    "listThumbnail": { "width": 44, "height": 58 }
+    "listThumbnail": {
+      "width": 44,
+      "height": 58
+    }
   },
   "elevation": {
     "page": "0 1px 3px rgba(0,0,0,0.18)",
