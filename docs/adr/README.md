@@ -12,6 +12,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0004](0004-sauvegarde-desactivee.md) | Sauvegarde Android désactivée | Accepté |
 | [0005](0005-outillage-build-qualite.md) | Outillage de build, de qualité et de test | Accepté |
 | [0006](0006-identifiant-application.md) | Identifiant d'application `io.github.myxomatom.lutrin` | Accepté |
+| [0007](0007-integration-mupdf.md) | Intégration de MuPDF : compilation et interface `PdfEngine` | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

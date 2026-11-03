@@ -41,6 +41,10 @@ Les règles de qualité sont centralisées dans `build-logic/` (plugins de conve
 `config/detekt/detekt.yml`, `config/lint/lint.xml` et `.editorconfig`. Toute désactivation
 d'une règle est justifiée en commentaire.
 
+MuPDF est un sous-module Git (`third-party/mupdf/libmupdf`, ADR 0007) : après le clonage,
+lancez `./scripts/init-mupdf.sh`. Ne modifiez jamais ses sources ; une mise à jour se fait en
+changeant le commit épinglé (tag officiel d'Artifex).
+
 Le jeu de fichiers de test est généré par `core/testing/scripts/generate_test_files.py`
 (voir `core/testing/README.md`).
 

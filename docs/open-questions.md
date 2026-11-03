@@ -9,6 +9,7 @@ puis déplacé dans la section « Tranchés ».
 | 1 | `readAloud` vs F25 | `readAloud` est exposé aux assistants en v1.1 (SPEC §2.4), mais la lecture à voix haute (F25) est prévue en v1.x. La règle de parité (`AGENTS.md` §10) impose d'avancer F25 en v1.1 ou de retirer `readAloud` de la v1.1. | M7 |
 | 2 | Grille de miniatures | V10 est prévue en v1.x, mais E7 (Extraction, v1.1) en a besoin : le composant doit exister dès M6. | M6 |
 | 3 | Dossier de sortie | ROADMAP le place dans E10 (Assistants IA), SPEC dans les paramètres, les maquettes dans E5 (Outils). | M6 |
+| 8 | Polices de secours CJK | Le build Android de MuPDF exclut les polices de secours (Noto, CJK, SIL) : un texte chinois / japonais / coréen dont la police n'est pas incorporée au PDF s'affiche en carrés. Les ajouter coûterait plusieurs Mo par ABI (limite de 15 Mo, `SPEC.md` §3). | M4 |
 | 6 | Licence affichée dans E4 | La maquette E4 indique « GNU GPL v3 » ; SPEC §7 demande de mentionner la distribution sous AGPL v3. | M5 |
 
 ## Tranchés

@@ -7,9 +7,9 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M0 (fondations).** Le squelette des modules, la CI et les règles de
-> qualité sont en place ; l'application affiche un écran d'accueil provisoire. Le moteur PDF
-> arrive au jalon M1 (voir `ROADMAP.md`).
+> 🚧 **Statut : jalon M1 (moteur PDF).** Le moteur MuPDF est compilé depuis les sources et
+> testé sur tout le jeu de fichiers de test ; l'interface de lecture arrive au jalon M2
+> (voir `ROADMAP.md`). L'application affiche encore un écran d'accueil provisoire.
 
 ---
 
@@ -58,9 +58,13 @@ Voir [`docs/architecture.md`](docs/architecture.md) et l'[ADR 0001](docs/adr/000
 
 ## Compilation et tests
 
-Prérequis : JDK 21 et le SDK Android (variable `ANDROID_HOME`) ; le wrapper télécharge Gradle.
+Prérequis : JDK 21, le SDK Android (variable `ANDROID_HOME`) ; le wrapper télécharge Gradle
+et AGP télécharge le NDK. Les tests JVM du moteur compilent aussi MuPDF pour la machine
+(Linux) : il faut `make`, un compilateur C, `pkg-config` et les paquets de développement
+de freetype2, OpenSSL et zlib (`sudo apt install libfreetype-dev libssl-dev zlib1g-dev pkg-config`).
 
 ```bash
+./scripts/init-mupdf.sh                # une fois : récupère MuPDF (sous-module épinglé)
 ./gradlew assembleDebug                # APK de debug (app/build/outputs/apk/debug/)
 ./gradlew check                        # tout ce que vérifie la CI, voir ci-dessous
 ./gradlew assembleRelease              # APK de release (non signé)

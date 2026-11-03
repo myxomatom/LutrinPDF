@@ -10,6 +10,16 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Jalon M1 : moteur PDF. MuPDF 1.28.6 compilé depuis son sous-module Git (NDK, 3 ABI) dans
+  `:third-party:mupdf` (ADR 0007).
+- `PdfEngine` / `PdfDocument` (`core:pdf`) : ouverture (fichier, URI de contenu, mémoire),
+  mot de passe, métadonnées, tailles de page, rendu d'une région (mode nuit), table des
+  matières, liens, recherche (casse et accents), extraction du texte d'une sélection.
+- Modèles et erreurs du domaine (`core:domain`) : `PdfError`, `PdfRect`, `OutlineItem`,
+  `SearchHit`… et analyse des dates PDF.
+- Tests du moteur sur tout le jeu de fichiers de test, sur la JVM (bibliothèque MuPDF hôte)
+  et instrumentés ; vérification précoce de la fusion et de la conversion d'image en PDF.
+- APK de release par ABI (arm64-v8a, armeabi-v7a, x86_64), codes de version distincts.
 - Jalon M0 : squelette des 11 modules (`SPEC.md` §4.3) et plugins de convention (`build-logic/`).
 - Écran d'accueil provisoire (FR / EN) dans le thème Material 3 de Lutrin (`core:ui`),
   couleurs dynamiques sur Android 12+, schémas clair et sombre issus des jetons de design.
@@ -23,10 +33,6 @@ changement y est signalé.
 - Jeu de fichiers de test généré (`core:testing`, `SPEC.md` §9).
 - CI GitHub Actions et Dependabot.
 - ADR 0002 à 0006 (Hilt, licences, sauvegarde désactivée, outillage, identifiant d'application).
-
-### Sécurité
-- Sauvegarde Android et transfert entre appareils désactivés (ADR 0004).
-
 - Spécification (`SPEC.md`), règles de développement (`AGENTS.md`) et feuille de route (`ROADMAP.md`).
 - Maquettes des écrans et jetons de design (`docs/design/`).
 - ADR 0001 (moteur PDF MuPDF), accepté, et modèle d'ADR.
@@ -35,3 +41,7 @@ changement y est signalé.
 - Textes des licences GPL v3 et AGPL v3 (`LICENSES/`).
 - Modèles d'issues et de pull request GitHub, `.editorconfig`, `.gitattributes`.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
+
+### Sécurité
+- JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.
+- Sauvegarde Android et transfert entre appareils désactivés (ADR 0004).
