@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import com.android.build.api.dsl.LibraryExtension
-import lutrin.build.configureAndroidCommon
-import lutrin.build.configureQuality
-import lutrin.build.libs
-import lutrin.build.pluginId
-import lutrin.build.version
+import lutrin.convention.configureAndroidCommon
+import lutrin.convention.configureQuality
+import lutrin.convention.libs
+import lutrin.convention.pluginId
+import lutrin.convention.version
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
