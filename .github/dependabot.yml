@@ -12,6 +12,10 @@ updates:
         patterns: ["androidx.*"]
       kotlin:
         patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*"]
+    ignore:
+      # compose-rules 0.5+ requires detekt 2.0, still in alpha: stay on 0.4.x with detekt 1.23 (ADR 0005).
+      - dependency-name: "io.nlopez.compose.rules:detekt"
+        versions: [">= 0.5.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
