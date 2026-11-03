@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Continuous integration (AGENTS.md §7). Every push and pull request runs:
+# ktlint, detekt, Android Lint, unit / Robolectric / screenshot tests, coverage thresholds,
+# dependency license allow-list, forbidden-permission check, release build and Dokka.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          # Rejects a tampered gradle-wrapper.jar.
+          validate-wrappers: true
+
+      - name: Check (lint, detekt, ktlint, tests, coverage, licenses, permissions)
+        run: ./gradlew check --continue
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+
+      - name: Generate documentation (Dokka, warnings are errors)
+        run: ./gradlew :dokkaGenerate
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/outputs/roborazzi/
+            **/build/test-results/
+          retention-days: 14
+
+  instrumented:
+    name: Instrumented tests (API 26 and latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: check
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Enable KVM for the emulators
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Run instrumented tests on Gradle Managed Devices
+        run: >
+          ./gradlew ciGroupDebugAndroidTest
+          -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: instrumented-reports
+          path: |
+            **/build/reports/androidTests/
+            **/build/outputs/androidTest-results/
+          retention-days: 14

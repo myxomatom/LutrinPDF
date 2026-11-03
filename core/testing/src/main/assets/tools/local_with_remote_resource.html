@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>HTML local avec ressource distante</title>
+<!-- Every remote resource below must be blocked by the converter (SPEC.md T05). -->
+<link rel="stylesheet" href="https://example.org/remote.css">
+<script src="https://example.org/remote.js"></script>
+<style>body { font-family: sans-serif; } .local { color: #2A5B8C; }</style>
+</head>
+<body>
+<h1 class="local">Contenu local</h1>
+<p>Ce paragraphe doit apparaître dans le PDF.</p>
+<img src="https://example.org/tracker.png" alt="Image distante bloquée" width="200" height="100">
+</body>
+</html>

@@ -7,8 +7,9 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : en préparation.** Le dépôt contient la spécification, les règles de
-> développement et les maquettes. Le code arrive avec le jalon M0 (voir `ROADMAP.md`).
+> 🚧 **Statut : jalon M0 (fondations).** Le squelette des modules, la CI et les règles de
+> qualité sont en place ; l'application affiche un écran d'accueil provisoire. Le moteur PDF
+> arrive au jalon M1 (voir `ROADMAP.md`).
 
 ---
 
@@ -57,13 +58,20 @@ Voir [`docs/architecture.md`](docs/architecture.md) et l'[ADR 0001](docs/adr/000
 
 ## Compilation et tests
 
-*À compléter au jalon M0.* Les commandes prévues :
+Prérequis : JDK 21 et le SDK Android (variable `ANDROID_HOME`) ; le wrapper télécharge Gradle.
 
 ```bash
-./gradlew assembleDebug        # construire l'APK de debug
-./gradlew check                # ktlint, detekt, Android Lint, tests unitaires
-./gradlew koverVerify          # seuils de couverture
+./gradlew assembleDebug                # APK de debug (app/build/outputs/apk/debug/)
+./gradlew check                        # tout ce que vérifie la CI, voir ci-dessous
+./gradlew assembleRelease              # APK de release (non signé)
+./gradlew :dokkaGenerate               # documentation (build/dokka/html/)
+./gradlew ciGroupDebugAndroidTest      # tests instrumentés sur émulateurs API 26 et 37 (KVM requis)
+./gradlew recordRoborazziDebug         # réenregistrer les captures de référence
 ```
+
+`./gradlew check` lance ktlint, detekt, Android Lint, les tests unitaires, Robolectric et
+captures d'écran, les seuils de couverture Kover, la vérification des licences (Licensee)
+et l'absence de permission réseau dans le manifeste fusionné (`verifyReleasePermissions`).
 
 ## Licence
 

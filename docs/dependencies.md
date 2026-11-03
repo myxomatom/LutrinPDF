@@ -5,12 +5,71 @@ avant d'être ajoutée (`AGENTS.md` §1.4). Licences acceptées : Apache 2.0, MI
 LGPL, GPL v3, AGPL v3. Refusées : propriétaires, non commerciales, SDK fermés,
 Google Play Services, Firebase, et toute bibliothèque qui ajoute une permission réseau.
 
-| Dépendance | Version | Licence (SPDX) | Module(s) | Justification | Vérifiée le |
-|------------|---------|----------------|-----------|---------------|-------------|
-| MuPDF (Artifex) | à épingler (M1) | AGPL-3.0 — identifiant exact à vérifier | `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001) | — |
+La CI vérifie automatiquement les deux gardes-fous (`./gradlew check`) :
+- **Licensee** échoue si une dépendance embarquée n'a pas une licence de la liste blanche (ADR 0003) ;
+- **`verifyReleasePermissions`** échoue si le manifeste fusionné demande une permission réseau
+  ou un accès large au stockage.
+
+Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt Maven de Google).
+
+## Embarquées dans l'application (classpath d'exécution de `release`)
+
+| Dépendance | Version | Licence (SPDX) | Module(s) | Justification |
+|------------|---------|----------------|-----------|---------------|
+| MuPDF (Artifex) | à épingler (M1) | AGPL-3.0-or-later | `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001) |
+| Kotlin stdlib, kotlinx-coroutines | 2.4.21 / 1.11.0 | Apache-2.0 | tous | Langage, asynchronisme |
+| AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app` | Extensions Kotlin d'Android |
+| AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
+| AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
+| Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
+| Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
+
+Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
+`./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
+
+## Debug uniquement (jamais dans l'APK publié)
+
+| Dépendance | Version | Licence | Justification |
+|------------|---------|---------|---------------|
+| LeakCanary | 2.14 | Apache-2.0 | Détection des fuites mémoire (`AGENTS.md` §8) |
+| Compose UI Tooling, ui-test-manifest | BOM | Apache-2.0 | Aperçus, activité de test Compose |
+
+## Tests (jamais distribués)
+
+| Dépendance | Version | Licence | Justification |
+|------------|---------|---------|---------------|
+| JUnit 4 | 4.13.2 | EPL-1.0 | Exécuteur de tests imposé par Robolectric. EPL-1.0 est incompatible avec la GPL pour une œuvre distribuée, mais JUnit n'est jamais distribué ni lié à l'APK (ADR 0005) |
+| Truth | 1.4.5 | Apache-2.0 | Assertions |
+| Turbine | 1.2.1 | Apache-2.0 | Tests de `Flow` |
+| kotlinx-coroutines-test | 1.11.0 | Apache-2.0 | Dispatchers de test |
+| Robolectric | 4.17 | MIT | Tests Android sur JVM |
+| Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
+| AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
+| Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+
+## Build et qualité (outils, jamais distribués)
+
+| Outil | Version | Licence |
+|-------|---------|---------|
+| Gradle | 9.8.2 | Apache-2.0 |
+| Android Gradle Plugin | 9.5.0 | Apache-2.0 |
+| KSP | 2.3.13 | Apache-2.0 |
+| ktlint / plugin Gradle ktlint | 1.8.0 / 14.2.0 | MIT |
+| detekt / compose-rules | 1.23.8 / 0.4.27 | Apache-2.0 |
+| Kover | 0.9.11 | Apache-2.0 |
+| Dokka | 2.2.0 | Apache-2.0 |
+| Licensee | 1.14.1 | Apache-2.0 |
+| PyMuPDF / Pillow (génération des fichiers de test) | 2.1 / 13.0.0 | AGPL-3.0 / MIT-CMU |
 
 ## Ressources de documentation (non embarquées)
 
 | Ressource | Licence | Emplacement |
 |-----------|---------|-------------|
 | Roboto, Roboto Mono | OFL-1.1 | `docs/design/assets/fonts/` |
+
+## Prévues
+
+| Dépendance | Jalon | Licence | Usage |
+|------------|-------|---------|-------|
+| AboutLibraries | M5 | Apache-2.0 | Écran des licences tierces (ADR 0003) |
+| Room, DataStore, Navigation Compose | M2–M3 | Apache-2.0 | Persistance, navigation |

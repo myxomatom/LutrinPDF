@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Placeholder icon: an open book resting on a lectern. To be replaced by the final artwork. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Book pages -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,40 C47,35 39,34 32,35 L32,62 C39,61 47,62 54,66 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,40 C61,35 69,34 76,35 L76,62 C69,61 61,62 54,66 Z" />
+    <!-- Lectern -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M30,68 L78,68 L74,73 L34,73 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M51,73 L57,73 L57,82 L51,82 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M42,82 L66,82 L66,85 L42,85 Z" />
+</vector>
