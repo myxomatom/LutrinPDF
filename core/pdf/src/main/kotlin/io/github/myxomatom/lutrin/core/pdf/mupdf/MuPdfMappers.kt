@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.myxomatom.lutrin.core.pdf.mupdf
+
+import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.Link
+import com.artifex.mupdf.fitz.Outline
+import com.artifex.mupdf.fitz.Quad
+import com.artifex.mupdf.fitz.Rect
+import com.artifex.mupdf.fitz.StructuredText
+import io.github.myxomatom.lutrin.core.domain.pdf.OutlineItem
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import io.github.myxomatom.lutrin.core.domain.pdf.parsePdfDate
+
+/** Value MuPDF reports in the `encryption` metadata of an unencrypted document. */
+private const val NOT_ENCRYPTED = "None"
+
+/** Converts a MuPDF rectangle, normalising it in case MuPDF returns an inverted one. */
+internal fun Rect.toPdfRect(): PdfRect = PdfRect(minOf(x0, x1), minOf(y0, y1), maxOf(x0, x1), maxOf(y0, y1))
+
+/** Smallest axis-aligned rectangle around a (possibly rotated) MuPDF quad. */
+internal fun Quad.toPdfRect(): PdfRect =
+    PdfRect.enclosing(listOf(ul_x to ul_y, ur_x to ur_y, ll_x to ll_y, lr_x to lr_y))
+
+/** MuPDF search flags for the given options. */
+internal fun SearchOptions.toMuPdfFlags(): Int {
+    var flags = StructuredText.SEARCH_EXACT
+    if (!matchCase) flags = flags or StructuredText.SEARCH_IGNORE_CASE
+    if (!matchAccents) flags = flags or StructuredText.SEARCH_IGNORE_DIACRITICS
+    return flags
+}
+
+/** Reads the document information; MuPDF returns blank strings for missing fields. */
+internal fun Document.readMetadata(pageCount: Int): PdfMetadata {
+    fun field(key: String) = getMetaData(key)?.takeIf { it.isNotBlank() }
+    return PdfMetadata(
+        pageCount = pageCount,
+        title = field(Document.META_INFO_TITLE),
+        author = field(Document.META_INFO_AUTHOR),
+        subject = field(Document.META_INFO_SUBJECT),
+        keywords = field(Document.META_INFO_KEYWORDS),
+        creator = field(Document.META_INFO_CREATOR),
+        producer = field(Document.META_INFO_PRODUCER),
+        creationDate = parsePdfDate(field(Document.META_INFO_CREATIONDATE)),
+        modificationDate = parsePdfDate(field(Document.META_INFO_MODIFICATIONDATE)),
+        format = field(Document.META_FORMAT),
+        isEncrypted = field(Document.META_ENCRYPTION).let { it != null && it != NOT_ENCRYPTED },
+    )
+}
+
+/** Zero-based page targeted by an internal [uri], or `null` if it does not resolve. */
+internal fun Document.pageIndexOf(uri: String?): Int? {
+    if (uri == null || Link.isExternal(uri)) return null
+    return runCatching { pageNumberFromLocation(resolveLink(uri)) }.getOrNull()?.takeIf { it >= 0 }
+}
+
+/** Converts MuPDF outline entries, recursively. */
+internal fun Document.toOutlineItems(entries: Array<Outline>?): List<OutlineItem> = entries.orEmpty().map { entry ->
+    OutlineItem(
+        title = entry.title.orEmpty(),
+        pageIndex = pageIndexOf(entry.uri),
+        uri = entry.uri?.takeIf(Link::isExternal),
+        children = toOutlineItems(entry.down),
+    )
+}
+
+/** Converts a MuPDF link; `null` for an internal link whose destination does not resolve. */
+internal fun Document.toPdfLink(link: Link): PdfLink? {
+    val uri = link.uri ?: return null
+    val bounds = link.bounds.toPdfRect()
+    return if (link.isExternal) {
+        PdfLink.External(bounds, uri)
+    } else {
+        pageIndexOf(uri)?.let { PdfLink.Internal(bounds, it) }
+    }
+}
