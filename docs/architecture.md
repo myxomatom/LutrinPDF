@@ -1,7 +1,7 @@
 # Architecture
 
-> Architecture **cible**, décrite par `SPEC.md` §4. Ce document sera tenu à jour à
-> mesure que les modules sont créés (à partir du jalon M0).
+> Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 ;
+> la plupart sont encore vides et se remplissent au fil des jalons (`ROADMAP.md`).
 
 ## Principes
 
@@ -67,3 +67,22 @@ sequenceDiagram
     VM-->>UI: StateFlow<UiState> (immuable)
     VM--)UI: effet ponctuel (Channel / SharedFlow)
 ```
+
+## Build
+
+- `build-logic/` (build inclus) contient les plugins de convention appliqués par chaque module :
+
+  | Plugin | Appliqué à | Ajoute |
+  |--------|-----------|--------|
+  | `lutrin.android.application` | `:app` | AGP application, Licensee, `verifyReleasePermissions`, émulateurs gérés |
+  | `lutrin.android.library` | modules Android `core:*` | AGP bibliothèque |
+  | `lutrin.android.compose` | `app`, `core:ui`, `feature:*` | Compose (BOM, compilateur) |
+  | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` |
+  | `lutrin.jvm.library` | `core:domain` | Kotlin/JVM pur |
+  | `lutrin.hilt` | `app`, `feature:*` | Hilt + KSP |
+
+  Tous appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17.
+- Versions : uniquement dans `gradle/libs.versions.toml`. Dépôts : uniquement dans
+  `settings.gradle.kts` (`FAIL_ON_PROJECT_REPOS`).
+- Identifiant d'application : `io.github.myxomatom.lutrin` (`.debug` en debug, ADR 0006).
+

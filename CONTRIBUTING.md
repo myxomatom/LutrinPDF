@@ -20,12 +20,35 @@ Merci de votre intérêt ! Avant toute contribution, lisez :
 2. Créez une branche : `feat/…`, `fix/…`, `docs/…` — une fonctionnalité = une branche = une PR.
 3. Commits au format [Conventional Commits](https://www.conventionalcommits.org/fr/), en anglais, à l'impératif
    (`feat(reader): add double-tap zoom`).
-4. Vérifiez localement : `./gradlew check` (disponible à partir du jalon M0).
+4. Vérifiez localement : `./gradlew check` (voir ci-dessous) ; formatez avec `./gradlew ktlintFormat`.
 5. Mettez à jour `CHANGELOG.md` (section *Non publié*) et la documentation concernée.
 6. Ouvrez la PR en remplissant le modèle (définition de « terminé », `AGENTS.md` §12).
 
 Une décision structurante (dépendance, architecture, écart à la spec ou aux maquettes)
 fait l'objet d'un ADR dans [`docs/adr/`](docs/adr/) à partir de `0000-modele.md`.
+
+## Vérifications locales
+
+| Commande | Rôle |
+|----------|------|
+| `./gradlew check` | ktlint, detekt, Android Lint, tests (unitaires, Robolectric, captures), couverture Kover, licences (Licensee), permissions interdites |
+| `./gradlew ktlintFormat` | Corrige le formatage |
+| `./gradlew recordRoborazziDebug` | Réenregistre les captures de référence (`src/test/screenshots/`) après un changement visuel **voulu** ; relisez les images avant de les committer |
+| `./gradlew ciGroupDebugAndroidTest` | Tests instrumentés sur émulateurs gérés API 26 et 37 (machine avec KVM) |
+| `./gradlew :dokkaGenerate` | Documentation de l'API (`build/dokka/html/`), sans avertissement |
+
+Les règles de qualité sont centralisées dans `build-logic/` (plugins de convention),
+`config/detekt/detekt.yml`, `config/lint/lint.xml` et `.editorconfig`. Toute désactivation
+d'une règle est justifiée en commentaire.
+
+Le jeu de fichiers de test est généré par `core/testing/scripts/generate_test_files.py`
+(voir `core/testing/README.md`).
+
+## Mise à jour de l'API Android cible
+
+Lint ne signale pas automatiquement une nouvelle API stable (`OldTargetApi` désactivé, ADR 0005).
+À chaque nouvelle version stable d'Android : relever `compileSdk` / `targetSdk` dans
+`gradle/libs.versions.toml`, vérifier les changements de comportement, lancer la CI complète.
 
 ## Traductions
 
