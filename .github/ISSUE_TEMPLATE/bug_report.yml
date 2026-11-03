@@ -1,0 +1,42 @@
+name: Signaler un bug
+description: Un comportement incorrect ou un plantage
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! **N'incluez pas de document personnel ni de mot de passe.**
+        Pour une faille de sécurité, utilisez le signalement privé (voir SECURITY.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Que s'est-il passé ? Qu'attendiez-vous ?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: "1. Ouvrir…\n2. Toucher…\n3. …"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de Lutrin
+      placeholder: "1.0.0 (F-Droid)"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Appareil et version d'Android
+      placeholder: "Pixel 7, Android 15"
+    validations:
+      required: true
+  - type: textarea
+    id: pdf
+    attributes:
+      label: Document concerné
+      description: Type de PDF (chiffré, scanné, très gros…). Joignez un PDF de démonstration libre de droits si possible.

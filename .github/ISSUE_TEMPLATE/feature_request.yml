@@ -1,0 +1,29 @@
+name: Proposer une fonctionnalité
+description: Une idée d'amélioration
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Avant de proposer, vérifiez le périmètre dans SPEC.md (§2.5 Hors périmètre).
+        Lutrin restera sans publicité, sans traqueur et **sans accès réseau**.
+  - type: textarea
+    id: need
+    attributes:
+      label: Besoin
+      description: Quel problème cette fonctionnalité résout-elle ?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Principes
+      options:
+        - label: Cette proposition ne nécessite ni accès réseau, ni dépendance propriétaire, ni collecte de données.
+          required: true

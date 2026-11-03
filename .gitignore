@@ -33,3 +33,18 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Kotlin
+kotlin-js-store/
+
+# macOS / editors
+.DS_Store
+*.swp
+.vscode/
+
+# Native builds (MuPDF)
+**/obj/
+
+# Signing (never commit secrets)
+keystore.properties
+signing.properties
