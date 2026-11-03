@@ -48,3 +48,6 @@ kotlin-js-store/
 # Signing (never commit secrets)
 keystore.properties
 signing.properties
+
+# Python virtual environments (test file generator)
+.venv/

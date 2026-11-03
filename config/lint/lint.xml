@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Android Lint runs with warningsAsErrors. Every rule turned off here is justified. -->
+<lint>
+    <!-- Dependency freshness is handled by Dependabot (.github/dependabot.yml). These checks
+         would turn every upstream release into a CI failure unrelated to the change under review. -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <!-- Same reason for new Android releases: targetSdk is raised deliberately, following the
+         release checklist in CONTRIBUTING.md. -->
+    <issue id="OldTargetApi" severity="ignore" />
+    <!-- Some AndroidX libraries ship lint checks compiled against an older lint API (e.g. the
+         lifecycle-runtime checks with AGP 9.5): lint skips them and reports it as an error.
+         It is a library packaging issue, not a problem in our code; revisit when upgrading. -->
+    <issue id="ObsoleteLintCustomCheck" severity="ignore" />
+</lint>
