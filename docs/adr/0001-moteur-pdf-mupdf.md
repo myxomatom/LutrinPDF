@@ -1,12 +1,8 @@
 # 0001 — Moteur PDF : MuPDF
 
-- **Statut** : proposé (à relire et accepter au début du jalon M1, `ROADMAP.md`)
-- **Date** : 2026-11-03
+- **Statut** : accepté
+- **Date** : 2026-11-03 (proposé et accepté)
 - **Références** : `SPEC.md` §4.2 et §7, `AGENTS.md` §1 et §3, `ROADMAP.md` §4
-
-> Brouillon reconstitué à partir de `SPEC.md`. Les points marqués **[à vérifier]**
-> doivent être confirmés sur les sources officielles (site et dépôt d'Artifex) avant
-> de passer le statut à « accepté ».
 
 ## Contexte
 
@@ -26,21 +22,21 @@ v1.1), et à terme annoter et remplir des formulaires (v1.x). Contraintes :
   structuré, recherche, liens, outline, annotations, formulaires, greffe de pages,
   création de documents) ; mode reflow ; autres formats (EPUB, XPS, CBZ, FB2) ;
   bibliothèque Android maintenue par l'éditeur.
-- Inconvénients : licence **AGPL v3** (contamine la distribution de l'application) ;
+- Inconvénients : licence **AGPL v3 ou ultérieure** (`AGPL-3.0-or-later`) (contamine la distribution de l'application) ;
   compilation native lourde (NDK) ; objets non thread-safe ; une licence commerciale
   existe mais n'est pas compatible avec notre modèle libre (non pertinente ici).
 
 ### Option B — PDFium (Google / Chromium)
-- Avantages : licence permissive (BSD / Apache 2.0 **[à vérifier]**) ; rendu éprouvé.
+- Avantages : licence permissive (`BSD-3-Clause`) ; rendu éprouvé.
 - Inconvénients : écriture limitée (fusion / création de documents peu outillées) ;
   pas de binding Android officiel (bindings communautaires de maintenance variable) ;
   compilation depuis les sources complexe (outillage Chromium) pour F-Droid.
 
 ### Option C — `android.graphics.pdf.PdfRenderer` (plateforme)
 - Avantages : aucune dépendance, aucune taille ajoutée.
-- Inconvénients : fonctionnalités de texte, recherche et liens absentes sur les anciennes
-  versions d'Android (au mieux disponibles sur les versions récentes **[à vérifier]**),
-  incompatible avec `minSdk` 26 pour le périmètre MVP ; aucune écriture.
+- Inconvénients : l'extraction de texte et la recherche (`PdfRenderer.Page.getTextContents()`,
+  `searchText()`) n'existent qu'à partir de l'API 35 (Android 15) : incompatible avec
+  `minSdk` 26 pour le périmètre MVP ; aucune écriture (fusion, création).
 
 ## Décision
 
@@ -61,5 +57,12 @@ PDFium reste le plan B documenté.
   ressources natives (`destroy()` / `use {}`), y compris en cas d'annulation.
 - **Isolation** : aucun type MuPDF hors de `core:pdf`, pour pouvoir changer de moteur.
 - **Vérifications de M1** : capacités d'écriture (fusion de 2 PDF, image → PDF) validées
-  tôt ; JavaScript PDF jamais exécuté ; identifiant SPDX exact de la licence de MuPDF
-  **[à vérifier]** reporté dans `docs/dependencies.md`.
+  tôt ; JavaScript PDF jamais exécuté.
+
+## Sources (consultées le 2026-11-03)
+
+- Licence de MuPDF : `README` et `COPYING` du dépôt <https://github.com/ArtifexSoftware/mupdf>
+  (« GNU Affero General Public License … either version 3 of the License, or (at your option) any later version »).
+- Licence de PDFium : `LICENSE` du miroir <https://github.com/chromium/pdfium> (BSD à 3 clauses).
+- `PdfRenderer.Page` : <https://developer.android.com/reference/android/graphics/pdf/PdfRenderer.Page>
+  (`searchText` / `getTextContents` : « Added in API level 35 »).

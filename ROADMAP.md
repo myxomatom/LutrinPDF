@@ -58,7 +58,7 @@ Les durées sont **indicatives**, pour une personne seule assistée d'un agent d
 
 ### M1 — Moteur PDF (≈ 1 à 2 semaines)
 **Objectif :** pouvoir ouvrir et rendre n'importe quel PDF du jeu de test, sans interface.
-- ADR 0001 (MuPDF) relu et accepté ; licence GPL-3.0-or-later + distribution AGPL v3 en place.
+- ~~ADR 0001 (MuPDF) relu et accepté~~ (fait le 2026-11-03) ; licence GPL-3.0-or-later + distribution AGPL v3 en place.
 - Compilation de MuPDF depuis les sources (sous-module Git, NDK, version épinglée), intégrée à la CI.
 - Interface `PdfEngine` + implémentation MuPDF : ouverture, mot de passe, rendu de région, métadonnées, table des matières, liens, texte, recherche.
 - Vérification précoce des capacités d'écriture (fusion de 2 PDF, image vers PDF) pour valider la v1.1.

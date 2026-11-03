@@ -7,7 +7,7 @@ Google Play Services, Firebase, et toute bibliothèque qui ajoute une permission
 
 | Dépendance | Version | Licence (SPDX) | Module(s) | Justification | Vérifiée le |
 |------------|---------|----------------|-----------|---------------|-------------|
-| MuPDF (Artifex) | à épingler (M1) | AGPL-3.0 — identifiant exact à vérifier | `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001) | — |
+| MuPDF (Artifex) | à épingler (M1) | AGPL-3.0-or-later | `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001) | 2026-11-03 |
 
 ## Ressources de documentation (non embarquées)
 

@@ -12,7 +12,7 @@ changement y est signalé.
 ### Ajouté
 - Spécification (`SPEC.md`), règles de développement (`AGENTS.md`) et feuille de route (`ROADMAP.md`).
 - Maquettes des écrans et jetons de design (`docs/design/`).
-- ADR 0001 (moteur PDF MuPDF) à l'état proposé, modèle d'ADR.
+- ADR 0001 (moteur PDF MuPDF), accepté, et modèle d'ADR.
 - Documents du projet : `README.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `SECURITY.md`,
   `docs/architecture.md`, `docs/dependencies.md`, `docs/open-questions.md`.
 - Textes des licences GPL v3 et AGPL v3 (`LICENSES/`).

@@ -6,7 +6,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 
 | N° | Décision | Statut |
 |----|----------|--------|
-| [0001](0001-moteur-pdf-mupdf.md) | Moteur PDF : MuPDF | Proposé |
+| [0001](0001-moteur-pdf-mupdf.md) | Moteur PDF : MuPDF | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 
