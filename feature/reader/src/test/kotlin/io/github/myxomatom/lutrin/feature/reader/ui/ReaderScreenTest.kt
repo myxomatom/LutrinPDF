@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -13,8 +15,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import io.github.myxomatom.lutrin.feature.reader.ReaderError
@@ -33,11 +39,47 @@ class ReaderScreenTest {
 
     private val document = FakePdfDocument()
 
-    private fun ready() = ReaderUiState.Ready(
+    private fun ready(
+        scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
+        currentPage: Int = 0,
+        doc: FakePdfDocument = document,
+    ) = ReaderUiState.Ready(
         "Contrat de location",
-        document.pageSizes,
-        PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
+        doc.pageSizes,
+        PageRenderer(doc, doc.pageSizes, Dispatchers.Unconfined),
+        scrollMode,
+        currentPage,
     )
+
+    /**
+     * Shows the reader wired like [io.github.myxomatom.lutrin.feature.reader.ReaderViewModel]:
+     * the chosen mode and the reported page come back in the state. Returns the reported pages.
+     */
+    private fun showConnected(initial: ReaderUiState.Ready): List<Int> {
+        val reported = mutableListOf<Int>()
+        var state by mutableStateOf(initial)
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                ReaderScreen(
+                    state = state,
+                    onBack = {},
+                    onPageChange = {
+                        reported += it
+                        state = state.copy(currentPage = it)
+                    },
+                    onScrollModeChange = { state = state.copy(scrollMode = it) },
+                )
+            }
+        }
+        return reported
+    }
+
+    private fun swipeDocument(page: Int, pageCount: Int = 3, left: Boolean = true) {
+        composeRule.onNodeWithContentDescription("Document, page $page of $pageCount").performTouchInput {
+            if (left) swipeLeft() else swipeRight()
+        }
+        composeRule.waitForIdle()
+    }
 
     private fun show(state: ReaderUiState, onBack: () -> Unit = {}) {
         composeRule.setContent { LutrinTheme(dynamicColor = false) { ReaderScreen(state, onBack) } }
@@ -138,6 +180,130 @@ class ReaderScreenTest {
         composeRule.onNodeWithContentDescription("Back").performClick()
 
         assertThat(back).isTrue()
+    }
+
+    @Test
+    fun `scrolling continuously from a given page shows that page in the indicator`() {
+        val reported = showConnected(ready(currentPage = 1))
+
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+        assertThat(reported).containsExactly(1)
+    }
+
+    @Test
+    fun `more options opens the display options with the current scroll mode`() {
+        show(ready())
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+
+        composeRule.onNodeWithText("Display").assertIsDisplayed()
+        composeRule.onNodeWithText("Scrolling").assertIsDisplayed()
+        composeRule.onNodeWithText("Continuous").assertIsSelected()
+        composeRule.onNodeWithText("Page by page").assertIsNotSelected()
+    }
+
+    @Test
+    fun `choosing page by page reports it and keeps the sheet open`() {
+        val chosen = mutableListOf<ScrollMode>()
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                ReaderScreen(ready(), onBack = {}, onScrollModeChange = { chosen += it })
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Page by page").performClick()
+
+        assertThat(chosen).containsExactly(ScrollMode.PAGED)
+        composeRule.onNodeWithText("Display").assertIsDisplayed()
+    }
+
+    @Test
+    fun `switching to page by page keeps the page and swiping moves through the document`() {
+        val reported = showConnected(ready(currentPage = 1))
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Page by page").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Page by page").assertIsSelected()
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+
+        swipeDocument(page = 2)
+
+        composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
+        assertThat(reported.last()).isEqualTo(2)
+    }
+
+    @Test
+    fun `switching back to continuous scrolling on the last page stays on it`() {
+        showConnected(ready(scrollMode = ScrollMode.PAGED, currentPage = 2))
+        composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Continuous").performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Document, page 3 of 3").assertIsDisplayed()
+    }
+
+    @Test
+    fun `page by page, the indicator follows the swipes and stops at the last page`() {
+        val reported = showConnected(ready(scrollMode = ScrollMode.PAGED))
+
+        swipeDocument(page = 1)
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+        swipeDocument(page = 2)
+        swipeDocument(page = 3)
+
+        composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
+        assertThat(reported).containsExactly(0, 1, 2).inOrder()
+        swipeDocument(page = 3, left = false)
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+    }
+
+    @Test
+    fun `page by page, a one-page document has no slider and does not move`() {
+        showConnected(ready(scrollMode = ScrollMode.PAGED, doc = FakePdfDocument(listOf(A4))))
+
+        swipeDocument(page = 1, pageCount = 1)
+
+        composeRule.onNodeWithText("1 / 1").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Go to page").assertDoesNotExist()
+    }
+
+    @Test
+    fun `page by page, a tap switches to full screen and the fit button fits the whole page`() {
+        show(ready(scrollMode = ScrollMode.PAGED))
+        composeRule.onNodeWithContentDescription("Fit page to screen").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Fit to width").assertDoesNotExist()
+
+        composeRule.onNodeWithContentDescription("Document, page 1 of 3").performTouchInput { click(center) }
+        composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_WAIT_MS)
+
+        composeRule.onNodeWithText("Page 1 / 3").assertIsDisplayed()
+        composeRule.onNodeWithText("Contrat de location").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the error screen has no more options button`() {
+        show(ReaderUiState.Error(ReaderError.UNREADABLE))
+
+        composeRule.onNodeWithContentDescription("More options").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `display options are translated into French`() {
+        show(ready())
+
+        composeRule.onNodeWithContentDescription("Plus d’options").performClick()
+
+        composeRule.onNodeWithText("Affichage").assertIsDisplayed()
+        composeRule.onNodeWithText("Défilement").assertIsDisplayed()
+        composeRule.onNodeWithText("Continu").assertIsSelected()
+        composeRule.onNodeWithText("Page par page").assertIsDisplayed()
     }
 
     private companion object {

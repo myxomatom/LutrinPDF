@@ -7,6 +7,12 @@
     <string name="reader_page_indicator">%1$d / %2$d</string>
     <string name="reader_page_slider">Aller à la page</string>
     <string name="reader_fit_width">Ajuster à la largeur</string>
+    <string name="reader_more_options">Plus d’options</string>
+    <string name="reader_fit_page">Ajuster la page à l’écran</string>
+    <string name="reader_options_title">Affichage</string>
+    <string name="reader_options_scrolling">Défilement</string>
+    <string name="reader_scroll_continuous">Continu</string>
+    <string name="reader_scroll_paged">Page par page</string>
     <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
     <string name="reader_error_title">Impossible d’ouvrir ce document</string>
     <string name="reader_error_unreadable">Le fichier est peut-être endommagé ou incomplet.</string>
