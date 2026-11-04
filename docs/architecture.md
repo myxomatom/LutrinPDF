@@ -98,6 +98,7 @@ sequenceDiagram
   | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` |
   | `lutrin.jvm.library` | `core:domain` | Kotlin/JVM pur |
   | `lutrin.hilt` | `app`, `feature:*` | Hilt + KSP |
+  | `lutrin.android.robolectric` | `app`, `core:ui` | Robolectric hors ligne (jars Android résolus par Gradle) |
 
   Tous appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17.
 - Versions : uniquement dans `gradle/libs.versions.toml`. Dépôts : uniquement dans

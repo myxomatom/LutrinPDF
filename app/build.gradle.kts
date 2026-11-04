@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.lutrin.android.application)
     alias(libs.plugins.lutrin.android.compose)
     alias(libs.plugins.lutrin.hilt)
+    alias(libs.plugins.lutrin.android.robolectric)
     alias(libs.plugins.roborazzi)
 }
 
@@ -81,7 +82,6 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)
-    testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
