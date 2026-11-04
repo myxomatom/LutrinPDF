@@ -6,6 +6,8 @@ plugins {
 dependencies {
     // JSR-330 annotations only (pure JVM): lets the domain declare injection qualifiers.
     api(libs.javax.inject)
+    // Flow in repository interfaces (pure Kotlin, no Android).
+    api(libs.kotlinx.coroutines.core)
 }
 
 // Stricter than the global 70 % (AGENTS.md §5.2).

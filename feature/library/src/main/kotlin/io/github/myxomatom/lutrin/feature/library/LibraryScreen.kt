@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,18 +42,28 @@ private val OfflineNoticeGap = 8.dp
 
 /**
  * Library screen (E1). Until recent documents exist (milestone M3) it always shows the empty
- * state of `docs/design/png/E1-Bibliotheque-Vide.png`; the tools and settings actions of the
- * mockup appear with their screens (milestones M5, M6).
+ * state of `docs/design/png/E1-Bibliotheque-Vide.png`; the tools action of the mockup appears
+ * with its screen (milestone M6).
  *
  * @param onOpenFile called when the user asks to pick a PDF with the system file picker.
+ * @param onOpenSettings called when the user opens the settings (E3).
  * @param modifier modifier applied to the screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(onOpenFile: () -> Unit, modifier: Modifier = Modifier) {
+fun LibraryScreen(onOpenFile: () -> Unit, onOpenSettings: () -> Unit, modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.library_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.library_title)) },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.library_settings))
+                    }
+                },
+            )
+        },
     ) { innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
             StatusMessage(
@@ -110,5 +123,5 @@ private fun OfflineNotice() {
 @Preview
 @Composable
 private fun LibraryScreenPreview() {
-    LutrinTheme(dynamicColor = false) { LibraryScreen(onOpenFile = {}) }
+    LutrinTheme(dynamicColor = false) { LibraryScreen(onOpenFile = {}, onOpenSettings = {}) }
 }

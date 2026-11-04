@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_dynamic_color">Dynamic colours</string>
+    <string name="settings_dynamic_color_summary">Use the colours of your wallpaper</string>
+    <string name="settings_dynamic_color_unavailable">Available from Android 12</string>
+</resources>

@@ -12,6 +12,8 @@ import androidx.navigation.compose.rememberNavController
 import io.github.myxomatom.lutrin.feature.library.LibraryScreen
 import io.github.myxomatom.lutrin.feature.reader.navigateToReader
 import io.github.myxomatom.lutrin.feature.reader.readerScreen
+import io.github.myxomatom.lutrin.feature.settings.navigateToSettings
+import io.github.myxomatom.lutrin.feature.settings.settingsScreen
 
 /** Route of the library (E1), the start destination. */
 private const val LIBRARY_ROUTE = "library"
@@ -20,7 +22,8 @@ private const val LIBRARY_ROUTE = "library"
 private const val PDF_MIME_TYPE = "application/pdf"
 
 /**
- * Root composable: the navigation graph between the library (E1) and the reader (E2).
+ * Root composable: the navigation graph between the library (E1), the reader (E2) and the
+ * settings (E3).
  *
  * @param modifier modifier applied to the navigation host.
  */
@@ -33,8 +36,12 @@ fun LutrinApp(modifier: Modifier = Modifier) {
                 rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
                     uri?.let(navController::navigateToReader)
                 }
-            LibraryScreen(onOpenFile = { picker.launch(arrayOf(PDF_MIME_TYPE)) })
+            LibraryScreen(
+                onOpenFile = { picker.launch(arrayOf(PDF_MIME_TYPE)) },
+                onOpenSettings = navController::navigateToSettings,
+            )
         }
         readerScreen(onBack = navController::popBackStack)
+        settingsScreen(onBack = navController::popBackStack)
     }
 }

@@ -7,14 +7,15 @@
 
 ## 0. État d'avancement
 
-> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-04**. Détail des constats :
+> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-04**. Pour reprendre le travail
+> dans une nouvelle session : [`docs/reprise.md`](docs/reprise.md). Détail des constats :
 > [`docs/audits/2026-11-04-audit-m1.md`](docs/audits/2026-11-04-audit-m1.md).
 
 | Jalon | État | Reste à faire |
 |-------|------|---------------|
 | M0 Fondations | ✅ Terminé | Module `:benchmark` (Macrobenchmark, Baseline Profile) et vérification de reproductibilité F-Droid, reportés (points ouverts 12 et 13) |
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
-| M2 Lecteur de base | 🚧 1re partie fusionnée (PR #6) | Mode page par page horizontal, module `:benchmark` et mesure des 60 images/s, gros PDF sur appareil réel |
+| M2 Lecteur de base | 🚧 1re partie fusionnée (PR #6), zoom corrigé (PR #9) | Mode page par page horizontal, module `:benchmark` et mesure des 60 images/s, gros PDF sur appareil réel |
 | M3 Fichiers et récents | ⏳ À faire | E1 existe déjà dans son état vide (ADR 0009) |
 | M4 à M8 | ⏳ À faire | — |
 
@@ -22,14 +23,15 @@
 
 | Vue | État | Remarques |
 |-----|------|-----------|
-| E1 Bibliothèque | 🟡 Partielle | État vide et « Ouvrir un fichier » (sélecteur système) ; récents, outils et paramètres en M3 / M5 / M6 |
+| E1 Bibliothèque | 🟡 Partielle | État vide, « Ouvrir un fichier » (sélecteur système) et accès aux paramètres ; récents en M3, outils en M6 |
 | E2 Lecteur | 🟡 Partielle | Défilement continu, zoom 25–800 % net, plein écran, curseur et indicateur de page ; recherche, table des matières, menu en M4 / M5 |
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible, protégé ; « Retirer des récents » en M3 |
-| Autres (E3–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; thème, rendu, lecture, données en M5 |
+| Autres (E4–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette
-des maquettes (ADR 0009, point ouvert 9).
+des maquettes (ADR 0009) ; un interrupteur permet maintenant de les désactiver (ADR 0010).
 
 ---
 

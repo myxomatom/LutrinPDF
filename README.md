@@ -43,7 +43,8 @@ Détails : [`SPEC.md`](SPEC.md).
 |---------|------|
 | [`SPEC.md`](SPEC.md) | Ce que fait l'application : fonctionnalités, architecture, critères d'acceptation |
 | [`AGENTS.md`](AGENTS.md) | Comment le code est écrit : règles absolues, tests, documentation, définition de « terminé » |
-| [`ROADMAP.md`](ROADMAP.md) | Inventaire des vues, jalons, risques |
+| [`ROADMAP.md`](ROADMAP.md) | Inventaire des vues, jalons, risques, état d'avancement (§0) |
+| [`docs/reprise.md`](docs/reprise.md) | Reprendre le développement : état, prochaines tâches, pièges connus |
 | [`docs/design/`](docs/design/) | Maquettes des écrans (ouvrir `docs/design/index.html`) et jetons de design |
 | [`docs/adr/`](docs/adr/) | Décisions d'architecture (ADR) |
 | [`docs/architecture.md`](docs/architecture.md) | Modules et flux de données |

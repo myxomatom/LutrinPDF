@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.feature.library
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,10 +21,13 @@ class LibraryScreenTest {
     val composeRule = createComposeRule()
 
     private var openClicks = 0
+    private var settingsClicks = 0
 
     private fun show() {
         composeRule.setContent {
-            LutrinTheme(dynamicColor = false) { LibraryScreen(onOpenFile = { openClicks++ }) }
+            LutrinTheme(dynamicColor = false) {
+                LibraryScreen(onOpenFile = { openClicks++ }, onOpenSettings = { settingsClicks++ })
+            }
         }
     }
 
@@ -43,6 +47,15 @@ class LibraryScreenTest {
         composeRule.onNodeWithText("Open a file").assertHasClickAction().performClick()
 
         assertThat(openClicks).isEqualTo(1)
+    }
+
+    @Test
+    fun `settings action opens the settings`() {
+        show()
+
+        composeRule.onNodeWithContentDescription("Settings").performClick()
+
+        assertThat(settingsClicks).isEqualTo(1)
     }
 
     @Test

@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Leak detection in debug builds only (AGENTS.md §8); never in release.
     debugImplementation(libs.leakcanary.android)
