@@ -42,8 +42,113 @@ class ReaderGeometryTest {
     @Test
     fun `zooming keeps the focal point still`() {
         // Content point at 100 + 50 = 150 px; after doubling it is at 300 px, still under the 50 px focus.
-        assertThat(scrollAfterZoom(scroll = 100f, focus = 50f, factor = 2f)).isEqualTo(250f)
-        assertThat(scrollAfterZoom(scroll = 0f, focus = 0f, factor = 3f)).isEqualTo(0f)
+        val doubled = PinchTransform.zoomAround(factor = 2f, focusX = 0f, focusY = 50f)
+        assertThat(scrollAfterGesture(scroll = 100f, scale = doubled.scale, translation = doubled.translationY))
+            .isEqualTo(250f)
+        val tripled = PinchTransform.zoomAround(factor = 3f, focusX = 0f, focusY = 0f)
+        assertThat(scrollAfterGesture(scroll = 0f, scale = tripled.scale, translation = tripled.translationY))
+            .isEqualTo(0f)
+    }
+
+    @Test
+    fun `pinch steps accumulate their factors instead of restarting from the initial zoom`() {
+        // Regression: the gesture used to read the zoom of its first frame, so every step
+        // zoomed by its own small factor from 100 % and the page shook instead of zooming.
+        val transform =
+            (1..10).fold(PinchTransform()) { current, _ ->
+                current.step(
+                    1.1f,
+                    centroidX = 0f,
+                    centroidY = 0f,
+                    panX = 0f,
+                    panY = 0f,
+                    minScale = 0.25f,
+                    maxScale = 8f,
+                )
+            }
+
+        assertThat(transform.scale).isWithin(1e-3f).of(2.5937f)
+    }
+
+    @Test
+    fun `a pinch keeps the point under the fingers under them`() {
+        val transform =
+            PinchTransform().step(
+                2f,
+                centroidX = 100f,
+                centroidY = 200f,
+                panX = 0f,
+                panY = 0f,
+                minScale = 0.25f,
+                maxScale = 8f,
+            )
+
+        // The content point at (100, 200) is still drawn at (100, 200).
+        assertThat(100f * transform.scale + transform.translationX).isEqualTo(100f)
+        assertThat(200f * transform.scale + transform.translationY).isEqualTo(200f)
+    }
+
+    @Test
+    fun `a pinch follows the fingers when they move`() {
+        val transform =
+            PinchTransform().step(
+                1f,
+                centroidX = 50f,
+                centroidY = 50f,
+                panX = 30f,
+                panY = -20f,
+                minScale = 0.25f,
+                maxScale = 8f,
+            )
+
+        assertThat(transform).isEqualTo(PinchTransform(scale = 1f, translationX = 30f, translationY = -20f))
+    }
+
+    @Test
+    fun `a pinch stops at the zoom limits`() {
+        val transform =
+            PinchTransform().step(
+                100f,
+                centroidX = 0f,
+                centroidY = 0f,
+                panX = 0f,
+                panY = 0f,
+                minScale = 0.5f,
+                maxScale = 4f,
+            )
+
+        assertThat(transform.scale).isEqualTo(4f)
+        assertThat(PinchTransform().isIdentity).isTrue()
+        assertThat(transform.isIdentity).isFalse()
+    }
+
+    @Test
+    fun `committing a zoom in moves to the page now under the top of the screen`() {
+        // Pages of 1000 px at the new zoom; doubling from 600 px into page 2 lands 200 px into page 3.
+        val position =
+            listPositionAfterGesture(ListPosition(2, 600), scale = 2f, translationY = 0f, itemCount = 10) { 1000 }
+
+        assertThat(position).isEqualTo(ListPosition(3, 200))
+    }
+
+    @Test
+    fun `committing a zoom out moves back to the previous pages`() {
+        // Zooming out around a point 400 px below the top: the offset becomes negative.
+        val transform = PinchTransform.zoomAround(factor = 0.5f, focusX = 0f, focusY = 400f)
+        val position =
+            listPositionAfterGesture(ListPosition(3, 100), transform.scale, transform.translationY, itemCount = 10) {
+                500
+            }
+
+        assertThat(position).isEqualTo(ListPosition(2, 350))
+    }
+
+    @Test
+    fun `a committed position never goes before the first page or past the last one`() {
+        assertThat(listPositionAfterGesture(ListPosition(0, 10), 0.5f, translationY = 300f, itemCount = 3) { 100 })
+            .isEqualTo(ListPosition(0, 0))
+        assertThat(listPositionAfterGesture(ListPosition(2, 50), 4f, translationY = 0f, itemCount = 3) { 100 })
+            .isEqualTo(ListPosition(2, 200))
     }
 
     @Test

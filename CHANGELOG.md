@@ -53,6 +53,11 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Lecteur : le zoom au pincement hésitait entre zoomer et déplacer la page. Le geste gardait
+  le zoom de son premier affichage et relançait la mise en page à chaque mouvement ; les pages
+  sont désormais agrandies visuellement pendant le geste et le zoom est appliqué une seule fois,
+  au lâcher, en gardant sous les doigts le point pincé. Le doigt restant après un pincement ne
+  fait plus défiler la page.
 - Moteur PDF : plus de fuite du document natif ni du descripteur de fichier quand l'ouverture
   est annulée ou échoue de façon inattendue ; `PdfError.Closed` au lieu d'une annulation
   silencieuse quand un appel croise `close()` ; fermeture robuste des ressources ; l'enveloppe

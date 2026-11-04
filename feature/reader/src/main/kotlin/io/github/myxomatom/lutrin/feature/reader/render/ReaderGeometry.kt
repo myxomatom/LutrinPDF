@@ -49,15 +49,6 @@ fun baseRenderWidth(viewportWidth: Int, zoom: Float): Int {
 }
 
 /**
- * New scroll offset keeping the content point under the focal point still while zooming.
- *
- * @param scroll current scroll offset along one axis, in pixels.
- * @param focus position of the focal point in the viewport along the same axis, in pixels.
- * @param factor ratio new zoom / old zoom.
- */
-fun scrollAfterZoom(scroll: Float, focus: Float, factor: Float): Float = (scroll + focus) * factor - focus
-
-/**
  * A rectangle in pixels, relative to the top-left corner of the displayed page.
  *
  * @property left x of the left edge.
@@ -120,4 +111,94 @@ fun PixelRect.toPageRect(page: PageSize, pageWidthPx: Int): PdfRect {
 fun currentPage(firstVisible: Int, firstVisibleOffset: Int, firstVisibleHeight: Int, pageCount: Int): Int {
     val pastHalf = firstVisibleHeight > 0 && firstVisibleOffset * 2 > firstVisibleHeight
     return (if (pastHalf) firstVisible + 1 else firstVisible).coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+}
+
+/**
+ * A pinch in progress, drawn as a visual transform of the pages until the fingers lift: a
+ * point at `p` before the gesture is shown at `p * scale + translation` (origin top-left).
+ * Relaying out the whole list at every finger move made the zoom stutter.
+ *
+ * @property scale zoom factor since the start of the gesture.
+ * @property translationX horizontal shift, in pixels.
+ * @property translationY vertical shift, in pixels.
+ */
+data class PinchTransform(val scale: Float = 1f, val translationX: Float = 0f, val translationY: Float = 0f) {
+    /** Whether the transform changes nothing. */
+    val isIdentity: Boolean get() = scale == 1f && translationX == 0f && translationY == 0f
+
+    /**
+     * Adds one pinch step: zoom by [factor] around the centroid ([centroidX], [centroidY]) of
+     * the fingers, then move by their pan ([panX], [panY]). The total scale stays within
+     * [minScale]..[maxScale], so that the committed zoom stays within the limits of F04.
+     */
+    @Suppress("LongParameterList") // A 2D step: one factor, two points, two bounds.
+    fun step(
+        factor: Float,
+        centroidX: Float,
+        centroidY: Float,
+        panX: Float,
+        panY: Float,
+        minScale: Float,
+        maxScale: Float,
+    ): PinchTransform {
+        val newScale = (scale * factor).coerceIn(minScale, maxScale)
+        val applied = newScale / scale
+        return PinchTransform(
+            scale = newScale,
+            translationX = centroidX + panX - (centroidX - translationX) * applied,
+            translationY = centroidY + panY - (centroidY - translationY) * applied,
+        )
+    }
+
+    /** Companion helpers. */
+    companion object {
+        /** Zoom by [factor] around the point ([focusX], [focusY]), as a double tap does. */
+        fun zoomAround(factor: Float, focusX: Float, focusY: Float): PinchTransform =
+            PinchTransform(scale = factor, translationX = focusX * (1 - factor), translationY = focusY * (1 - factor))
+    }
+}
+
+/**
+ * Scroll offset that keeps on screen what a gesture showed, once the zoom is applied: content
+ * scrolled by [scroll] and transformed by [scale] and [translation] ends up scrolled by this.
+ */
+fun scrollAfterGesture(scroll: Float, scale: Float, translation: Float): Float = scroll * scale - translation
+
+/**
+ * A position in the list of pages.
+ *
+ * @property index index of the first visible page.
+ * @property offset how much of it is scrolled out of view, in pixels, `>= 0`.
+ */
+data class ListPosition(val index: Int, val offset: Int)
+
+/**
+ * Position of the list once a gesture is committed. The new offset may fall before the first
+ * visible page (zooming out) or past it (zooming in): it is carried over to the neighbouring
+ * pages using their heights at the new zoom.
+ *
+ * @param from position before the gesture.
+ * @param scale zoom factor of the gesture.
+ * @param translationY vertical shift of the gesture, in pixels.
+ * @param itemCount number of pages.
+ * @param itemExtent height of a page plus the gap below it, at the new zoom, in pixels.
+ */
+fun listPositionAfterGesture(
+    from: ListPosition,
+    scale: Float,
+    translationY: Float,
+    itemCount: Int,
+    itemExtent: (Int) -> Int,
+): ListPosition {
+    var index = from.index.coerceIn(0, (itemCount - 1).coerceAtLeast(0))
+    var offset = scrollAfterGesture(from.offset.toFloat(), scale, translationY).roundToInt()
+    while (offset < 0 && index > 0) {
+        index--
+        offset += itemExtent(index)
+    }
+    while (index < itemCount - 1 && offset >= itemExtent(index)) {
+        offset -= itemExtent(index)
+        index++
+    }
+    return ListPosition(index, offset.coerceAtLeast(0))
 }
