@@ -2,12 +2,6 @@
 package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,11 +21,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -41,12 +30,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
-import io.github.myxomatom.lutrin.feature.reader.render.MAX_ZOOM
-import io.github.myxomatom.lutrin.feature.reader.render.MIN_ZOOM
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
-import io.github.myxomatom.lutrin.feature.reader.render.doubleTapZoom
 import io.github.myxomatom.lutrin.feature.reader.render.listPositionAfterGesture
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
@@ -168,14 +154,7 @@ private fun PagesList(
             modifier
                 .fillMaxSize()
                 .onGloballyPositioned { viewport = Viewport(it, it.size) }
-                .graphicsLayer {
-                    val transform = pinch ?: PinchTransform()
-                    transformOrigin = TransformOrigin(0f, 0f)
-                    scaleX = transform.scale
-                    scaleY = transform.scale
-                    translationX = transform.translationX
-                    translationY = transform.translationY
-                }
+                .pinchLayer { pinch }
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
         contentPadding = PaddingValues(vertical = PAGE_SPACING * zoom),
         verticalArrangement = Arrangement.spacedBy(PAGE_SPACING * zoom),
@@ -204,10 +183,6 @@ private fun PagesList(
  * @property size its size, in pixels.
  */
 internal data class Viewport(val coordinates: LayoutCoordinates, val size: IntSize)
-
-/** Transform of a double tap at [focus]: to [doubleTapZoom], around the tapped point. */
-private fun doubleTapTransform(zoom: Float, focus: Offset): PinchTransform =
-    PinchTransform.zoomAround(clampZoom(doubleTapZoom(zoom)) / zoom, focus.x, focus.y)
 
 /**
  * Returns a function applying a finished gesture: sets the new zoom and, in the same frame,
@@ -243,65 +218,5 @@ private fun rememberCommit(
                 scrollAfterGesture(horizontal.value.toFloat(), scale, transform.translationX).toInt().coerceAtLeast(0)
             }
         }
-    }
-}
-
-/**
- * Pinch, double tap and tap detection. The gesture code outlives recompositions, so it reads
- * the zoom through [rememberUpdatedState]-backed lambdas instead of capturing it once.
- */
-@Composable
-private fun Modifier.readerGestures(
-    zoom: Float,
-    onPinch: (PinchTransform) -> Unit,
-    onPinchEnd: (PinchTransform) -> Unit,
-    onDoubleTap: (Offset) -> Unit,
-    onTap: () -> Unit,
-): Modifier {
-    val currentZoom by rememberUpdatedState(zoom)
-    val currentOnPinch by rememberUpdatedState(onPinch)
-    val currentOnPinchEnd by rememberUpdatedState(onPinchEnd)
-    val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
-    val currentOnTap by rememberUpdatedState(onTap)
-    return pinchToZoom(
-        scaleBounds = { MIN_ZOOM / currentZoom to MAX_ZOOM / currentZoom },
-        onPinch = { currentOnPinch(it) },
-        onPinchEnd = { currentOnPinchEnd(it) },
-    ).pointerInput(Unit) {
-        detectTapGestures(onTap = { currentOnTap() }, onDoubleTap = { currentOnDoubleTap(it) })
-    }
-}
-
-/**
- * Detects two-finger pinches without stealing single-finger scrolling from the list. Once a
- * pinch has started, every event of the gesture is consumed until all fingers are up, so
- * that the finger left on screen does not scroll the page.
- *
- * @param scaleBounds smallest and largest scale allowed for this gesture.
- * @param onPinch transform since the start of the gesture, at every move.
- * @param onPinchEnd final transform, when the fingers lift.
- */
-private fun Modifier.pinchToZoom(
-    scaleBounds: () -> Pair<Float, Float>,
-    onPinch: (PinchTransform) -> Unit,
-    onPinchEnd: (PinchTransform) -> Unit,
-): Modifier = pointerInput(Unit) {
-    awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        var transform: PinchTransform? = null
-        do {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
-            if (event.changes.count { it.pressed } >= 2) {
-                val (minScale, maxScale) = scaleBounds()
-                val centroid = event.calculateCentroid()
-                val pan = event.calculatePan()
-                val next = (transform ?: PinchTransform())
-                    .step(event.calculateZoom(), centroid.x, centroid.y, pan.x, pan.y, minScale, maxScale)
-                transform = next
-                onPinch(next)
-            }
-            if (transform != null) event.changes.forEach { it.consume() }
-        } while (event.changes.any { it.pressed })
-        transform?.let(onPinchEnd)
     }
 }
