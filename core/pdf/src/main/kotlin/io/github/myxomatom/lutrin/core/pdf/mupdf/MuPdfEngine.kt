@@ -15,11 +15,11 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.withContext
 
-private const val PDF_MAGIC = "application/pdf"
+/** MIME type passed to MuPDF to pick its PDF handler for in-memory and stream sources. */
+private const val PDF_MIME_TYPE = "application/pdf"
 
 /** Opens the file descriptor of a content URI; abstracted so that the engine is testable. */
 fun interface ContentOpener {
@@ -44,13 +44,17 @@ internal class MuPdfEngine @Inject constructor(
 
     override suspend fun open(source: DocumentSource, password: String?): Result<PdfDocument> {
         val dispatcher = dispatchers.create()
+        // Set on the document thread as soon as the document exists: if the caller is cancelled
+        // while or right after it is built, withContext throws and drops its result, so this
+        // reference is the only way to release the native document and its file descriptor.
+        var opened: PdfDocument? = null
         return try {
-            Result.success(withContext(dispatcher) { openOnDocumentThread(source, password, dispatcher) })
-        } catch (error: CancellationException) {
-            dispatcher.close()
-            throw error
+            val document =
+                releasingOnFailure(release = { (opened ?: dispatcher).close() }) {
+                    withContext(dispatcher) { openOnDocumentThread(source, password, dispatcher).also { opened = it } }
+                }
+            Result.success(document)
         } catch (error: PdfError) {
-            dispatcher.close()
             Result.failure(error)
         }
     }
@@ -61,20 +65,33 @@ internal class MuPdfEngine @Inject constructor(
         dispatcher: ExecutorCoroutineDispatcher,
     ): PdfDocument {
         val (document, resources) = load(source)
-        return try {
+        return releasingOnFailure(release = { releaseNative(document, resources) }) {
             val metadata = translatingMuPdfErrors { prepare(document, password) }
             MuPdfDocument(document, dispatcher, metadata, resources)
-        } catch (error: PdfError) {
+        }
+    }
+
+    private fun releaseNative(document: Document, resources: Closeable?) {
+        try {
             document.destroy()
+        } finally {
             resources?.close()
-            throw error
         }
     }
 
     /** Unlocks the document, turns JavaScript off and reads its metadata. */
     private fun prepare(document: Document, password: String?): PdfMetadata {
         unlock(document, password)
-        document.asPDF()?.disableJs() // PDF JavaScript is never run (AGENTS.md §9).
+        // PDF JavaScript is never run (AGENTS.md §9). asPDF() returns a wrapper holding its own
+        // native reference to the document: destroy it here, on the document thread, or it would
+        // keep the document and its file open until the garbage collector finalises it.
+        document.asPDF()?.let { pdf ->
+            try {
+                pdf.disableJs()
+            } finally {
+                pdf.destroy()
+            }
+        }
         val pageCount = document.countPages()
         if (pageCount < 1) throw PdfError.Unreadable()
         return document.readMetadata(pageCount)
@@ -89,7 +106,7 @@ internal class MuPdfEngine @Inject constructor(
 
         is DocumentSource.FromBytes -> {
             checkHeader(source.bytes)
-            translatingMuPdfErrors { Document.openDocument(source.bytes, PDF_MAGIC) } to null
+            translatingMuPdfErrors { Document.openDocument(source.bytes, PDF_MIME_TYPE) } to null
         }
 
         is DocumentSource.FromUri -> loadUri(source.uri)
@@ -97,17 +114,14 @@ internal class MuPdfEngine @Inject constructor(
 
     private fun loadUri(uri: Uri): Pair<Document, Closeable?> {
         val descriptor = readSafely { contentOpener.open(uri) }
-        try {
+        return releasingOnFailure(release = descriptor::close) {
             val channel = FileInputStream(descriptor.fileDescriptor).channel
             val start = ByteBuffer.allocate(PDF_HEADER_SEARCH_LENGTH)
             readSafely { channel.read(start, 0) }
             checkHeader(start.array().copyOf(start.position()))
             val document =
-                translatingMuPdfErrors { Document.openDocument(ChannelSeekableInputStream(channel), PDF_MAGIC) }
-            return document to descriptor
-        } catch (error: PdfError) {
-            descriptor.close()
-            throw error
+                translatingMuPdfErrors { Document.openDocument(ChannelSeekableInputStream(channel), PDF_MIME_TYPE) }
+            document to descriptor
         }
     }
 

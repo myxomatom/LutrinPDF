@@ -51,9 +51,17 @@ internal fun Document.readMetadata(pageCount: Int): PdfMetadata {
 }
 
 /** Zero-based page targeted by an internal [uri], or `null` if it does not resolve. */
-internal fun Document.pageIndexOf(uri: String?): Int? {
-    if (uri == null || Link.isExternal(uri)) return null
-    return runCatching { pageNumberFromLocation(resolveLink(uri)) }.getOrNull()?.takeIf { it >= 0 }
+internal fun Document.pageIndexOf(uri: String?): Int? =
+    if (uri == null || Link.isExternal(uri)) null else resolvedPageOrNull(uri)?.takeIf { it >= 0 }
+
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
+private fun Document.resolvedPageOrNull(uri: String): Int? = try {
+    pageNumberFromLocation(resolveLink(uri))
+} catch (error: RuntimeException) {
+    // MuPDF reports a malformed or dangling destination as a plain RuntimeException
+    // (see translatingMuPdfErrors). A broken link must not make the whole outline or
+    // link list unreadable, so it is dropped; an Error (out of memory…) still propagates.
+    null
 }
 
 /** Converts MuPDF outline entries, recursively. */

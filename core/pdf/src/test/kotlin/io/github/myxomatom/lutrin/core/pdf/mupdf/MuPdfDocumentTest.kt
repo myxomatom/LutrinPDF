@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.pdf.mupdf
 
+import com.artifex.mupdf.fitz.Document
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import java.time.Instant
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.toList
@@ -222,6 +232,97 @@ class MuPdfDocumentTest {
 
         assertThat(runCatching { document.pageSize(0) }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
         assertThrows(PdfError.Closed::class.java) { runBlocking { document.search("x").toList() } }
+    }
+
+    @Test
+    fun `every call fails with Closed after close`() = runTest {
+        val document = openTestPdf("pdfs/links_internal_external.pdf")
+        document.close()
+
+        assertThat(runCatching { document.outline() }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
+        assertThat(
+            runCatching { document.textAt(0, wholePage) }.exceptionOrNull(),
+        ).isInstanceOf(PdfError.Closed::class.java)
+        assertThat(runCatching { document.links(0) }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
+        assertThat(
+            runCatching { document.renderPixels(0, RenderSpec(wholePage, 0.1f, 60, 84, false)) }.exceptionOrNull(),
+        ).isInstanceOf(PdfError.Closed::class.java)
+    }
+
+    @Test
+    fun `textAt rejects a page index out of range`() = runTest {
+        openTestPdf("pdfs/simple_1page.pdf").use { document ->
+            val error = runCatching { document.textAt(1, wholePage) }.exceptionOrNull()
+
+            assertThat(error).isInstanceOf(PdfError.PageOutOfRange::class.java)
+        }
+    }
+
+    @Test
+    fun `reports Closed when the document is closed just before a call is dispatched`() = runBlocking<Unit> {
+        val executor = HookedExecutor()
+        val document =
+            engine(dispatchers = { executor.asCoroutineDispatcher() })
+                .open(TestAssets.source("pdfs/simple_1page.pdf"))
+                .getOrThrow()
+        // Closes the document after the call passed its first check, right before it reaches
+        // the document thread: the executor then rejects the call.
+        executor.beforeNextExecute = { document.close() }
+
+        val error = runCatching { document.pageSize(0) }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(PdfError.Closed::class.java)
+    }
+
+    @Test
+    fun `close releases the resources even when destroying the document fails`() {
+        val uncaught = AtomicReference<Throwable>()
+        val threads = CopyOnWriteArrayList<Thread>()
+        val executor =
+            Executors.newSingleThreadExecutor { task ->
+                val thread = Thread(task)
+                thread.setUncaughtExceptionHandler { _, error -> uncaught.set(error) }
+                thread.also(threads::add)
+            }
+        val released = AtomicBoolean(false)
+        val failingDocument =
+            object : Document(0L) {
+                override fun destroy() {
+                    error("Simulated native failure")
+                }
+            }
+
+        MuPdfDocument(failingDocument, executor.asCoroutineDispatcher(), PdfMetadata(pageCount = 1)) {
+            released.set(true)
+        }.close()
+
+        assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue()
+        // The executor terminates before its thread reports the failure: wait for the thread.
+        threads.forEach { it.join(TimeUnit.SECONDS.toMillis(10)) }
+        assertThat(released.get()).isTrue()
+        // The failure is reported, not swallowed.
+        assertThat(uncaught.get()).isInstanceOf(IllegalStateException::class.java)
+    }
+
+    /** Single-thread executor that runs a hook right before accepting its next task. */
+    private class HookedExecutor :
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(),
+            { task -> Thread(task).apply { isDaemon = true } },
+        ) {
+        @Volatile
+        var beforeNextExecute: (() -> Unit)? = null
+
+        override fun execute(command: Runnable) {
+            val hook = beforeNextExecute
+            beforeNextExecute = null
+            hook?.invoke()
+            super.execute(command)
+        }
     }
 
     private fun PageSize.rounded() = Math.round(width) to Math.round(height)

@@ -16,12 +16,15 @@ import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -60,6 +63,15 @@ internal class MuPdfDocument(
     /**
      * Renders like [renderPage] into an array of ARGB pixels, row by row: the platform-free
      * part of the rendering, testable on the JVM. Cancelling the caller aborts the drawing.
+     *
+     * The [Cookie] is the one MuPDF object deliberately created and destroyed on the caller's
+     * thread rather than on the document thread (ADR 0007): it is a plain native counter block,
+     * tied to no document, that MuPDF designed to be shared between threads — the document
+     * thread reads it while drawing and [Cookie.abort] is called from the cancellation handler.
+     * Owning it here guarantees it outlives the drawing and is destroyed exactly once.
+     *
+     * @throws PdfError.PageOutOfRange if [index] is not a page of the document.
+     * @throws PdfError.Closed if the document is closed.
      */
     internal suspend fun renderPixels(index: Int, spec: RenderSpec): IntArray {
         val cookie = Cookie()
@@ -116,21 +128,45 @@ internal class MuPdfDocument(
 
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
-        // Queued after any call already dispatched; the executor then stops its thread.
-        dispatcher.executor.execute {
-            pages.clear()
-            document.destroy()
-            resources?.close()
+        try {
+            // Queued after any call already dispatched; the executor then stops its thread.
+            // Each release step runs even if an earlier one fails.
+            dispatcher.executor.execute {
+                try {
+                    pages.clear()
+                } finally {
+                    try {
+                        document.destroy()
+                    } finally {
+                        resources?.close()
+                    }
+                }
+            }
+        } finally {
+            dispatcher.close()
         }
-        dispatcher.close()
     }
 
-    /** Runs [block] on the document thread, translating MuPDF failures into [PdfError]. */
+    /**
+     * Runs [block] on the document thread, translating MuPDF failures into [PdfError].
+     *
+     * @throws PdfError.Closed if the document is or gets closed before [block] runs.
+     */
     private suspend fun <T> onDocumentThread(block: () -> T): T {
         ensureOpen()
-        return withContext(dispatcher) {
-            ensureOpen()
-            translatingMuPdfErrors(block)
+        return try {
+            withContext(dispatcher) {
+                ensureOpen()
+                translatingMuPdfErrors(block)
+            }
+        } catch (error: CancellationException) {
+            // If close() stops the thread between ensureOpen() and the dispatch, the executor
+            // rejects the call and kotlinx.coroutines cancels it: report the real cause, unless
+            // the caller itself was cancelled.
+            if (closed.get() && currentCoroutineContext().isActive) {
+                throw PdfError.Closed().apply { addSuppressed(error) }
+            }
+            throw error
         }
     }
 
