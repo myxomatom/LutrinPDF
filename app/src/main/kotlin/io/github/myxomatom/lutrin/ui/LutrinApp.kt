@@ -1,61 +1,63 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import io.github.myxomatom.lutrin.R
-import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import io.github.myxomatom.lutrin.feature.library.LibraryScreen
+import io.github.myxomatom.lutrin.feature.reader.ReaderDestination
+import io.github.myxomatom.lutrin.feature.reader.readerScreen
+
+/** Route of the library (E1), the start destination. */
+internal const val LIBRARY_ROUTE: String = "library"
+
+/** MIME type the system file picker is restricted to. */
+private const val PDF_MIME_TYPE = "application/pdf"
 
 /**
- * Root composable of the application. For now a welcome placeholder (milestone M0);
- * it will host the navigation graph from milestone M2 onwards.
+ * Root composable of the application: the navigation graph between the library (E1) and the
+ * reader (E2).
  *
- * @param modifier modifier applied to the root layout.
+ * @param modifier modifier applied to the navigation host.
+ * @param navController navigation state, replaceable in tests.
  */
 @Composable
-fun LutrinApp(modifier: Modifier = Modifier) {
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                text = stringResource(R.string.welcome_tagline),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(R.string.welcome_status),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+fun LutrinApp(modifier: Modifier = Modifier, navController: NavHostController = rememberNavController()) {
+    val resolver = LocalContext.current.contentResolver
+    val pickDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) navController.navigate(ReaderDestination.route(uri.toString(), resolver.displayName(uri)))
+    }
+    NavHost(navController = navController, startDestination = LIBRARY_ROUTE, modifier = modifier) {
+        composable(LIBRARY_ROUTE) {
+            LibraryScreen(onOpenFile = { pickDocument.launch(arrayOf(PDF_MIME_TYPE)) })
         }
+        readerScreen(onBack = { navController.popBackStack() })
     }
 }
 
-@Preview
-@Composable
-private fun LutrinAppPreview() {
-    LutrinTheme(dynamicColor = false) { LutrinApp() }
+/**
+ * Display name of a document granted by the system, or the last segment of its URI when the
+ * provider does not give one. Never logged (`AGENTS.md` §1.8).
+ */
+internal fun ContentResolver.displayName(uri: Uri): String {
+    // A missing name is not an error: the reader then shows the end of the URI.
+    val name = try {
+        query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        }
+    } catch (ignored: SecurityException) {
+        null
+    } catch (ignored: IllegalArgumentException) {
+        null
+    }
+    return name ?: uri.lastPathSegment.orEmpty()
 }

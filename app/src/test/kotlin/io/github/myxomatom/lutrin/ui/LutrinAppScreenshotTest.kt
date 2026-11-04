@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Screenshot references of the welcome screen (light, dark, large font, French). */
+/** Screenshot references of the start screen, the empty library (light, dark, large font, French). */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h640dp-xhdpi")
@@ -34,15 +34,15 @@ class LutrinAppScreenshotTest {
     }
 
     @Test
-    fun light() = capture("welcome_light", darkTheme = false)
+    fun light() = capture("library_empty_light", darkTheme = false)
 
     @Test
-    fun dark() = capture("welcome_dark", darkTheme = true)
+    fun dark() = capture("library_empty_dark", darkTheme = true)
 
     @Test
-    fun largeFont() = capture("welcome_light_font200", darkTheme = false, fontScale = 2f)
+    fun largeFont() = capture("library_empty_light_font200", darkTheme = false, fontScale = 2f)
 
     @Test
     @Config(qualifiers = "+fr")
-    fun french() = capture("welcome_light_fr", darkTheme = false)
+    fun french() = capture("library_empty_light_fr", darkTheme = false)
 }

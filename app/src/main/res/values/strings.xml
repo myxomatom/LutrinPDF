@@ -2,6 +2,4 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="app_name" translatable="false">Lutrin</string>
-    <string name="welcome_tagline">Free PDF reader. No ads, no trackers, fully offline.</string>
-    <string name="welcome_status">Under construction: coming soon.</string>
 </resources>

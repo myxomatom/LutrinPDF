@@ -18,15 +18,16 @@ class MainActivityTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun `shows the welcome screen in English`() {
+    fun `starts on the library in English`() {
         composeRule.onNodeWithText("Lutrin").assertIsDisplayed()
-        composeRule.onNodeWithText("Free PDF reader. No ads, no trackers, fully offline.").assertIsDisplayed()
+        composeRule.onNodeWithText("No recent documents").assertIsDisplayed()
+        composeRule.onNodeWithText("Open a file").assertIsDisplayed()
     }
 
     @Test
     @Config(qualifiers = "fr")
-    fun `shows the welcome screen in French`() {
-        composeRule.onNodeWithText("En construction : bientôt disponible.").assertIsDisplayed()
+    fun `starts on the library in French`() {
+        composeRule.onNodeWithText("Aucun document récent").assertIsDisplayed()
     }
 
     @Test

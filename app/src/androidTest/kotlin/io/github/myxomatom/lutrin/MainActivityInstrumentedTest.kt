@@ -25,7 +25,7 @@ class MainActivityInstrumentedTest {
     }
 
     @Test
-    fun welcomeScreenIsDisplayedAndAccessible() {
+    fun libraryIsDisplayedAndAccessible() {
         composeRule.onNodeWithText("Lutrin").assertIsDisplayed()
         composeRule.onRoot().tryPerformAccessibilityChecks()
     }

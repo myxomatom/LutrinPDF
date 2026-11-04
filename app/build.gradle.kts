@@ -30,6 +30,13 @@ android {
         }
     }
 
+    // No Google-encrypted dependency metadata in the APK or bundle: F-Droid flags it, and it
+    // would make the build harder to reproduce.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     buildTypes {
         debug {
             // Lets a debug build live next to the published app on the same device.
@@ -76,6 +83,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
 
     // Leak detection in debug builds only (AGENTS.md §8); never in release.
     debugImplementation(libs.leakcanary.android)
