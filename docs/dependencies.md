@@ -16,7 +16,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 
 | Dépendance | Version | Licence (SPDX) | Module(s) | Justification |
 |------------|---------|----------------|-----------|---------------|
-| MuPDF (Artifex) | à épingler (M1) | AGPL-3.0-or-later | `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001) |
+| MuPDF (Artifex) | 1.28.6 (`da5f5eb89`) | AGPL-3.0-or-later | `third-party:mupdf` → `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001, 0007) |
 | Kotlin stdlib, kotlinx-coroutines | 2.4.21 / 1.11.0 | Apache-2.0 | tous | Langage, asynchronisme |
 | AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app` | Extensions Kotlin d'Android |
 | AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
@@ -26,6 +26,28 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 
 Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 `./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
+
+### Bibliothèques compilées avec MuPDF (sous-modules de `libmupdf/thirdparty`)
+
+Elles sont compilées depuis les sources par `:third-party:mupdf` et liées dans `libmupdf_java.so`.
+Licensee ne les voit pas (ce ne sont pas des artefacts Maven) : elles sont vérifiées ici à
+chaque mise à jour de MuPDF.
+
+| Bibliothèque | Rôle | Licence |
+|--------------|------|---------|
+| brotli | Décompression Brotli | MIT |
+| cmark-gfm | Markdown (conversion, v1.1) | BSD-2-Clause |
+| extract | Extraction de structure | AGPL-3.0-or-later |
+| FreeType | Rendu des polices | FTL ou GPL-2.0-or-later (option GPL retenue) |
+| gumbo-parser | Analyse HTML (conversion, v1.1) | Apache-2.0 |
+| HarfBuzz | Mise en forme du texte (scripts complexes) | MIT (« Old MIT ») |
+| jbig2dec | Images JBIG2 | AGPL-3.0-or-later |
+| Little CMS 2 | Gestion des couleurs | MIT |
+| libjpeg (IJG) | Images JPEG | IJG |
+| MuJS | Interpréteur JavaScript requis par la compilation de MuPDF ; **jamais activé** (ADR 0007) | ISC |
+| OpenJPEG | Images JPEG 2000 | BSD-2-Clause |
+
+La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.13676358.
 
 ## Debug uniquement (jamais dans l'APK publié)
 
@@ -60,6 +82,8 @@ Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 | Dokka | 2.2.0 | Apache-2.0 |
 | Licensee | 1.14.1 | Apache-2.0 |
 | PyMuPDF / Pillow (génération des fichiers de test) | 2.1 / 13.0.0 | AGPL-3.0 / MIT-CMU |
+| Android NDK | 28.2.13676358 | Apache-2.0 (licence du SDK Android pour la distribution des binaires de l'outil) |
+| freetype2, OpenSSL, zlib du système (build hôte, tests JVM uniquement) | paquets Ubuntu | FTL/GPL-2.0+, Apache-2.0, Zlib |
 
 ## Ressources de documentation (non embarquées)
 

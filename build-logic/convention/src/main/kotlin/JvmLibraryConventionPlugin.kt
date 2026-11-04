@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-import lutrin.build.JAVA_VERSION
-import lutrin.build.configureKotlinCompiler
-import lutrin.build.configureQuality
-import lutrin.build.library
-import lutrin.build.libs
-import lutrin.build.pluginId
+import lutrin.convention.JAVA_VERSION
+import lutrin.convention.configureKotlinCompiler
+import lutrin.convention.configureQuality
+import lutrin.convention.library
+import lutrin.convention.libs
+import lutrin.convention.pluginId
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension

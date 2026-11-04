@@ -63,6 +63,10 @@ gradlePlugin {
             id = libs.plugins.lutrin.jvm.library.get().pluginId
             implementationClass = "JvmLibraryConventionPlugin"
         }
+        register("androidRobolectric") {
+            id = libs.plugins.lutrin.android.robolectric.get().pluginId
+            implementationClass = "AndroidRobolectricConventionPlugin"
+        }
         register("hilt") {
             id = libs.plugins.lutrin.hilt.get().pluginId
             implementationClass = "HiltConventionPlugin"

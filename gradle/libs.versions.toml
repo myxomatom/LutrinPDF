@@ -9,6 +9,10 @@ minSdk = "26"
 compileSdk = "37"
 targetSdk = "37"
 jvmTarget = "17"
+# MuPDF version pinned by the third-party/mupdf/libmupdf submodule; the build checks they match.
+mupdf = "1.28.6"
+# NDK used to build MuPDF: the version Artifex builds and tests mupdf-android-fitz 1.28 with.
+ndk = "28.2.13676358"
 
 # Build
 agp = "9.5.0"
@@ -32,6 +36,11 @@ junit = "4.13.2"
 truth = "1.4.5"
 turbine = "1.2.1"
 robolectric = "4.17"
+# Android framework jars of Robolectric 4.17 (android-all-instrumented), resolved by Gradle so that
+# tests run offline. Update them together with Robolectric (versions listed in its release notes).
+robolectricAndroidAll30 = "11-robolectric-6757853-i7"
+robolectricAndroidAll31 = "12-robolectric-7732740-i7"
+robolectricAndroidAll36 = "16-robolectric-13921718-i7"
 roborazzi = "1.77.0"
 androidxTestRunner = "1.7.0"
 androidxTestRules = "1.7.0"
@@ -126,3 +135,4 @@ lutrin-android-compose = { id = "lutrin.android.compose" }
 lutrin-android-feature = { id = "lutrin.android.feature" }
 lutrin-jvm-library = { id = "lutrin.jvm.library" }
 lutrin-hilt = { id = "lutrin.hilt" }
+lutrin-android-robolectric = { id = "lutrin.android.robolectric" }

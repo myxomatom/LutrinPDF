@@ -23,7 +23,7 @@ avertissement. Plusieurs choix de versions et d'outils restaient à faire.
 | Couverture | Kover : ≥ 70 % global, ≥ 80 % `core:domain` et `core:data` ; classes générées exclues ; `core:testing` hors agrégat | `AGENTS.md` §5.2 |
 | Documentation | Dokka 2, `failOnWarning`, KDoc des modules dans `Module.md`, **sans lien vers des docs externes** | Build sans accès réseau, reproductible |
 | Captures d'écran | **Roborazzi** (sur Robolectric), références dans `src/test/screenshots/`, vérifiées à chaque `test` (`roborazzi.test.verify=true`) | Réutilise Robolectric ; Paparazzi dépend de layoutlib, plus fragile avec les nouvelles versions d'AGP |
-| Robolectric | 4.17, SDK 36 par défaut (`robolectric.properties`), `--add-exports java.base/jdk.internal.access` | Robolectric ne prend pas encore en charge l'API 37 ; l'export est requis sur JDK 21 |
+| Robolectric | 4.17, SDK 36 par défaut (`robolectric.properties`), `--add-exports java.base/jdk.internal.access`, **hors ligne** (plugin `lutrin.android.robolectric`) | Robolectric ne prend pas encore en charge l'API 37 ; l'export est requis sur JDK 21. Ses jars Android (`android-all-instrumented`, versions dans le catalogue) sont résolus par Gradle, car leur téléchargement par Robolectric en cours de test échouait en CI |
 | Tests instrumentés | Gradle Managed Devices : API 26 (`aosp`) et API 37 (`aosp-atd`), groupe `ci` | `AGENTS.md` §7 |
 | Accessibilité | `ui-test-junit4-accessibility` (Accessibility Test Framework) dans les tests instrumentés | `AGENTS.md` §5.1 |
 | Permissions | Tâche maison `verifyReleasePermissions` (dans `check`) sur le manifeste fusionné | `SPEC.md` §1, testée dans `build-logic` |

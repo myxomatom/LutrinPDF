@@ -18,7 +18,8 @@
 | `:app` | Point d'entrée, navigation, assemblage de l'injection de dépendances |
 | `:core:domain` | Modèles, interfaces de repository, cas d'usage (`operator fun invoke`) |
 | `:core:data` | Repositories, Room (récents, positions, signets), DataStore (préférences) |
-| `:core:pdf` | `PdfEngine` / `PdfWriter` et leur implémentation MuPDF (code natif) |
+| `:core:pdf` | `PdfEngine` / `PdfWriter` et leur implémentation MuPDF |
+| `:third-party:mupdf` | MuPDF compilé depuis son sous-module (Java + JNI, NDK) ; seul `core:pdf` en dépend (ADR 0007) |
 | `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés |
 | `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) |
 | `:feature:library` | Bibliothèque / récents (E1) |
@@ -44,12 +45,29 @@ flowchart TD
 
     data --> domain
     pdf --> domain
+    pdf --> mupdf[":third-party:mupdf"]
 
     testing[":core:testing"] -.tests.-> domain
 ```
 
 `core:pdf` et `core:data` implémentent les interfaces déclarées dans `core:domain` ;
 `:app` les relie par injection de dépendances. Les features ne connaissent que le domaine.
+
+## Moteur PDF (`core:pdf`)
+
+```mermaid
+flowchart LR
+    caller["Feature / cas d'usage"] -->|"open(source, password)"| engine["PdfEngine (MuPdfEngine)"]
+    engine -->|"Result&lt;PdfDocument&gt;"| caller
+    caller -->|"renderPage, search, outline…"| doc["PdfDocument (MuPdfDocument)"]
+    doc -->|"withContext"| thread["Thread dédié au document"]
+    thread --> fitz["MuPDF (JNI)"]
+```
+
+- Un thread par document : tous les objets MuPDF y vivent et y sont détruits (`close()`).
+- Les erreurs natives deviennent des `PdfError` (`core:domain`) ; aucune n'atteint l'UI en crash.
+- Tests : sur la JVM avec la bibliothèque MuPDF compilée pour la machine de build, et
+  instrumentés sur émulateur pour la bibliothèque Android.
 
 ## Flux de données d'un écran
 
@@ -80,6 +98,7 @@ sequenceDiagram
   | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` |
   | `lutrin.jvm.library` | `core:domain` | Kotlin/JVM pur |
   | `lutrin.hilt` | `app`, `feature:*` | Hilt + KSP |
+  | `lutrin.android.robolectric` | `app`, `core:ui` | Robolectric hors ligne (jars Android résolus par Gradle) |
 
   Tous appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17.
 - Versions : uniquement dans `gradle/libs.versions.toml`. Dépôts : uniquement dans

@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package lutrin.convention
+
+import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.dependencies
+import org.jetbrains.dokka.gradle.DokkaExtension
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
+
+/** Generated classes that carry no hand-written logic and must not count in coverage. */
+private val COVERAGE_EXCLUDED_CLASSES =
+    listOf(
+        "*_Factory",
+        "*_Factory\$*",
+        "*_MembersInjector",
+        "*_Provide*Factory",
+        "HiltWrapper_*",
+        "*.di.*Module",
+        "*.di.*Module\$*",
+        "*_HiltModules*",
+        "*_GeneratedInjector",
+        "*_ComponentTreeDeps",
+        "*Hilt_*",
+        "dagger.hilt.internal.*",
+        "hilt_aggregated_deps.*",
+        "*.BuildConfig",
+        "*.ComposableSingletons*",
+    )
+
+/**
+ * Applies the quality tools shared by every module: ktlint, detekt (with Compose rules),
+ * Kover and Dokka (`AGENTS.md` §4–§6).
+ */
+internal fun Project.configureQuality() {
+    with(pluginManager) {
+        apply(libs.pluginId("ktlint"))
+        apply(libs.pluginId("detekt"))
+        apply(libs.pluginId("kover"))
+        apply(libs.pluginId("dokka"))
+    }
+    configureKtlint()
+    configureDetekt()
+    configureKover()
+    configureDokka()
+}
+
+private fun Project.configureKtlint() {
+    extensions.configure<KtlintExtension> {
+        version.set(libs.version("ktlint"))
+    }
+}
+
+private fun Project.configureDetekt() {
+    extensions.configure<DetektExtension> {
+        buildUponDefaultConfig = true
+        parallel = true
+        config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
+        source.setFrom("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin")
+    }
+    dependencies {
+        "detektPlugins"(libs.library("compose-rules-detekt"))
+    }
+    // detekt 1.23 embeds its own Kotlin compiler: keep its classpath on that exact version,
+    // otherwise the project's newer Kotlin would leak into detekt and break it.
+    val detektKotlin = libs.version("detektKotlin")
+    configurations.named("detekt") {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlin") useVersion(detektKotlin)
+        }
+    }
+}
+
+private fun Project.configureKover() {
+    extensions.configure<KoverProjectExtension> {
+        reports.filters.excludes {
+            classes(COVERAGE_EXCLUDED_CLASSES)
+            annotatedBy("androidx.compose.ui.tooling.preview.Preview")
+        }
+    }
+}
+
+private fun Project.configureDokka() {
+    extensions.configure<DokkaExtension> {
+        // Must match the "# Module" heading of the module's Module.md.
+        moduleName.set(path.removePrefix(":"))
+        // No network access while building, like the app itself: no links to external API docs.
+        dokkaSourceSets.configureEach { enableJdkDocumentationLink.set(false) }
+        dokkaSourceSets.configureEach { enableAndroidDocumentationLink.set(false) }
+        dokkaSourceSets.configureEach { enableKotlinStdLibDocumentationLink.set(false) }
+        dokkaSourceSets.configureEach {
+            includes.from(layout.projectDirectory.file("Module.md"))
+            reportUndocumented.set(true)
+        }
+        dokkaPublications.configureEach {
+            failOnWarning.set(true)
+        }
+    }
+}
