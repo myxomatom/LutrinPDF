@@ -32,12 +32,14 @@ import kotlinx.coroutines.withContext
  * [PdfDocument] backed by MuPDF. All MuPDF objects are created, used and destroyed on
  * [dispatcher], a single thread owned by this document.
  *
+ * @param releaseFailures receives the failures of [close], which never throws them.
  * @param resources released after the document, e.g. the file descriptor of a content URI.
  */
 internal class MuPdfDocument(
     private val document: Document,
     private val dispatcher: ExecutorCoroutineDispatcher,
     override val metadata: PdfMetadata,
+    private val releaseFailures: ReleaseFailureReporter,
     private val resources: Closeable? = null,
 ) : PdfDocument {
     override val pageCount: Int = metadata.pageCount
@@ -132,15 +134,9 @@ internal class MuPdfDocument(
             // Queued after any call already dispatched; the executor then stops its thread.
             // Each release step runs even if an earlier one fails.
             dispatcher.executor.execute {
-                try {
-                    pages.clear()
-                } finally {
-                    try {
-                        document.destroy()
-                    } finally {
-                        resources?.close()
-                    }
-                }
+                releaseFailures.reporting { pages.clear() }
+                releaseFailures.reporting { document.destroy() }
+                releaseFailures.reporting { resources?.close() }
             }
         } finally {
             dispatcher.close()

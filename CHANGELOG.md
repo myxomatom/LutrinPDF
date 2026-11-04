@@ -53,6 +53,8 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Moteur PDF : un échec natif pendant la fermeture d'un document ne fait plus planter
+  l'application ; il est intercepté et signalé (type d'exception seul dans le journal).
 - Lecteur : le zoom au pincement hésitait entre zoomer et déplacer la page. Le geste gardait
   le zoom de son premier affichage et relançait la mise en page à chaque mouvement ; les pages
   sont désormais agrandies visuellement pendant le geste et le zoom est appliqué une seule fois,

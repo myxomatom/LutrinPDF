@@ -11,7 +11,9 @@ import dagger.hilt.components.SingletonComponent
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import io.github.myxomatom.lutrin.core.pdf.mupdf.ContentOpener
 import io.github.myxomatom.lutrin.core.pdf.mupdf.DocumentDispatcherFactory
+import io.github.myxomatom.lutrin.core.pdf.mupdf.LogReleaseFailureReporter
 import io.github.myxomatom.lutrin.core.pdf.mupdf.MuPdfEngine
+import io.github.myxomatom.lutrin.core.pdf.mupdf.ReleaseFailureReporter
 import io.github.myxomatom.lutrin.core.pdf.mupdf.SingleThreadDocumentDispatcherFactory
 import java.io.FileNotFoundException
 import javax.inject.Singleton
@@ -28,6 +30,10 @@ internal abstract class PdfModule {
     /** One dedicated thread per open document (ADR 0007, point 6). */
     @Binds
     abstract fun bindDispatcherFactory(factory: SingleThreadDocumentDispatcherFactory): DocumentDispatcherFactory
+
+    /** Failures of closing a document are logged (type only), never thrown on its thread. */
+    @Binds
+    abstract fun bindReleaseFailureReporter(reporter: LogReleaseFailureReporter): ReleaseFailureReporter
 
     companion object {
         /**

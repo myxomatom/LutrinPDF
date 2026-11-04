@@ -24,4 +24,5 @@ puis déplacé dans la section « Tranchés ».
 |---|-------|----------|
 | 4 | Injection de dépendances | Hilt — [ADR 0002](adr/0002-injection-dependances-hilt.md) |
 | 5 | Licences tierces | Licensee (CI) et AboutLibraries (écran, M5) — [ADR 0003](adr/0003-licences-tierces.md) |
+| 15 | Échec natif à la fermeture d'un document | Intercepté (décision du 2026-11-04) : chaque étape de libération s'exécute même si la précédente échoue ; l'échec est signalé à `ReleaseFailureReporter`, qui écrit seulement le type d'exception dans le journal (`AGENTS.md` §1.8), au lieu de faire planter l'application |
 | 7 | Schéma de couleurs sombre | Schéma M3 complet généré depuis `#2A5B8C`, dans `design-tokens.json` et `core:ui` |
