@@ -30,6 +30,13 @@ android {
         }
     }
 
+    // No Google-encrypted dependency metadata in the APK or bundle: F-Droid flags it, and it
+    // would make the build harder to reproduce.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     buildTypes {
         debug {
             // Lets a debug build live next to the published app on the same device.
