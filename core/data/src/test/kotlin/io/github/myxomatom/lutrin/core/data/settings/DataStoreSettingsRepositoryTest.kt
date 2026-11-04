@@ -2,9 +2,12 @@
 package io.github.myxomatom.lutrin.core.data.settings
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,6 +36,7 @@ class DataStoreSettingsRepositoryTest {
 
         assertThat(settings).isEqualTo(AppSettings())
         assertThat(settings.dynamicColor).isTrue()
+        assertThat(settings.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
     }
 
     @Test
@@ -70,5 +74,59 @@ class DataStoreSettingsRepositoryTest {
 
         assertThat(file.exists()).isTrue()
         assertThat(repository(file).settings.first().dynamicColor).isFalse()
+    }
+
+    @Test
+    fun `stores the scroll mode and emits every change`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.settings.test {
+            assertThat(awaitItem().scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+            repository.setScrollMode(ScrollMode.PAGED)
+            assertThat(awaitItem()).isEqualTo(AppSettings(dynamicColor = true, scrollMode = ScrollMode.PAGED))
+            repository.setScrollMode(ScrollMode.CONTINUOUS)
+            assertThat(awaitItem().scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        }
+    }
+
+    @Test
+    fun `changing one setting keeps the other`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.setScrollMode(ScrollMode.PAGED)
+        repository.setDynamicColor(false)
+
+        val expected = AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED)
+        assertThat(repository.settings.first()).isEqualTo(expected)
+    }
+
+    @Test
+    fun `keeps the scroll mode in the file`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "scroll.preferences_pb")
+        val firstScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        DataStoreSettingsRepository(PreferenceDataStoreFactory.create(scope = firstScope, produceFile = { file }))
+            .setScrollMode(ScrollMode.PAGED)
+        firstScope.cancel()
+
+        assertThat(repository(file).settings.first().scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `an unknown stored scroll mode reads as the default`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "odd.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        // A value written by a future version, or a damaged file.
+        dataStore.edit { it[stringPreferencesKey("scroll_mode")] = "spiral" }
+
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first().scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+    }
+
+    @Test
+    fun `stored values of the scroll modes are stable`() {
+        // Written on the users' devices: changing them would reset everyone's choice.
+        assertThat(ScrollMode.CONTINUOUS.storedValue).isEqualTo("continuous")
+        assertThat(ScrollMode.PAGED.storedValue).isEqualTo("paged")
+        assertThat(ScrollMode.entries.map { scrollModeOf(it.storedValue) }).isEqualTo(ScrollMode.entries)
+        assertThat(scrollModeOf(null)).isEqualTo(ScrollMode.CONTINUOUS)
     }
 }

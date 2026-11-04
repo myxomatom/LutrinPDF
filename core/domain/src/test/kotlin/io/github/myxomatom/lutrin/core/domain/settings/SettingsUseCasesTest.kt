@@ -15,6 +15,10 @@ class SettingsUseCasesTest {
         override suspend fun setDynamicColor(enabled: Boolean) {
             (settings as MutableStateFlow).value = settings.value.copy(dynamicColor = enabled)
         }
+
+        override suspend fun setScrollMode(mode: ScrollMode) {
+            (settings as MutableStateFlow).value = settings.value.copy(scrollMode = mode)
+        }
     }
 
     private val repository = InMemorySettings()
@@ -38,5 +42,23 @@ class SettingsUseCasesTest {
 
         setDynamicColor(true)
         assertThat(repository.settings.value.dynamicColor).isTrue()
+    }
+
+    @Test
+    fun `pages scroll continuously by default`() {
+        assertThat(AppSettings().scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        assertThat(AppSettings.DEFAULT_SCROLL_MODE).isEqualTo(ScrollMode.CONTINUOUS)
+    }
+
+    @Test
+    fun `scroll mode can be switched to page by page and back`() = runTest {
+        val setScrollMode = SetScrollModeUseCase(repository)
+
+        setScrollMode(ScrollMode.PAGED)
+        assertThat(repository.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
+        assertThat(repository.settings.value.dynamicColor).isTrue()
+
+        setScrollMode(ScrollMode.CONTINUOUS)
+        assertThat(repository.settings.value.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
     }
 }
