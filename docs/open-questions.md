@@ -15,6 +15,7 @@ puis déplacé dans la section « Tranchés ».
 | 11 | URI non seekables | L'ouverture d'un `content://` suppose un descripteur seekable ; un fournisseur qui renvoie un tube (pipe) donne « Document indisponible ». Repli possible : copie dans `cacheDir`, supprimée à la fermeture (`AGENTS.md` §9). | M3 |
 | 12 | Benchmark et Baseline Profile | Aucun module `:benchmark` (`AGENTS.md` §5.1, §8) alors que M0 demandait « un test de chaque type » et que M2 demande des benchmarks de défilement et d'ouverture. | M2 |
 | 13 | Reproductibilité F-Droid | Pas de drapeaux de compilation déterministe pour MuPDF (`-ffile-prefix-map`, `--build-id=none`) ni de job CI qui compile deux fois et compare les APK (`ROADMAP.md` §4). | Publication v1.0 |
+| 14 | Suivi des versions de MuPDF | Dependabot ne sait suivre un sous-module que sur la pointe de sa branche, pas sur les tags publiés (PR #8 refusée par `verifyMupdfVersion`). Option : un job CI planifié qui compare le tag épinglé au dernier tag `1.x.y` d'Artifex et ouvre une issue. | Publication v1.0 |
 | 6 | Licence affichée dans E4 | La maquette E4 indique « GNU GPL v3 » ; SPEC §7 demande de mentionner la distribution sous AGPL v3. | M5 |
 
 ## Tranchés

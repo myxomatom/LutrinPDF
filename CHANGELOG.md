@@ -61,7 +61,6 @@ changement y est signalé.
 
 ### Modifié
 - APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
-- Dependabot suit aussi le sous-module MuPDF.
 
 ### Sécurité
 - JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.
