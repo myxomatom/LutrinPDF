@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader
 
-import android.net.Uri
+import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -55,7 +56,7 @@ class ReaderViewModel @Inject constructor(
             mutableState.value = ReaderUiState.Error(title, ReaderError.NOT_ACCESSIBLE)
             return
         }
-        engine.open(DocumentSource.FromUri(Uri.parse(uri)))
+        engine.open(DocumentSource.FromUri(uri.toUri()))
             .onSuccess { opened -> showContent(opened) }
             .onFailure { error -> mutableState.value = ReaderUiState.Error(title, error.toReaderError()) }
     }
@@ -81,19 +82,19 @@ class ReaderViewModel @Inject constructor(
      *   (the screen then keeps showing a blank page).
      */
     suspend fun loadPage(index: Int, widthPx: Int): ImageBitmap? {
-        val opened = document ?: return null
-        val content = mutableState.value as? ReaderUiState.Content ?: return null
-        val pageSize: PageSize = content.pageSizes.getOrNull(index) ?: return null
+        val opened = document
+        val pageSize = (mutableState.value as? ReaderUiState.Content)?.pageSizes?.getOrNull(index)
+        if (opened == null || pageSize == null) return null
         val key = PageBitmapCache.Key(index, widthPx)
-        pageCache[key]?.let { return it.asImageBitmap() }
-        val bitmap = try {
-            renderer.render(opened, index, pageSize, widthPx)
-        } catch (ignored: PdfError) {
-            // A single damaged page stays blank; the rest of the document is still readable.
-            return null
-        }
-        pageCache.put(key, bitmap)
-        return bitmap.asImageBitmap()
+        val bitmap = pageCache[key] ?: renderOrNull(opened, index, pageSize, widthPx)?.also { pageCache.put(key, it) }
+        return bitmap?.asImageBitmap()
+    }
+
+    private suspend fun renderOrNull(opened: PdfDocument, index: Int, pageSize: PageSize, widthPx: Int): Bitmap? = try {
+        renderer.render(opened, index, pageSize, widthPx)
+    } catch (ignored: PdfError) {
+        // A single damaged page stays blank; the rest of the document is still readable.
+        null
     }
 
     override fun onCleared() {

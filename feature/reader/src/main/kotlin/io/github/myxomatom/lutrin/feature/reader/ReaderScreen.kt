@@ -59,8 +59,12 @@ fun ReaderScreen(
 ) {
     when (state) {
         is ReaderUiState.Content -> DocumentReader(state, onBack, loadPage, modifier)
+
         is ReaderUiState.Loading -> StatusScaffold(state.title, onBack, modifier) { LoadingIndicator() }
-        is ReaderUiState.Error -> StatusScaffold(state.title, onBack, modifier) { ReaderErrorMessage(state.reason, onBack) }
+
+        is ReaderUiState.Error -> StatusScaffold(state.title, onBack, modifier) {
+            ReaderErrorMessage(state.reason, onBack)
+        }
     }
 }
 
@@ -134,8 +138,14 @@ private fun LoadingIndicator(modifier: Modifier = Modifier) {
 private fun ReaderErrorMessage(reason: ReaderError, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val (title, message) = when (reason) {
         ReaderError.UNREADABLE -> R.string.reader_error_unreadable_title to R.string.reader_error_unreadable_message
-        ReaderError.NOT_ACCESSIBLE -> R.string.reader_error_not_accessible_title to R.string.reader_error_not_accessible_message
-        ReaderError.PASSWORD_PROTECTED -> R.string.reader_error_protected_title to R.string.reader_error_protected_message
+
+        ReaderError.NOT_ACCESSIBLE ->
+            R.string.reader_error_not_accessible_title to
+                R.string.reader_error_not_accessible_message
+
+        ReaderError.PASSWORD_PROTECTED ->
+            R.string.reader_error_protected_title to
+                R.string.reader_error_protected_message
     }
     Column(modifier.fillMaxSize()) {
         StatusMessage(

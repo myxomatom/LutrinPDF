@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.feature.reader
 
 import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
@@ -28,7 +29,7 @@ internal class PageRenderer {
      */
     suspend fun render(document: PdfDocument, index: Int, pageSize: PageSize, widthPx: Int): Bitmap {
         val (width, height) = renderSize(pageSize, widthPx)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
         try {
             val region = PdfRect(0f, 0f, pageSize.width, pageSize.height)
             document.renderPage(index, bitmap, region, scale = width / pageSize.width, nightMode = false)

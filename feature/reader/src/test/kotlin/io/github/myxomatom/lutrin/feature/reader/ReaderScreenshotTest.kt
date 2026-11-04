@@ -43,5 +43,6 @@ class ReaderScreenshotTest {
 
     @Test
     @Config(qualifiers = "+fr")
-    fun errorFrench() = capture("reader_error_light_fr", ReaderUiState.Error("scan_facture.pdf", ReaderError.UNREADABLE))
+    fun errorFrench() =
+        capture("reader_error_light_fr", ReaderUiState.Error("scan_facture.pdf", ReaderError.UNREADABLE))
 }

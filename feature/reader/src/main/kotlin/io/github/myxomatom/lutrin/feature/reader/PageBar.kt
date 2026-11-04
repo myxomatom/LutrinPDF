@@ -59,31 +59,22 @@ private val PageBarSpacing = 8.dp
  * @param modifier modifier applied to the bar.
  */
 @Composable
-internal fun PageBar(
-    listState: LazyListState,
-    pageCount: Int,
-    onFitWidth: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+internal fun PageBar(listState: LazyListState, pageCount: Int, onFitWidth: () -> Unit, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val currentPage by remember(listState) { derivedStateOf { listState.centerPageIndex() } }
     // While dragging, the thumb follows the finger rather than the (lagging) scroll position.
     var draggedPage by remember { mutableStateOf<Float?>(null) }
     Surface(modifier = modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainer) {
         Row(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = LutrinDimens.ScreenGutter, vertical = PageBarSpacing),
+            modifier = Modifier.navigationBarsPadding().padding(
+                horizontal = LutrinDimens.ScreenGutter,
+                vertical = PageBarSpacing,
+            ),
             horizontalArrangement = Arrangement.spacedBy(PageBarSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val shownPage = draggedPage?.roundToInt() ?: currentPage
-            Text(
-                text = stringResource(R.string.reader_page_indicator, shownPage + 1, pageCount),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.widthIn(min = PageIndicatorMinWidth),
-            )
+            PageIndicator(page = draggedPage?.roundToInt() ?: currentPage, pageCount = pageCount)
             if (pageCount > 1) {
-                val sliderDescription = stringResource(R.string.reader_page_slider)
                 PageSlider(
                     value = draggedPage ?: currentPage.toFloat(),
                     pageCount = pageCount,
@@ -92,16 +83,30 @@ internal fun PageBar(
                         scope.launch { listState.scrollToItem(value.roundToInt()) }
                     },
                     onValueChangeFinished = { draggedPage = null },
-                    modifier = Modifier.weight(1f).semantics { contentDescription = sliderDescription },
+                    modifier = Modifier.weight(1f),
                 )
             } else {
                 Spacer(Modifier.weight(1f))
             }
             IconButton(onClick = onFitWidth) {
-                Icon(painterResource(UiR.drawable.ic_fit_width), contentDescription = stringResource(R.string.reader_fit_width))
+                Icon(
+                    painterResource(UiR.drawable.ic_fit_width),
+                    contentDescription = stringResource(R.string.reader_fit_width),
+                )
             }
         }
     }
+}
+
+/** « n / total », with [page] counted from 0. */
+@Composable
+private fun PageIndicator(page: Int, pageCount: Int, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.reader_page_indicator, page + 1, pageCount),
+        style = MaterialTheme.typography.titleMedium,
+        textAlign = TextAlign.Center,
+        modifier = modifier.widthIn(min = PageIndicatorMinWidth),
+    )
 }
 
 /** Height of the slider track (E2 mockup). */
@@ -124,6 +129,7 @@ private fun PageSlider(
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val description = stringResource(R.string.reader_page_slider)
     Slider(
         value = value,
         onValueChange = onValueChange,
@@ -141,6 +147,6 @@ private fun PageSlider(
                 thumbTrackGapSize = 0.dp,
             )
         },
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = description },
     )
 }
