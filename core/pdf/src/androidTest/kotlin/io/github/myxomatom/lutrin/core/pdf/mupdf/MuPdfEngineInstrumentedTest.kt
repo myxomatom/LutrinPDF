@@ -34,6 +34,7 @@ class MuPdfEngineInstrumentedTest {
                 targetContext.contentResolver.openFileDescriptor(uri, "r") ?: throw FileNotFoundException()
             },
             dispatchers = SingleThreadDocumentDispatcherFactory(),
+            releaseFailures = LogReleaseFailureReporter(),
         )
 
     /** Copies a test asset (packaged in the test APK) into the app cache. */

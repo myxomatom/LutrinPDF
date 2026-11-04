@@ -9,6 +9,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
@@ -275,7 +276,9 @@ class MuPdfDocumentTest {
     }
 
     @Test
-    fun `close releases the resources even when destroying the document fails`() {
+    fun `close releases the resources and reports the failure when destroying the document fails`() {
+        // Regression: the failure used to escape on the document thread, uncaught, which
+        // crashes an Android app although the user has already left the document.
         val uncaught = AtomicReference<Throwable>()
         val threads = CopyOnWriteArrayList<Thread>()
         val executor =
@@ -285,6 +288,7 @@ class MuPdfDocumentTest {
                 thread.also(threads::add)
             }
         val released = AtomicBoolean(false)
+        val reported = RecordingReleaseFailures()
         val failingDocument =
             object : Document(0L) {
                 override fun destroy() {
@@ -292,16 +296,49 @@ class MuPdfDocumentTest {
                 }
             }
 
-        MuPdfDocument(failingDocument, executor.asCoroutineDispatcher(), PdfMetadata(pageCount = 1)) {
+        MuPdfDocument(failingDocument, executor.asCoroutineDispatcher(), PdfMetadata(pageCount = 1), reported) {
             released.set(true)
         }.close()
 
         assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue()
-        // The executor terminates before its thread reports the failure: wait for the thread.
         threads.forEach { it.join(TimeUnit.SECONDS.toMillis(10)) }
         assertThat(released.get()).isTrue()
-        // The failure is reported, not swallowed.
-        assertThat(uncaught.get()).isInstanceOf(IllegalStateException::class.java)
+        // The failure is reported, not swallowed, and nothing escapes on the document thread.
+        assertThat(reported.failures.single()).isInstanceOf(IllegalStateException::class.java)
+        assertThat(uncaught.get()).isNull()
+    }
+
+    @Test
+    fun `close reports every failed step and still runs the next ones`() {
+        val executor = Executors.newSingleThreadExecutor()
+        val reported = RecordingReleaseFailures()
+        val failingDocument =
+            object : Document(0L) {
+                override fun destroy() {
+                    error("Simulated native failure")
+                }
+            }
+
+        MuPdfDocument(failingDocument, executor.asCoroutineDispatcher(), PdfMetadata(pageCount = 1), reported) {
+            throw IOException("Simulated descriptor failure")
+        }.close()
+
+        assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue()
+        assertThat(
+            reported.failures.map {
+                it::class
+            },
+        ).containsExactly(IllegalStateException::class, IOException::class).inOrder()
+    }
+
+    @Test
+    fun `a normal close reports nothing`() = runTest {
+        val reported = RecordingReleaseFailures()
+        val document = engine(releaseFailures = reported).open(TestAssets.source("pdfs/simple_1page.pdf")).getOrThrow()
+
+        document.close()
+
+        assertThat(reported.failures).isEmpty()
     }
 
     /** Single-thread executor that runs a hook right before accepting its next task. */

@@ -32,10 +32,15 @@ fun interface ContentOpener {
     fun open(uri: Uri): ParcelFileDescriptor
 }
 
-/** [PdfEngine] backed by MuPDF (ADR 0001). */
+/**
+ * [PdfEngine] backed by MuPDF (ADR 0001).
+ *
+ * @param releaseFailures receives the failures of closing a document, which never crash the app.
+ */
 internal class MuPdfEngine @Inject constructor(
     private val contentOpener: ContentOpener,
     private val dispatchers: DocumentDispatcherFactory,
+    private val releaseFailures: ReleaseFailureReporter,
 ) : PdfEngine {
     init {
         // MuPDF warnings may quote document data: never write them to the system log.
@@ -67,7 +72,7 @@ internal class MuPdfEngine @Inject constructor(
         val (document, resources) = load(source)
         return releasingOnFailure(release = { releaseNative(document, resources) }) {
             val metadata = translatingMuPdfErrors { prepare(document, password) }
-            MuPdfDocument(document, dispatcher, metadata, resources)
+            MuPdfDocument(document, dispatcher, metadata, releaseFailures, resources)
         }
     }
 

@@ -46,8 +46,24 @@ internal fun openDescriptorsTo(file: File): Int {
     }
 }
 
-internal fun engine(dispatchers: DocumentDispatcherFactory = SingleThreadDocumentDispatcherFactory()) =
-    MuPdfEngine(contentOpener = { error("Content URIs are covered by instrumented tests") }, dispatchers = dispatchers)
+/** Release failures reported by the documents of the tests; none is expected unless a test causes one. */
+internal class RecordingReleaseFailures : ReleaseFailureReporter {
+    /** Failures reported so far, in order. */
+    val failures: MutableList<Exception> = CopyOnWriteArrayList()
+
+    override fun report(error: Exception) {
+        failures += error
+    }
+}
+
+internal fun engine(
+    dispatchers: DocumentDispatcherFactory = SingleThreadDocumentDispatcherFactory(),
+    releaseFailures: ReleaseFailureReporter = RecordingReleaseFailures(),
+) = MuPdfEngine(
+    contentOpener = { error("Content URIs are covered by instrumented tests") },
+    dispatchers = dispatchers,
+    releaseFailures = releaseFailures,
+)
 
 internal suspend fun openTestPdf(path: String, password: String? = null): MuPdfDocument =
     engine().open(TestAssets.source(path), password).getOrThrow() as MuPdfDocument
