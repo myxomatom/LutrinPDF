@@ -49,6 +49,17 @@ changement y est signalé.
 - Modèles d'issues et de pull request GitHub, `.editorconfig`, `.gitattributes`.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
+### Corrigé
+- Moteur PDF : plus de fuite du document natif ni du descripteur de fichier quand l'ouverture
+  est annulée ou échoue de façon inattendue ; `PdfError.Closed` au lieu d'une annulation
+  silencieuse quand un appel croise `close()` ; fermeture robuste des ressources ; l'enveloppe
+  `PDFDocument` de MuPDF est détruite à l'ouverture (elle gardait le fichier ouvert jusqu'au GC).
+- Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
+
+### Modifié
+- APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
+- Dependabot suit aussi le sous-module MuPDF.
+
 ### Sécurité
 - JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.
 - Sauvegarde Android et transfert entre appareils désactivés (ADR 0004).
