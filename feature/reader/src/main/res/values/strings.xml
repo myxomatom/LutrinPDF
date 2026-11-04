@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="reader_back">Back</string>
+    <string name="reader_loading">Opening the document…</string>
+    <string name="reader_page_indicator" translatable="false">%1$d / %2$d</string>
+    <string name="reader_page_slider">Page</string>
+    <string name="reader_page_description">Page %1$d of %2$d</string>
+    <string name="reader_fit_width">Fit to width</string>
+    <string name="reader_error_unreadable_title">Can’t open this document</string>
+    <string name="reader_error_unreadable_message">The file may be damaged or incomplete, or it isn’t a PDF.</string>
+    <string name="reader_error_not_accessible_title">Document unavailable</string>
+    <string name="reader_error_not_accessible_message">The file was moved or deleted, or Lutrin no longer has permission to read it. Open it again from your files.</string>
+    <string name="reader_error_protected_title">Protected document</string>
+    <string name="reader_error_protected_message">This document needs a password. Opening protected documents is coming in a next version.</string>
+    <string name="reader_back_to_library">Back to library</string>
+</resources>
