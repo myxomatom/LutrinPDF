@@ -6,3 +6,8 @@ plugins {
 android {
     namespace = "io.github.myxomatom.lutrin.core.testing"
 }
+
+dependencies {
+    api(projects.core.pdf)
+    implementation(libs.kotlinx.coroutines.core)
+}

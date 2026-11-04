@@ -27,7 +27,7 @@ class LutrinAppScreenshotTest {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { LutrinApp() }
+                LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { WelcomeScreen(onOpenDocument = {}) }
             }
         }
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")

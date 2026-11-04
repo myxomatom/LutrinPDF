@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="reader_back">Back</string>
+    <string name="reader_loading">Opening the document…</string>
+    <string name="reader_document">Document, page %1$d of %2$d</string>
+    <string name="reader_page_indicator">%1$d / %2$d</string>
+    <string name="reader_page_slider">Go to page</string>
+    <string name="reader_fit_width">Fit to width</string>
+    <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
+    <string name="reader_error_title">This document cannot be opened</string>
+    <string name="reader_error_unreadable">The file may be damaged or incomplete.</string>
+    <string name="reader_error_unsupported">This file is not a PDF.</string>
+    <string name="reader_error_not_accessible">The file was moved or deleted, or access to it was revoked.</string>
+    <string name="reader_error_password">This document is protected by a password. Opening protected documents is coming soon.</string>
+</resources>

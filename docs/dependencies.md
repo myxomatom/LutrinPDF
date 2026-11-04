@@ -23,6 +23,10 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
 | Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
 | Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
+| AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader` | Navigation entre écrans (`SPEC.md` §4.1) |
+| AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | ViewModels dans Compose |
+| AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` |
+| Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte) |
 
 Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 `./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
@@ -96,4 +100,4 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Dépendance | Jalon | Licence | Usage |
 |------------|-------|---------|-------|
 | AboutLibraries | M5 | Apache-2.0 | Écran des licences tierces (ADR 0003) |
-| Room, DataStore, Navigation Compose | M2–M3 | Apache-2.0 | Persistance, navigation |
+| Room, DataStore | M3 | Apache-2.0 | Persistance |

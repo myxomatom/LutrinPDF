@@ -52,6 +52,19 @@ jobs:
       - name: Generate documentation (Dokka, warnings are errors)
         run: ./gradlew :dokkaGenerate
 
+      - name: Build debug APKs (installable, signed with the debug key)
+        run: ./gradlew :app:assembleDebug
+
+      - name: Upload debug APKs
+        uses: actions/upload-artifact@v7
+        with:
+          # One APK per ABI; most phones need arm64-v8a. Debug builds install next to the
+          # published app (application id suffix .debug).
+          name: lutrin-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v7

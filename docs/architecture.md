@@ -69,6 +69,16 @@ flowchart LR
 - Tests : sur la JVM avec la bibliothèque MuPDF compilée pour la machine de build, et
   instrumentés sur émulateur pour la bibliothèque Android.
 
+## Lecteur (`feature:reader`)
+
+- `ReaderViewModel` ouvre le document (URI reçue par la navigation) via `PdfEngine` et le ferme
+  avec lui ; il expose `ReaderUiState` : `Loading`, `Error` (V8) ou `Ready`.
+- `PageRenderer` produit les bitmaps : rendu de base de chaque page (cache LRU `BitmapCache`) et
+  rendu net de la partie visible au-delà de « ajuster à la largeur » (ADR 0008).
+- `ReaderScreen` / `PdfPagesView` (Compose) : `LazyColumn` des pages, gestes de zoom, barres,
+  plein écran. Les calculs (zoom, partie visible, page courante) sont des fonctions pures de
+  `ReaderGeometry.kt`, testées sur la JVM.
+
 ## Flux de données d'un écran
 
 ```mermaid

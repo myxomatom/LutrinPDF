@@ -10,6 +10,13 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Jalon M2 (première partie) : lecteur (E2). Défilement vertical continu, zoom à deux doigts
+  et double tap de 25 % à 800 %, rendu net de la partie visible au-delà de la largeur de
+  l'écran, bouton « Ajuster à la largeur », curseur et indicateur de page, plein écran au tap
+  (barres système masquées), écran d'erreur (V8) en français et en anglais (ADR 0008).
+- Bouton provisoire « Ouvrir un PDF » (sélecteur système) sur l'écran d'accueil, en attendant
+  la bibliothèque (M3).
+- CI : APK de debug par ABI téléchargeables dans les artefacts de chaque exécution.
 - Jalon M1 : moteur PDF. MuPDF 1.28.6 compilé depuis son sous-module Git (NDK, 3 ABI) dans
   `:third-party:mupdf` (ADR 0007).
 - `PdfEngine` / `PdfDocument` (`core:pdf`) : ouverture (fichier, URI de contenu, mémoire),

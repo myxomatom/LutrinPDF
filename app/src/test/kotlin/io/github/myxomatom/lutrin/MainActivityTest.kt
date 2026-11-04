@@ -26,7 +26,7 @@ class MainActivityTest {
     @Test
     @Config(qualifiers = "fr")
     fun `shows the welcome screen in French`() {
-        composeRule.onNodeWithText("En construction : bientôt disponible.").assertIsDisplayed()
+        composeRule.onNodeWithText("Ouvrir un PDF").assertIsDisplayed()
     }
 
     @Test
