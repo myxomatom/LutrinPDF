@@ -31,7 +31,8 @@ Sur la branche de la session suivante, testé seulement sous Robolectric : **mod
 glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
 
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
-#10 fermeture sans plantage. La PR qui suit apporte E3 et ce fichier.
+#10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
+par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
@@ -46,7 +47,6 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
    - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
-   - épingler les actions GitHub par SHA ;
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
 
@@ -97,7 +97,9 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 
 Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
 
-1. **SDK Android** : outils en ligne de commande dans `/opt/android-sdk/cmdline-tools/latest`,
+1. **SDK Android** : outils en ligne de commande dans `/opt/android-sdk/cmdline-tools/latest`
+   (archive `commandlinetools-linux-14742923_latest.zip`, 172 Mo : l'index XML de
+   dl.google.com ne liste que d'anciennes versions, il faut le nom exact),
    puis `sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;37.0.0"
    "ndk;28.2.13676358" "cmake;3.22.1"`. Créer ensuite `local.properties` avec
    `sdk.dir=/opt/android-sdk`. Ce fichier est ignoré par Git.
@@ -107,9 +109,12 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
    `~/.gradle/init.d/central-mirror.init.gradle.kts`. Il ajoute en premier le miroir
    `https://maven-central.storage-download.googleapis.com/maven2/` à `pluginManagement` et à
    `dependencyResolutionManagement`, et remet `gradlePluginPortal()` quand `pluginManagement` n'a
-   pas d'autre dépôt.
+   pas d'autre dépôt. Sans ce miroir, le symptôme n'est pas forcément une erreur 429 : la
+   configuration échoue avec `Plugin [id: 'io.github.takahirom.roborazzi', …] was not found`.
 4. **Vérifier** : `./gradlew check assembleRelease :dokkaGenerate`, comme la CI. Compter 5 à
-   10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte.
+   10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte
+   et pour les trois ABI. Un agent dont les commandes au premier plan sont limitées à
+   10 minutes doit lancer cette première compilation en arrière-plan.
 5. **Captures d'écran** : après un changement visuel voulu, `./gradlew recordRoborazziDebug`,
    puis relire les images avant de les committer.
 
