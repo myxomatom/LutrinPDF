@@ -49,7 +49,6 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
    - épingler les actions GitHub par SHA ;
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
-   - passer `ContentOpener` et `DocumentDispatcherFactory` en `internal`.
 
 ## 3. Décisions à connaître
 
