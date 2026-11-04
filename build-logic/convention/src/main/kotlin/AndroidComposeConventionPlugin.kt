@@ -18,6 +18,9 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
                 val bom = platform(libs.library("androidx-compose-bom"))
                 "implementation"(bom)
                 "androidTestImplementation"(bom)
+                // Compose UI tests pull Espresso 3.5, whose input injection uses a hidden API removed
+                // in Android 17 (API 37). Espresso 3.7 uses the public InputManager service instead.
+                "androidTestImplementation"(libs.library("androidx-test-espresso-core"))
                 "implementation"(libs.library("androidx-compose-ui-tooling-preview"))
                 "debugImplementation"(libs.library("androidx-compose-ui-tooling"))
             }
