@@ -10,6 +10,10 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Paramètres (E3), section « Apparence » : interrupteur « Couleurs dynamiques » (Material You,
+  Android 12+), activé par défaut ; désactivé, l'application reprend la palette Lutrin des
+  maquettes. Ouvert par l'icône engrenage de la bibliothèque (ADR 0010).
+- Préférences enregistrées sur l'appareil avec DataStore (`core:data`).
 - Jalon M2 (première partie) : lecteur (E2). Défilement vertical continu, zoom à deux doigts
   et double tap de 25 % à 800 %, rendu net de la partie visible au-delà de la largeur de
   l'écran, bouton « Ajuster à la largeur », curseur et indicateur de page, plein écran au tap

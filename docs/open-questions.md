@@ -10,8 +10,6 @@ puis déplacé dans la section « Tranchés ».
 | 2 | Grille de miniatures | V10 est prévue en v1.x, mais E7 (Extraction, v1.1) en a besoin : le composant doit exister dès M6. | M6 |
 | 3 | Dossier de sortie | ROADMAP le place dans E10 (Assistants IA), SPEC dans les paramètres, les maquettes dans E5 (Outils). | M6 |
 | 8 | Polices de secours CJK | Le build Android de MuPDF exclut les polices de secours (Noto, CJK, SIL) : un texte chinois / japonais / coréen dont la police n'est pas incorporée au PDF s'affiche en carrés. Les ajouter coûterait plusieurs Mo par ABI (limite de 15 Mo, `SPEC.md` §3). | M4 |
-| 9 | Réglage « Couleurs dynamiques » | Material You (activé par défaut, `SPEC.md` §4.1) remplace la palette des maquettes sur Android 12+ : l'application ne ressemble aux maquettes que sous Android 11 ou moins. Proposition : interrupteur « Couleurs dynamiques » dans E3, activé par défaut. À ajouter à `SPEC.md` F13 si accepté (ADR 0009). | M5 |
-| 10 | Police et espacement des lettres | Les maquettes embarquent Roboto sans espacement des lettres ; l'application utilise la police système (pas toujours Roboto) avec l'espacement de Material 3. Embarquer Roboto (OFL 1.1, ≈ 1 Mo) ou garder la police système ? | M5 |
 | 11 | URI non seekables | L'ouverture d'un `content://` suppose un descripteur seekable ; un fournisseur qui renvoie un tube (pipe) donne « Document indisponible ». Repli possible : copie dans `cacheDir`, supprimée à la fermeture (`AGENTS.md` §9). | M3 |
 | 12 | Benchmark et Baseline Profile | Aucun module `:benchmark` (`AGENTS.md` §5.1, §8) alors que M0 demandait « un test de chaque type » et que M2 demande des benchmarks de défilement et d'ouverture. | M2 |
 | 13 | Reproductibilité F-Droid | Pas de drapeaux de compilation déterministe pour MuPDF (`-ffile-prefix-map`, `--build-id=none`) ni de job CI qui compile deux fois et compare les APK (`ROADMAP.md` §4). | Publication v1.0 |
@@ -24,5 +22,7 @@ puis déplacé dans la section « Tranchés ».
 |---|-------|----------|
 | 4 | Injection de dépendances | Hilt — [ADR 0002](adr/0002-injection-dependances-hilt.md) |
 | 5 | Licences tierces | Licensee (CI) et AboutLibraries (écran, M5) — [ADR 0003](adr/0003-licences-tierces.md) |
+| 9 | Réglage « Couleurs dynamiques » | Interrupteur dans E3, activé par défaut — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
+| 10 | Police | Police du système conservée, pas de Roboto embarquée — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
 | 15 | Échec natif à la fermeture d'un document | Intercepté (décision du 2026-11-04) : chaque étape de libération s'exécute même si la précédente échoue ; l'échec est signalé à `ReleaseFailureReporter`, qui écrit seulement le type d'exception dans le journal (`AGENTS.md` §1.8), au lieu de faire planter l'application |
 | 7 | Schéma de couleurs sombre | Schéma M3 complet généré depuis `#2A5B8C`, dans `design-tokens.json` et `core:ui` |

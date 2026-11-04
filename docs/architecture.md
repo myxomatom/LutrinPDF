@@ -1,7 +1,8 @@
 # Architecture
 
-> Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 ;
-> la plupart sont encore vides et se remplissent au fil des jalons (`ROADMAP.md`).
+> Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 et se
+> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-04 : `feature:tools` et
+> `feature:assistant` sont encore vides.
 
 ## Principes
 
@@ -84,6 +85,23 @@ flowchart LR
   gardent le contenu à l'endroit où le geste l'a laissé (`requestScrollToItem`, même image).
   Le double tap passe par le même chemin. Un geste à deux doigts est consommé jusqu'au bout :
   le doigt restant ne fait pas défiler la page.
+
+## Paramètres (`feature:settings`, `core:data`)
+
+```mermaid
+flowchart LR
+    e3["SettingsScreen (E3)"] -->|"onDynamicColorChange"| vm["SettingsViewModel"]
+    vm -->|"SetDynamicColorUseCase"| repo["SettingsRepository"]
+    repo --> ds["DataStore Preferences (fichiers privés)"]
+    repo -->|"Flow&lt;AppSettings&gt;"| act["MainActivity → LutrinTheme(dynamicColor)"]
+    repo -->|"Flow&lt;AppSettings&gt;"| vm
+```
+
+- `AppSettings`, `SettingsRepository` et les cas d'usage sont dans `core:domain` ;
+  `DataStoreSettingsRepository` dans `core:data` (une seule instance de DataStore par fichier,
+  sur le dispatcher d'I/O injecté).
+- `MainActivity` observe les paramètres : le thème change dès que l'interrupteur bouge, sans
+  redémarrer (ADR 0010).
 
 ## Flux de données d'un écran
 

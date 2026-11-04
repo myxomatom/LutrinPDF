@@ -25,11 +25,12 @@
 | E1 Bibliothèque | 🟡 Partielle | État vide et « Ouvrir un fichier » (sélecteur système) ; récents, outils et paramètres en M3 / M5 / M6 |
 | E2 Lecteur | 🟡 Partielle | Défilement continu, zoom 25–800 % net, plein écran, curseur et indicateur de page ; recherche, table des matières, menu en M4 / M5 |
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible, protégé ; « Retirer des récents » en M3 |
-| Autres (E3–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; thème, rendu, lecture, données en M5 |
+| Autres (E4–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette
-des maquettes (ADR 0009, point ouvert 9).
+des maquettes (ADR 0009) ; un interrupteur permet maintenant de les désactiver (ADR 0010).
 
 ---
 
