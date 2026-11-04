@@ -5,6 +5,11 @@ import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import java.io.File
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -105,6 +110,61 @@ class MuPdfEngineTest {
         assertThat(dispatchers.created).hasSize(2)
         dispatchers.created.forEach { assertThat(it.executor.isShutdownExecutor()).isTrue() }
     }
+
+    @Test
+    fun `releases the document thread when opening fails unexpectedly`() = runTest {
+        val dispatchers = RecordingDispatcherFactory()
+        val failingFile =
+            object : File(TestAssets.file("pdfs/simple_1page.pdf").path) {
+                override fun canRead(): Boolean = error("Simulated unexpected failure")
+            }
+
+        val error = runCatching { engine(dispatchers).open(DocumentSource.FromFile(failingFile)) }.exceptionOrNull()
+
+        assertThat(error).isInstanceOf(IllegalStateException::class.java)
+        dispatchers.awaitTermination()
+        assertThat(dispatchers.created.single().executor.isShutdownExecutor()).isTrue()
+    }
+
+    @Test
+    fun `closing a document releases its file`() = runBlocking<Unit> {
+        val dispatchers = RecordingDispatcherFactory()
+        val file = copyOfTestPdf("pdfs/simple_1page.pdf")
+
+        val document = engine(dispatchers).open(DocumentSource.FromFile(file)).getOrThrow()
+        // MuPDF keeps the file open while the document is: the check below is meaningful.
+        assertThat(openDescriptorsTo(file)).isGreaterThan(0)
+        document.close()
+
+        dispatchers.awaitTermination()
+        assertThat(openDescriptorsTo(file)).isEqualTo(0)
+    }
+
+    @Test
+    fun `releases the document when the caller is cancelled while it is being opened`() = runBlocking<Unit> {
+        val dispatchers = RecordingDispatcherFactory()
+        val file = copyOfTestPdf("pdfs/simple_1page.pdf")
+        lateinit var opening: Job
+        // Cancels the caller from the document thread, while the native document is being built.
+        val cancellingFile =
+            object : File(file.path) {
+                override fun canRead(): Boolean = super.canRead().also { opening.cancel() }
+            }
+        opening =
+            launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+                engine(dispatchers).open(DocumentSource.FromFile(cancellingFile))
+            }
+
+        opening.start()
+        opening.join()
+
+        assertThat(opening.isCancelled).isTrue()
+        dispatchers.awaitTermination()
+        assertThat(dispatchers.created.single().executor.isShutdownExecutor()).isTrue()
+        assertThat(openDescriptorsTo(file)).isEqualTo(0)
+    }
+
+    private fun copyOfTestPdf(path: String): File = TestAssets.file(path).copyTo(File(folder.root, File(path).name))
 
     private fun java.util.concurrent.Executor.isShutdownExecutor() =
         (this as java.util.concurrent.ExecutorService).isShutdown

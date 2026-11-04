@@ -20,14 +20,23 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class PdfModule {
+    /** The MuPDF engine, shared by the whole app (it holds no per-document state). */
     @Binds
     @Singleton
     abstract fun bindEngine(engine: MuPdfEngine): PdfEngine
 
+    /** One dedicated thread per open document (ADR 0007, point 6). */
     @Binds
     abstract fun bindDispatcherFactory(factory: SingleThreadDocumentDispatcherFactory): DocumentDispatcherFactory
 
     companion object {
+        /**
+         * Opens content URIs read-only through the [android.content.ContentResolver]
+         * (SAF only, `AGENTS.md` §9).
+         *
+         * @throws FileNotFoundException if no provider serves the URI any more.
+         * @throws SecurityException if the read permission was revoked.
+         */
         @Provides
         fun provideContentOpener(@ApplicationContext context: Context): ContentOpener = ContentOpener { uri ->
             context.contentResolver.openFileDescriptor(uri, "r")
