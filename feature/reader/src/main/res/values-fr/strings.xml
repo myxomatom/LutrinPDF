@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="reader_back">Retour</string>
+    <string name="reader_loading">Ouverture du document…</string>
+    <string name="reader_document">Document, page %1$d sur %2$d</string>
+    <string name="reader_page_indicator">%1$d / %2$d</string>
+    <string name="reader_page_slider">Aller à la page</string>
+    <string name="reader_fit_width">Ajuster à la largeur</string>
+    <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
+    <string name="reader_error_title">Impossible d’ouvrir ce document</string>
+    <string name="reader_error_unreadable">Le fichier est peut-être endommagé ou incomplet.</string>
+    <string name="reader_error_unsupported">Ce fichier n’est pas un PDF.</string>
+    <string name="reader_error_not_accessible">Le fichier a été déplacé ou supprimé, ou l’accès à ce fichier a été retiré.</string>
+    <string name="reader_error_password">Ce document est protégé par un mot de passe. L’ouverture des documents protégés arrive bientôt.</string>
+</resources>
