@@ -57,7 +57,8 @@ changement y est signalé.
 ### Corrigé
 - Moteur PDF : plus de fuite du document natif ni du descripteur de fichier quand l'ouverture
   est annulée ou échoue de façon inattendue ; `PdfError.Closed` au lieu d'une annulation
-  silencieuse quand un appel croise `close()` ; fermeture robuste des ressources.
+  silencieuse quand un appel croise `close()` ; fermeture robuste des ressources ; l'enveloppe
+  `PDFDocument` de MuPDF est détruite à l'ouverture (elle gardait le fichier ouvert jusqu'au GC).
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
