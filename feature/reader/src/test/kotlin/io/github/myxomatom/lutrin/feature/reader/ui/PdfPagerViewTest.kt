@@ -3,11 +3,13 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -16,6 +18,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pinch
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
@@ -41,21 +44,27 @@ class PdfPagerViewTest {
     private lateinit var pagerState: PagerState
     private lateinit var scope: CoroutineScope
 
-    private fun show(pageSizes: List<PageSize> = List(3) { A4 }, initialPage: Int = 0) {
+    private fun show(
+        pageSizes: List<PageSize> = List(3) { A4 },
+        initialPage: Int = 0,
+        layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+    ) {
         document = FakePdfDocument(pageSizes)
         composeRule.setContent {
             LutrinTheme(dynamicColor = false) {
-                pagerState = rememberPagerState(initialPage) { pageSizes.size }
-                scope = rememberCoroutineScope()
-                PdfPagerView(
-                    pageSizes = pageSizes,
-                    renderer = PageRenderer(document, pageSizes, Dispatchers.Unconfined),
-                    pagerState = pagerState,
-                    zoom = zoom,
-                    onZoomChange = { zoom = it },
-                    onTap = {},
-                    contentDescription = DOCUMENT,
-                )
+                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+                    pagerState = rememberPagerState(initialPage) { pageSizes.size }
+                    scope = rememberCoroutineScope()
+                    PdfPagerView(
+                        pageSizes = pageSizes,
+                        renderer = PageRenderer(document, pageSizes, Dispatchers.Unconfined),
+                        pagerState = pagerState,
+                        zoom = zoom,
+                        onZoomChange = { zoom = it },
+                        onTap = {},
+                        contentDescription = DOCUMENT,
+                    )
+                }
             }
         }
         composeRule.waitForIdle()
@@ -89,6 +98,15 @@ class PdfPagerViewTest {
         assertThat(pagerState.currentPage).isEqualTo(2)
 
         swipe(left = false)
+        assertThat(pagerState.currentPage).isEqualTo(1)
+    }
+
+    @Test
+    fun `pages run left to right even when the interface runs right to left`() {
+        show(layoutDirection = LayoutDirection.Rtl)
+
+        swipe(left = true)
+
         assertThat(pagerState.currentPage).isEqualTo(1)
     }
 

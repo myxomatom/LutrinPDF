@@ -12,6 +12,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -48,7 +51,8 @@ private val PAGE_MARGIN = 16.dp
  * While zoomed in beyond 1, drags pan the page and swiping to another page is off: a double
  * tap or the "fit" button brings the page back, and swiping with it. The zoom goes back to 1
  * whenever another page settles. Only the pages on screen are composed: a page that leaves the
- * screen cancels its renderings (ADR 0008).
+ * screen cancels its renderings (ADR 0008). Pages always run left to right, even when the
+ * interface is right to left.
  *
  * @param pagerState current page and swipe state; hoisted so that the slider can move it.
  * @param zoom current zoom, 1 = whole page; hoisted so that the screen can reset it.
@@ -69,22 +73,26 @@ internal fun PdfPagerView(
     nightMode: Boolean = false,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
-    HorizontalPager(
-        state = pagerState,
-        modifier = modifier.fillMaxSize().semantics { this.contentDescription = contentDescription },
-        userScrollEnabled = zoom <= 1f,
-        key = { it },
-    ) { index ->
-        ZoomablePage(
-            pageIndex = index,
-            page = pageSizes[index],
-            renderer = renderer,
-            zoom = zoom,
-            onZoomChange = onZoomChange,
-            onTap = onTap,
-            pagerMoving = pagerState.isScrollInProgress,
-            nightMode = nightMode,
-        )
+    // Pages follow each other left to right whatever the language of the interface: the
+    // reading direction belongs to the document, not to the app (ADR 0011).
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = modifier.fillMaxSize().semantics { this.contentDescription = contentDescription },
+            userScrollEnabled = zoom <= 1f,
+            key = { it },
+        ) { index ->
+            ZoomablePage(
+                pageIndex = index,
+                page = pageSizes[index],
+                renderer = renderer,
+                zoom = zoom,
+                onZoomChange = onZoomChange,
+                onTap = onTap,
+                pagerMoving = pagerState.isScrollInProgress,
+                nightMode = nightMode,
+            )
+        }
     }
 }
 
