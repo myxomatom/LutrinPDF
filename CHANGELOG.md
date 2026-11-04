@@ -71,6 +71,7 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
 - APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
 
 ### Sécurité
