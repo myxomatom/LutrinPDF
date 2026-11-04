@@ -9,6 +9,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.material.icons.core)
+
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

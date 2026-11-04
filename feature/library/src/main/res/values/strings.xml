@@ -6,4 +6,5 @@
     <string name="library_empty_message">Open a PDF from your files, or from another app with “Open with” or “Share”.</string>
     <string name="library_open_file">Open a file</string>
     <string name="library_offline_notice">Works fully offline. No data collected.</string>
+    <string name="library_settings">Settings</string>
 </resources>

@@ -6,4 +6,5 @@
     <string name="library_empty_message">Ouvrez un PDF depuis vos fichiers, ou depuis une autre application avec « Ouvrir avec » ou « Partager ».</string>
     <string name="library_open_file">Ouvrir un fichier</string>
     <string name="library_offline_notice">Fonctionne entièrement hors ligne. Aucune donnée collectée.</string>
+    <string name="library_settings">Paramètres</string>
 </resources>
