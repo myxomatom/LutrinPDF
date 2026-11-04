@@ -42,5 +42,6 @@ sur un téléphone dépasse 300 Mo).
   gros documents, cela allonge l'ouverture. À mesurer avec les benchmarks (suite de M2) et, si
   besoin, lire les tailles à la demande.
 - La copie `Pixmap` → `Bitmap` (ADR 0007) est conservée en attendant ces mesures.
-- Restent pour la suite de M2 : mode page par page horizontal (F03), module `:benchmark`
-  (Macrobenchmark : ouverture, défilement), vérification des 60 images/s sur un appareil réel.
+- Restent pour la suite de M2 : ~~mode page par page horizontal (F03)~~ (fait, ADR 0011, qui
+  réutilise ce rendu), module `:benchmark` (Macrobenchmark : ouverture, défilement),
+  vérification des 60 images/s sur un appareil réel.

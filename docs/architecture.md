@@ -85,6 +85,23 @@ flowchart LR
   gardent le contenu à l'endroit où le geste l'a laissé (`requestScrollToItem`, même image).
   Le double tap passe par le même chemin. Un geste à deux doigts est consommé jusqu'au bout :
   le doigt restant ne fait pas défiler la page.
+- Mode page par page (ADR 0011) : `PdfPagerView`, un `HorizontalPager` dont chaque page est
+  une surface zoomable (l'écran multiplié par le zoom, défilable dans les deux sens), avec les
+  mêmes gestes (`ReaderGestures.kt`) et le même `PdfPage` que le mode continu. Le zoom 1 y
+  vaut « page entière » (`PagedGeometry.kt`).
+- `PageNavigator` donne la page courante et le saut de page au curseur, à l'indicateur et au
+  ViewModel, quel que soit le mode. Le mode vient des paramètres :
+
+```mermaid
+flowchart LR
+    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange"| rvm["ReaderViewModel"]
+    rvm -->|"SetScrollModeUseCase"| repo["SettingsRepository (DataStore)"]
+    repo -->|"Flow&lt;AppSettings&gt;.scrollMode"| rvm
+    screen["ReaderScreen"] -->|"onPageChange"| rvm
+    rvm -->|"Ready(scrollMode, currentPage)"| screen
+    screen -->|"CONTINUOUS"| list["PdfPagesView (LazyColumn)"]
+    screen -->|"PAGED"| pager["PdfPagerView (HorizontalPager)"]
+```
 
 ## Paramètres (`feature:settings`, `core:data`)
 
@@ -102,6 +119,9 @@ flowchart LR
   sur le dispatcher d'I/O injecté).
 - `MainActivity` observe les paramètres : le thème change dès que l'interrupteur bouge, sans
   redémarrer (ADR 0010).
+- Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) est stocké de la même
+  façon ; le lecteur le lit et l'écrit par ses propres cas d'usage, sans dépendre de
+  `feature:settings`.
 
 ## Flux de données d'un écran
 

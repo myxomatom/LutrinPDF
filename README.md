@@ -8,7 +8,7 @@ offline: no ads, no tracking, no network permission. Read, search, merge and con
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
 > 🚧 **Statut : jalon M2 (lecteur de base), en cours.** On peut ouvrir un PDF depuis la
-> bibliothèque (encore vide) et le lire : défilement, zoom, plein écran. Documents récents au
+> bibliothèque (encore vide) et le lire : défilement continu ou page par page, zoom, plein écran. Documents récents au
 > jalon M3. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet

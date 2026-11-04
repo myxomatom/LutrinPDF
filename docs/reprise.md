@@ -11,7 +11,7 @@
 |-------|------|
 | M0 Fondations | ✅ Terminé (sauf `:benchmark` et la vérification de reproductibilité F-Droid, reportés) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
-| M2 Lecteur de base | 🚧 Environ aux deux tiers |
+| M2 Lecteur de base | 🚧 Lecteur complet ; reste le module `:benchmark` et les mesures |
 | M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -25,13 +25,17 @@ Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur a
   activé par défaut, enregistré avec DataStore (ADR 0010).
 - Moteur MuPDF 1.28.6 compilé depuis les sources, sans fuite à l'ouverture ni à la fermeture.
 
+Sur la branche de la session suivante, testé seulement sous Robolectric : **mode page par page**
+(F03, ADR 0011) et feuille « Affichage » (V6, section « Défilement » seulement) ouverte par
+« Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
+glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage. La PR qui suit apporte E3 et ce fichier.
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
 1. **Finir M2** (`ROADMAP.md` §2) :
-   - mode page par page horizontal (option de F03) ;
    - module `:benchmark` : Macrobenchmark (démarrage, ouverture, défilement) et Baseline
      Profile (point ouvert 12) ; vérifier 60 images/s sur 500 pages, et le gros PDF de test
      sur appareil.
@@ -49,12 +53,14 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0010) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0011) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
   - **ADR 0010** : couleurs dynamiques désactivables, activées par défaut ; police du système
-    conservée (pas de Roboto embarquée).
+    conservée (pas de Roboto embarquée) ;
+  - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
+    de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
 - Points encore ouverts : 1, 2, 3, 6, 8, 11 à 14 (`docs/open-questions.md`).
@@ -78,6 +84,13 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 - **Dependabot sur le sous-module MuPDF** : il propose la pointe de la branche de développement,
   refusée par `verifyMupdfVersion`. Fermer ces PR sans les merger (suivi retiré de
   `.github/dependabot.yml`).
+- **Tests Compose sous Robolectric** :
+  - `waitForIdle()` n'avance pas l'horloge à travers un `delay()` (rendu de détail après
+    150 ms) : utiliser `composeRule.mainClock.advanceTimeBy(…)` puis `waitForIdle()` ;
+  - le qualificatif `ldrtl` ne passe pas Compose en droite à gauche dans un module de
+    bibliothèque : fournir `LocalLayoutDirection` dans le test ;
+  - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
+    `EOFException` sur `testDebugUnitTest`).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
