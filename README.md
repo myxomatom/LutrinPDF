@@ -7,9 +7,11 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M1 (moteur PDF).** Le moteur MuPDF est compilé depuis les sources et
-> testé sur tout le jeu de fichiers de test ; l'interface de lecture arrive au jalon M2
-> (voir `ROADMAP.md`). L'application affiche encore un écran d'accueil provisoire.
+> 🚧 **Statut : jalon M2 (lecteur de base) en cours.** Le moteur MuPDF (M1) est compilé depuis
+> les sources et testé sur tout le jeu de fichiers de test. L'application ouvre un PDF depuis le
+> sélecteur de fichiers et l'affiche en défilement continu, avec zoom, plein écran et curseur de
+> pages. Récents, recherche, table des matières et paramètres arrivent aux jalons M3 à M5.
+> État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 
 ---
 

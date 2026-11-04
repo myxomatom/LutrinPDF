@@ -23,6 +23,11 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
 | Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
 | Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
+| AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader` | Navigation entre écrans, un `ViewModel` par destination (ADR 0008) |
+| AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` dans une destination (ADR 0008) |
+| AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | `ViewModel` et Compose |
+| Compose Material Icons Core | 1.7.8 (BOM) | Apache-2.0 | `core:ui` | Icônes standard (retour, alerte…) ; les autres sont des vecteurs repris des maquettes (ADR 0009) |
+| AndroidX Core KTX | 1.19.1 | Apache-2.0 | `feature:reader` | Contrôle des barres système (plein écran, F14) |
 
 Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 `./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
@@ -68,6 +73,8 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
 | AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
 | Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+| Espresso Core | 3.7.0 | Apache-2.0 | Synchronisation des tests Compose instrumentés |
+| Robolectric android-all-instrumented | 11, 12, 16 (voir catalogue) | Apache-2.0 | Bibliothèques Android de Robolectric, résolues par Gradle pour des tests hors ligne |
 
 ## Build et qualité (outils, jamais distribués)
 
@@ -78,6 +85,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | KSP | 2.3.13 | Apache-2.0 |
 | ktlint / plugin Gradle ktlint | 1.8.0 / 14.2.0 | MIT |
 | detekt / compose-rules | 1.23.8 / 0.4.27 | Apache-2.0 |
+| Compilateur Kotlin embarqué par detekt | 2.0.21 | Apache-2.0 |
 | Kover | 0.9.11 | Apache-2.0 |
 | Dokka | 2.2.0 | Apache-2.0 |
 | Licensee | 1.14.1 | Apache-2.0 |
@@ -96,4 +104,5 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Dépendance | Jalon | Licence | Usage |
 |------------|-------|---------|-------|
 | AboutLibraries | M5 | Apache-2.0 | Écran des licences tierces (ADR 0003) |
-| Room, DataStore, Navigation Compose | M2–M3 | Apache-2.0 | Persistance, navigation |
+| Room, DataStore | M3 | Apache-2.0 | Persistance (récents, positions, préférences) |
+| WorkManager | M6 | Apache-2.0 | Opérations longues ; ajoute `ACCESS_NETWORK_STATE`, à retirer du manifeste (`tools:node="remove"`) |

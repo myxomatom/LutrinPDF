@@ -5,6 +5,34 @@
 
 ---
 
+## 0. État d'avancement
+
+> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-04**. Détail des constats :
+> [`docs/audits/2026-11-04-audit-m1.md`](docs/audits/2026-11-04-audit-m1.md).
+
+| Jalon | État | Reste à faire |
+|-------|------|---------------|
+| M0 Fondations | ✅ Terminé (2026-11-03) | Module `:benchmark` (Macrobenchmark, Baseline Profile) et vérification de reproductibilité F-Droid, reportés (points ouverts 12 et 13) |
+| M1 Moteur PDF | ✅ Terminé (2026-11-03), correctifs de l'audit le 2026-11-04 | — |
+| M2 Lecteur de base | 🚧 En cours | Rendu en tuiles aux forts zooms, mode page par page, benchmarks (60 fps sur 500 pages), test du gros PDF sur appareil |
+| M3 Fichiers et récents | ⏳ À faire | E1 existe déjà dans son état vide (ADR 0009) |
+| M4 à M8 | ⏳ À faire | — |
+
+### Vues
+
+| Vue | État | Remarques |
+|-----|------|-----------|
+| E1 Bibliothèque | 🟡 Partielle | État vide et bouton « Ouvrir un fichier » (sélecteur système) ; récents en M3 |
+| E2 Lecteur | 🟡 Partielle | Défilement continu, zoom (pincer, double tap, ajuster à la largeur), plein écran au tap, curseur et indicateur de page ; recherche, table des matières et menu en M4 / M5 |
+| V8 Erreur / état vide | 🟡 Partielle | Document illisible, indisponible ou protégé ; « Retirer des récents » en M3 |
+| Autres (E3–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+
+**Pourquoi l'APK ne ressemblait pas aux maquettes** (avant M2) : seul un écran provisoire
+existait, et sur Android 12+ les couleurs dynamiques remplacent la palette des maquettes
+(ADR 0009, point ouvert 9).
+
+---
+
 ## 1. Inventaire des vues
 
 ### 1.1 Écrans complets (destinations de navigation)
@@ -68,9 +96,9 @@ Les durées sont **indicatives**, pour une personne seule assistée d'un agent d
 
 ### M2 — Lecteur de base (≈ 2 semaines) — vues E2, V8
 **Objectif :** lire confortablement un document.
-- Rendu en tuiles, cache LRU, défilement continu et page par page, zoom (pincer, double tap).
-- Plein écran, curseur de pages, indicateur de page.
-- Premiers benchmarks de défilement et d'ouverture.
+- [ ] Rendu en tuiles ; [x] cache LRU borné ; [x] défilement continu ; [ ] page par page ; [x] zoom (pincer, double tap, 25–800 %).
+- [x] Plein écran, [x] curseur de pages, [x] indicateur de page ; [x] vue d'erreur V8.
+- [ ] Premiers benchmarks de défilement et d'ouverture (module `:benchmark`).
 
 **Sortie :** 60 fps sur un document de 500 pages, aucun crash mémoire sur le gros PDF de test.
 

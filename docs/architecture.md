@@ -1,7 +1,9 @@
 # Architecture
 
-> Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 ;
-> la plupart sont encore vides et se remplissent au fil des jalons (`ROADMAP.md`).
+> Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 et se
+> remplissent au fil des jalons (`ROADMAP.md`). État au 2026-11-04 : `core:domain`, `core:pdf`,
+> `core:ui`, `core:testing`, `feature:library` (état vide) et `feature:reader` ont du code ;
+> `core:data`, `feature:settings`, `feature:tools` et `feature:assistant` sont encore vides.
 
 ## Principes
 
@@ -9,6 +11,8 @@
 - `core:domain` est en Kotlin pur (aucune dépendance Android).
 - Un module `feature:*` ne dépend jamais d'un autre module `feature:*`.
 - MuPDF n'est visible que dans `core:pdf`, derrière `PdfEngine` et `PdfWriter`.
+- Seules les features qui dessinent ou écrivent des PDF (`feature:reader`, puis `feature:tools`)
+  dépendent de `core:pdf`, et seulement de ses interfaces (ADR 0008).
 - Les dispatchers sont injectés ; aucun travail lourd sur le thread principal.
 
 ## Modules
@@ -42,6 +46,7 @@ flowchart TD
 
     fl & fr & fs & ft --> ui[":core:ui"]
     fl & fr & fs & ft & fa --> domain[":core:domain"]
+    fr --> pdf
 
     data --> domain
     pdf --> domain
@@ -51,7 +56,34 @@ flowchart TD
 ```
 
 `core:pdf` et `core:data` implémentent les interfaces déclarées dans `core:domain` ;
-`:app` les relie par injection de dépendances. Les features ne connaissent que le domaine.
+`:app` les relie par injection de dépendances. Les features ne connaissent que le domaine,
+sauf le lecteur qui utilise l'interface `PdfEngine` de `core:pdf` (ADR 0008).
+
+## Navigation
+
+`:app` héberge un `NavHost` (Navigation Compose, ADR 0008) : la bibliothèque (`library`) est la
+destination de départ ; le sélecteur de fichiers système (`ACTION_OPEN_DOCUMENT`, filtré sur
+`application/pdf`) renvoie un URI, `:app` lit son nom affiché puis ouvre la destination
+`reader?uri=…&title=…`. Chaque destination a son `ViewModel` (`hiltViewModel()`), détruit en
+quittant l'écran : `ReaderViewModel.onCleared()` ferme le document.
+
+## Lecteur (`feature:reader`)
+
+```mermaid
+flowchart LR
+    screen["ReaderScreen (sans état)"] -->|"loadPage(index, largeur px)"| vm["ReaderViewModel"]
+    vm --> cache["PageBitmapCache (LRU, ¼ de la mémoire)"]
+    vm --> renderer["PageRenderer (≤ 16 Mpx)"]
+    renderer -->|"renderPage"| doc["PdfDocument"]
+    vm -->|"StateFlow&lt;ReaderUiState&gt;"| screen
+```
+
+- `ReaderUiState` : `Loading`, `Error(ReaderError)` (vue V8) ou `Content(pageSizes)`.
+- Les pages sont une `LazyColumn` : seules les pages proches de l'écran sont composées, et le
+  rendu d'une page qui sort de l'écran est annulé avec sa composition (`AGENTS.md` §8).
+- Zoom (25 à 800 %) : la largeur des pages change et elles sont redessinées à cette largeur,
+  arrondie au multiple de 256 px supérieur. Le rendu en tuiles, prévu pour les zooms forts,
+  n'est pas encore fait : au-delà de 16 mégapixels, une page est agrandie, donc floue.
 
 ## Moteur PDF (`core:pdf`)
 
