@@ -64,6 +64,10 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 - **Une seule session de développement à la fois.** Deux sessions ont réalisé le même lecteur
   en parallèle (PR #6 et une branche abandonnée), avec des conflits et deux ADR 0008. Avant de
   commencer, vérifier les PR ouvertes et les branches `ccr-*` récentes.
+- **`./gradlew check` ne suffit pas** : la CI lance aussi `assembleRelease` et `:dokkaGenerate`.
+  Dokka échoue sur toute déclaration publique sans KDoc, y compris les `override` des fakes de
+  `core:testing` (PR #11). Avant de pousser :
+  `./gradlew check assembleRelease :dokkaGenerate`.
 - **Merger une PR seulement quand sa CI est verte.** Une PR mergée avant la fin de sa CI ne
   prouve rien.
 - **CI GitHub** :
@@ -92,8 +96,8 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
    `https://maven-central.storage-download.googleapis.com/maven2/` à `pluginManagement` et à
    `dependencyResolutionManagement`, et remet `gradlePluginPortal()` quand `pluginManagement` n'a
    pas d'autre dépôt.
-4. **Vérifier** : `./gradlew check`. Compter 5 à 10 minutes au premier lancement, à cause de la
-   compilation de MuPDF pour la machine hôte.
+4. **Vérifier** : `./gradlew check assembleRelease :dokkaGenerate`, comme la CI. Compter 5 à
+   10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte.
 5. **Captures d'écran** : après un changement visuel voulu, `./gradlew recordRoborazziDebug`,
    puis relire les images avant de les committer.
 

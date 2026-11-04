@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
 class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRepository {
     private val state = MutableStateFlow(initial)
 
+    /** Current settings; a [StateFlow], so tests can read [StateFlow.value] directly. */
     override val settings: StateFlow<AppSettings> = state
 
+    /** Changes the setting in memory; [settings] emits the new value at once. */
     override suspend fun setDynamicColor(enabled: Boolean) {
         state.value = state.value.copy(dynamicColor = enabled)
     }
