@@ -78,6 +78,12 @@ flowchart LR
 - `ReaderScreen` / `PdfPagesView` (Compose) : `LazyColumn` des pages, gestes de zoom, barres,
   plein écran. Les calculs (zoom, partie visible, page courante) sont des fonctions pures de
   `ReaderGeometry.kt`, testées sur la JVM.
+- Zoom au pincement : pendant le geste, la liste n'est que transformée visuellement
+  (`PinchTransform` dans un `graphicsLayer`, sans nouvelle mise en page ni rendu) ; au lâcher,
+  le zoom est appliqué une fois et `listPositionAfterGesture` calcule la page et le décalage qui
+  gardent le contenu à l'endroit où le geste l'a laissé (`requestScrollToItem`, même image).
+  Le double tap passe par le même chemin. Un geste à deux doigts est consommé jusqu'au bout :
+  le doigt restant ne fait pas défiler la page.
 
 ## Flux de données d'un écran
 

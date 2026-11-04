@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -19,14 +19,17 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -37,13 +40,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
+import io.github.myxomatom.lutrin.feature.reader.render.MAX_ZOOM
+import io.github.myxomatom.lutrin.feature.reader.render.MIN_ZOOM
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
+import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
 import io.github.myxomatom.lutrin.feature.reader.render.doubleTapZoom
+import io.github.myxomatom.lutrin.feature.reader.render.listPositionAfterGesture
+import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
-import io.github.myxomatom.lutrin.feature.reader.render.scrollAfterZoom
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import io.github.myxomatom.lutrin.feature.reader.render.scrollAfterGesture
 
 /** Gap between two pages at zoom 1; scaled with the zoom so that zooming keeps its focal point. */
 private val PAGE_SPACING = 8.dp
@@ -54,6 +61,10 @@ private val PAGE_GUTTER = 16.dp
 /**
  * Pages of a document in a continuous vertical scroll (F03), with pinch and double-tap zoom
  * (F04). Single-finger gestures scroll; two-finger gestures zoom around their centroid.
+ *
+ * During a pinch the pages are only scaled visually ([PinchTransform]); the zoom is applied
+ * once, when the fingers lift, with the list scrolled so that the pages stay where the gesture
+ * left them. Relaying out the list at every move made the zoom stutter and the page jump.
  *
  * @param zoom current zoom, 1 = fit width; hoisted so that the screen can reset it.
  * @param onZoomChange called with the new, clamped zoom.
@@ -73,40 +84,115 @@ internal fun PdfPagesView(
     nightMode: Boolean = false,
 ) {
     val horizontal = rememberScrollState()
-    var pinching by remember { mutableStateOf(false) }
-    var viewport by remember { mutableStateOf<Viewport?>(null) }
-    val zoomTo = rememberZoomTo(zoom, onZoomChange, listState, horizontal)
+    var pinch by remember { mutableStateOf<PinchTransform?>(null) }
+    var pendingHorizontal by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(zoom, pendingHorizontal) {
+        // The horizontal range only grows once the new zoom is laid out: scroll afterwards.
+        pendingHorizontal?.let { horizontal.scrollTo(it) }
+        pendingHorizontal = null
+    }
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val gutterPx = with(LocalDensity.current) { PAGE_GUTTER.roundToPx() }
-        // "Fit width" leaves a margin on both sides: pages are sized against the remaining width.
-        val fitWidth = (constraints.maxWidth - 2 * gutterPx).coerceAtLeast(1)
-        val contentWidth = maxOf(constraints.maxWidth, pageWidthPx(fitWidth, zoom) + (2 * gutterPx * zoom).toInt())
-        LazyColumn(
-            state = listState,
+        val layout = pagesLayout(constraints.maxWidth, zoom)
+        val commit = rememberCommit(zoom, onZoomChange, listState, horizontal) { newZoom ->
+            { index: Int -> layout.itemExtent(pageSizes[index], newZoom) }
+        }
+        val onCommit: (PinchTransform) -> Unit = { pendingHorizontal = commit(it, pageSizes.size) }
+        PagesList(
+            pageSizes = pageSizes,
+            renderer = renderer,
+            listState = listState,
+            horizontal = horizontal,
+            zoom = zoom,
+            layout = layout,
+            pinch = pinch,
+            nightMode = nightMode,
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { viewport = Viewport(it, it.size) }
-                    .readerGestures(zoom, zoomTo, onPinching = { pinching = it }, onTap = onTap)
-                    .horizontalScroll(horizontal, enabled = zoom > 1f)
+                    .readerGestures(
+                        zoom = zoom,
+                        onPinch = { pinch = it },
+                        onPinchEnd = { transform ->
+                            onCommit(transform)
+                            pinch = null
+                        },
+                        onDoubleTap = { focus -> onCommit(doubleTapTransform(zoom, focus)) },
+                        onTap = onTap,
+                    )
                     .semantics { this.contentDescription = contentDescription },
-            contentPadding = PaddingValues(vertical = PAGE_SPACING * zoom),
-            verticalArrangement = Arrangement.spacedBy(PAGE_SPACING * zoom),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            itemsIndexed(pageSizes, key = { index, _ -> index }) { index, page ->
-                PdfPage(
-                    pageIndex = index,
-                    page = page,
-                    renderer = renderer,
-                    fitWidth = fitWidth,
-                    viewport = viewport,
-                    zoom = zoom,
-                    settled = !pinching && !listState.isScrollInProgress && !horizontal.isScrollInProgress,
-                    nightMode = nightMode,
-                    modifier = Modifier.width(with(LocalDensity.current) { contentWidth.toDp() }),
-                )
-            }
+        )
+    }
+}
+
+/**
+ * Sizes of the pages for a viewport width and a zoom.
+ *
+ * @property fitWidth page width at zoom 1: the viewport minus a margin on both sides.
+ * @property contentWidth width of the scrollable content, at least the viewport.
+ * @property spacingPx gap between pages at zoom 1, in pixels.
+ */
+private data class PagesLayout(val fitWidth: Int, val contentWidth: Int, val spacingPx: Float) {
+    /** Height of [page] plus the gap below it, at [zoom], in pixels. */
+    fun itemExtent(page: PageSize, zoom: Float): Int =
+        pageHeightPx(page, pageWidthPx(fitWidth, zoom)) + (spacingPx * zoom).toInt()
+}
+
+@Composable
+private fun pagesLayout(viewportWidth: Int, zoom: Float): PagesLayout {
+    val density = LocalDensity.current
+    val gutterPx = with(density) { PAGE_GUTTER.roundToPx() }
+    // "Fit width" leaves a margin on both sides: pages are sized against the remaining width.
+    val fitWidth = (viewportWidth - 2 * gutterPx).coerceAtLeast(1)
+    val contentWidth = maxOf(viewportWidth, pageWidthPx(fitWidth, zoom) + (2 * gutterPx * zoom).toInt())
+    return PagesLayout(fitWidth, contentWidth, with(density) { PAGE_SPACING.toPx() })
+}
+
+/** The list of pages, drawn with the [pinch] transform while a pinch is in progress. */
+@Suppress("LongParameterList") // Plain wiring of the state hoisted in PdfPagesView.
+@Composable
+private fun PagesList(
+    pageSizes: List<PageSize>,
+    renderer: PageRenderer,
+    listState: LazyListState,
+    horizontal: ScrollState,
+    zoom: Float,
+    layout: PagesLayout,
+    pinch: PinchTransform?,
+    nightMode: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var viewport by remember { mutableStateOf<Viewport?>(null) }
+    val density = LocalDensity.current
+    LazyColumn(
+        state = listState,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .onGloballyPositioned { viewport = Viewport(it, it.size) }
+                .graphicsLayer {
+                    val transform = pinch ?: PinchTransform()
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = transform.scale
+                    scaleY = transform.scale
+                    translationX = transform.translationX
+                    translationY = transform.translationY
+                }
+                .horizontalScroll(horizontal, enabled = zoom > 1f),
+        contentPadding = PaddingValues(vertical = PAGE_SPACING * zoom),
+        verticalArrangement = Arrangement.spacedBy(PAGE_SPACING * zoom),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        itemsIndexed(pageSizes, key = { index, _ -> index }) { index, page ->
+            PdfPage(
+                pageIndex = index,
+                page = page,
+                renderer = renderer,
+                fitWidth = layout.fitWidth,
+                viewport = viewport,
+                zoom = zoom,
+                settled = pinch == null && !listState.isScrollInProgress && !horizontal.isScrollInProgress,
+                nightMode = nightMode,
+                modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
+            )
         }
     }
 }
@@ -119,67 +205,103 @@ internal fun PdfPagesView(
  */
 internal data class Viewport(val coordinates: LayoutCoordinates, val size: IntSize)
 
-/** Returns a function setting a new zoom (clamped) while keeping the given focal point still. */
+/** Transform of a double tap at [focus]: to [doubleTapZoom], around the tapped point. */
+private fun doubleTapTransform(zoom: Float, focus: Offset): PinchTransform =
+    PinchTransform.zoomAround(clampZoom(doubleTapZoom(zoom)) / zoom, focus.x, focus.y)
+
+/**
+ * Returns a function applying a finished gesture: sets the new zoom and, in the same frame,
+ * the list position that keeps the pages where the gesture showed them. It returns the
+ * horizontal scroll to apply once the wider content is laid out.
+ *
+ * @param itemExtentAt height of page `index` plus its gap, at a given zoom, in pixels.
+ */
 @Composable
-private fun rememberZoomTo(
+private fun rememberCommit(
     zoom: Float,
     onZoomChange: (Float) -> Unit,
     listState: LazyListState,
     horizontal: ScrollState,
-): (Float, Offset) -> Unit {
-    val scope = rememberCoroutineScope()
-    return { target, focus ->
-        val factor = clampZoom(target) / zoom
-        if (factor != 1f) {
-            onZoomChange(clampZoom(target))
-            scope.keepFocus(listState, horizontal, focus, factor)
+    itemExtentAt: (Float) -> (Int) -> Int,
+): (PinchTransform, Int) -> Int? {
+    val currentZoom by rememberUpdatedState(zoom)
+    val currentOnZoomChange by rememberUpdatedState(onZoomChange)
+    val currentExtent by rememberUpdatedState(itemExtentAt)
+    return remember(listState, horizontal) {
+        { transform, itemCount ->
+            val newZoom = clampZoom(currentZoom * transform.scale)
+            val scale = newZoom / currentZoom
+            if (scale == 1f && transform.isIdentity) {
+                null
+            } else {
+                val from = ListPosition(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+                val to =
+                    listPositionAfterGesture(from, scale, transform.translationY, itemCount, currentExtent(newZoom))
+                currentOnZoomChange(newZoom)
+                // Applied at the next layout, which already uses the new zoom: no intermediate frame.
+                listState.requestScrollToItem(to.index, to.offset)
+                scrollAfterGesture(horizontal.value.toFloat(), scale, transform.translationX).toInt().coerceAtLeast(0)
+            }
         }
-    }
-}
-
-/** Pinch and double tap zoom to [zoomTo] (new zoom, focal point); a single tap calls [onTap]. */
-private fun Modifier.readerGestures(
-    zoom: Float,
-    zoomTo: (Float, Offset) -> Unit,
-    onPinching: (Boolean) -> Unit,
-    onTap: () -> Unit,
-): Modifier = pinchToZoom(onPinch = { factor, centroid -> zoomTo(zoom * factor, centroid) }, onActive = onPinching)
-    .pointerInput(zoom) {
-        detectTapGestures(onTap = { onTap() }, onDoubleTap = { zoomTo(doubleTapZoom(zoom), it) })
-    }
-
-/** Moves both scroll positions so that the content under [focus] stays under it after zooming by [factor]. */
-private fun CoroutineScope.keepFocus(listState: LazyListState, horizontal: ScrollState, focus: Offset, factor: Float) {
-    launch {
-        val offset = scrollAfterZoom(listState.firstVisibleItemScrollOffset.toFloat(), focus.y, factor)
-        listState.scrollToItem(listState.firstVisibleItemIndex, offset.toInt().coerceAtLeast(0))
-    }
-    launch {
-        horizontal.scrollTo(scrollAfterZoom(horizontal.value.toFloat(), focus.x, factor).toInt().coerceAtLeast(0))
     }
 }
 
 /**
- * Detects two-finger pinches without stealing single-finger scrolling from the list.
- *
- * @param onPinch zoom factor since the previous event, and the centroid of the fingers.
- * @param onActive whether a pinch is in progress (renderings wait for its end).
+ * Pinch, double tap and tap detection. The gesture code outlives recompositions, so it reads
+ * the zoom through [rememberUpdatedState]-backed lambdas instead of capturing it once.
  */
-@OptIn(ExperimentalFoundationApi::class)
-private fun Modifier.pinchToZoom(onPinch: (Float, Offset) -> Unit, onActive: (Boolean) -> Unit): Modifier =
-    pointerInput(Unit) {
-        awaitEachGesture {
-            awaitFirstDown(requireUnconsumed = false)
-            do {
-                val event = awaitPointerEvent(PointerEventPass.Initial)
-                val pressed = event.changes.count { it.pressed }
-                if (pressed >= 2) {
-                    onActive(true)
-                    val factor = event.calculateZoom()
-                    if (factor != 1f) onPinch(factor, event.calculateCentroid())
-                    event.changes.forEach { it.consume() }
-                }
-            } while (event.changes.any { it.pressed })
-            onActive(false)
-        }
+@Composable
+private fun Modifier.readerGestures(
+    zoom: Float,
+    onPinch: (PinchTransform) -> Unit,
+    onPinchEnd: (PinchTransform) -> Unit,
+    onDoubleTap: (Offset) -> Unit,
+    onTap: () -> Unit,
+): Modifier {
+    val currentZoom by rememberUpdatedState(zoom)
+    val currentOnPinch by rememberUpdatedState(onPinch)
+    val currentOnPinchEnd by rememberUpdatedState(onPinchEnd)
+    val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
+    val currentOnTap by rememberUpdatedState(onTap)
+    return pinchToZoom(
+        scaleBounds = { MIN_ZOOM / currentZoom to MAX_ZOOM / currentZoom },
+        onPinch = { currentOnPinch(it) },
+        onPinchEnd = { currentOnPinchEnd(it) },
+    ).pointerInput(Unit) {
+        detectTapGestures(onTap = { currentOnTap() }, onDoubleTap = { currentOnDoubleTap(it) })
     }
+}
+
+/**
+ * Detects two-finger pinches without stealing single-finger scrolling from the list. Once a
+ * pinch has started, every event of the gesture is consumed until all fingers are up, so
+ * that the finger left on screen does not scroll the page.
+ *
+ * @param scaleBounds smallest and largest scale allowed for this gesture.
+ * @param onPinch transform since the start of the gesture, at every move.
+ * @param onPinchEnd final transform, when the fingers lift.
+ */
+private fun Modifier.pinchToZoom(
+    scaleBounds: () -> Pair<Float, Float>,
+    onPinch: (PinchTransform) -> Unit,
+    onPinchEnd: (PinchTransform) -> Unit,
+): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var transform: PinchTransform? = null
+        do {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.count { it.pressed } >= 2) {
+                val (minScale, maxScale) = scaleBounds()
+                val centroid = event.calculateCentroid()
+                val pan = event.calculatePan()
+                val next = (transform ?: PinchTransform())
+                    .step(event.calculateZoom(), centroid.x, centroid.y, pan.x, pan.y, minScale, maxScale)
+                transform = next
+                onPinch(next)
+            }
+            if (transform != null) event.changes.forEach { it.consume() }
+        } while (event.changes.any { it.pressed })
+        transform?.let(onPinchEnd)
+    }
+}

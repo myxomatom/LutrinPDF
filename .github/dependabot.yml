@@ -20,9 +20,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  # MuPDF (third-party/mupdf/libmupdf): proposals only; the pinned version in
-  # gradle/libs.versions.toml must be updated with it (verifyMupdfVersion fails otherwise).
-  - package-ecosystem: gitsubmodule
-    directory: /
-    schedule:
-      interval: weekly
+# The MuPDF submodule (third-party/mupdf/libmupdf) is deliberately not tracked: Dependabot
+# proposes the tip of MuPDF's default branch, not a release tag, which verifyMupdfVersion
+# rejects (ADR 0007: MuPDF stays pinned on a tag). Watch MuPDF releases by hand instead.
