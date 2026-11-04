@@ -7,9 +7,9 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M2 (lecteur de base), en cours.** On peut ouvrir un PDF depuis l'écran
-> d'accueil provisoire et le lire : défilement, zoom, plein écran. Bibliothèque et documents
-> récents au jalon M3 (voir `ROADMAP.md`).
+> 🚧 **Statut : jalon M2 (lecteur de base), en cours.** On peut ouvrir un PDF depuis la
+> bibliothèque (encore vide) et le lire : défilement, zoom, plein écran. Documents récents au
+> jalon M3. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.
