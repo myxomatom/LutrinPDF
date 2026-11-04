@@ -20,3 +20,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # MuPDF (third-party/mupdf/libmupdf): proposals only; the pinned version in
+  # gradle/libs.versions.toml must be updated with it (verifyMupdfVersion fails otherwise).
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: weekly
