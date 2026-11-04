@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Dark variant: primary / primaryContainer / surface roles of the dark scheme (design tokens). -->
+<resources>
+    <color name="lutrin_illustration_floor">#FF1A4975</color>
+    <color name="lutrin_illustration_wood">#FFA1CAFD</color>
+    <color name="lutrin_illustration_page">#FF1D2024</color>
+    <color name="lutrin_illustration_page_outline">#FF43474E</color>
+    <color name="lutrin_illustration_lines">#FF43474E</color>
+</resources>

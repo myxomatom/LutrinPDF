@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Lectern illustration of the empty library (docs/design/screens/E1-Bibliotheque-Vide.html).
+     Decorative: screens give it no content description. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="140dp"
+    android:viewportWidth="160"
+    android:viewportHeight="140">
+    <path
+        android:fillColor="@color/lutrin_illustration_floor"
+        android:pathData="M23,118h114a3,3 0,0 1,0 6h-114a3,3 0,0 1,0 -6z" />
+    <path
+        android:pathData="M80,118V70M58,118h44"
+        android:strokeColor="@color/lutrin_illustration_wood"
+        android:strokeLineCap="round"
+        android:strokeWidth="5" />
+    <path
+        android:fillColor="@color/lutrin_illustration_wood"
+        android:pathData="M34,64l46,-14 46,14 -6,12 -40,-10 -40,10z" />
+    <path
+        android:fillColor="@color/lutrin_illustration_page"
+        android:pathData="M44,58l36,-46 36,46"
+        android:strokeColor="@color/lutrin_illustration_page_outline"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M62,38h12M62,46h16M86,38h12M86,46h10"
+        android:strokeColor="@color/lutrin_illustration_lines"
+        android:strokeLineCap="round"
+        android:strokeWidth="3" />
+</vector>

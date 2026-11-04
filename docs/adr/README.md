@@ -14,6 +14,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0006](0006-identifiant-application.md) | Identifiant d'application `io.github.myxomatom.lutrin` | Accepté |
 | [0007](0007-integration-mupdf.md) | Intégration de MuPDF : compilation et interface `PdfEngine` | Accepté |
 | [0008](0008-rendu-du-lecteur.md) | Rendu des pages dans le lecteur (base + détail visible) | Accepté |
+| [0009](0009-ecarts-maquettes-m2.md) | Écarts assumés entre les maquettes et l'application (M2) | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

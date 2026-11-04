@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="library_title" translatable="false">Lutrin</string>
+    <string name="library_empty_title">No recent documents</string>
+    <string name="library_empty_message">Open a PDF from your files, or from another app with “Open with” or “Share”.</string>
+    <string name="library_open_file">Open a file</string>
+    <string name="library_offline_notice">Works fully offline. No data collected.</string>
+</resources>

@@ -38,6 +38,13 @@ uniquement d'un émulateur, alors que la couverture Kover ne compte que les test
 6. **Fil d'exécution** : chaque document possède un thread dédié (`DocumentDispatcherFactory`,
    injectée) ; tous les objets MuPDF y sont créés, utilisés et détruits. Les pages chargées sont
    gardées dans un cache LRU de 4 pages. L'annulation d'un rendu déclenche `Cookie.abort()`.
+   Seule exception : le `Cookie` d'un rendu est créé et détruit sur le fil de l'appelant. C'est
+   un simple bloc de compteurs natif, lié à aucun document, que MuPDF prévoit de partager entre
+   fils (le fil du document le lit pendant le dessin, `abort()` est appelé depuis le
+   gestionnaire d'annulation) ; le posséder côté appelant garantit qu'il survit au dessin et
+   n'est détruit qu'une fois. À l'ouverture comme à la fermeture, le document natif, son
+   descripteur de fichier et son thread sont libérés quelle que soit l'issue (erreur métier,
+   annulation de l'appelant, erreur inattendue).
 7. **Rendu** : MuPDF dessine dans un `Pixmap` BGRA dont les pixels sont copiés dans le `Bitmap`
    (`setPixels`). Plus simple et testable sur JVM que `AndroidDrawDevice` ; le coût de la copie
    sera mesuré au jalon M2 (tuiles), avec repli sur `AndroidDrawDevice` si nécessaire.
