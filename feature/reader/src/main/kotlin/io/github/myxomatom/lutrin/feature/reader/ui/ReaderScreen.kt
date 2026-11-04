@@ -170,7 +170,10 @@ private fun FullscreenPageIndicator(page: Int, pageCount: Int, modifier: Modifie
 }
 
 private fun LazyListState.currentPageIndex(pageCount: Int): Int {
-    val first = layoutInfo.visibleItemsInfo.firstOrNull() ?: return firstVisibleItemIndex
+    // The visible items may start with the page just above, touching the top edge: use the item
+    // the scroll offset belongs to, or the indicator shows the previous page after a jump.
+    val first = layoutInfo.visibleItemsInfo.firstOrNull { it.index == firstVisibleItemIndex }
+        ?: return firstVisibleItemIndex
     return currentPage(
         first.index,
         firstVisibleItemScrollOffset,

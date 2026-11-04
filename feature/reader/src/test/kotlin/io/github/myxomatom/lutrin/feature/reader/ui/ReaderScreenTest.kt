@@ -4,12 +4,14 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -112,6 +114,20 @@ class ReaderScreenTest {
         composeRule.onNodeWithContentDescription("Document, page 1 of 3").performTouchInput { click(center) }
         composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_WAIT_MS)
         composeRule.onNodeWithText("Contrat de location").assertIsDisplayed()
+    }
+
+    @Test
+    fun `jumping to a page with the slider shows that page in the indicator`() {
+        // Regression: the indicator read the page touching the top edge, one before the real one.
+        show(ready())
+
+        composeRule.onNodeWithContentDescription("Go to page").performSemanticsAction(SemanticsActions.SetProgress) {
+            it(1f)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Document, page 2 of 3").assertIsDisplayed()
     }
 
     @Test
