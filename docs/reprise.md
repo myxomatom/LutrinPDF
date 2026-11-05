@@ -11,7 +11,7 @@
 |-------|------|
 | M0 Fondations | ✅ Terminé (sauf `:benchmark` et la vérification de reproductibilité F-Droid, reportés) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
-| M2 Lecteur de base | 🚧 Environ aux deux tiers |
+| M2 Lecteur de base | 🚧 Lecteur complet ; reste le module `:benchmark` et les mesures |
 | M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -25,13 +25,18 @@ Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur a
   activé par défaut, enregistré avec DataStore (ADR 0010).
 - Moteur MuPDF 1.28.6 compilé depuis les sources, sans fuite à l'ouverture ni à la fermeture.
 
+Sur la branche de la session suivante, testé seulement sous Robolectric : **mode page par page**
+(F03, ADR 0011) et feuille « Affichage » (V6, section « Défilement » seulement) ouverte par
+« Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
+glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
-#10 fermeture sans plantage. La PR qui suit apporte E3 et ce fichier.
+#10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
+par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
 1. **Finir M2** (`ROADMAP.md` §2) :
-   - mode page par page horizontal (option de F03) ;
    - module `:benchmark` : Macrobenchmark (démarrage, ouverture, défilement) et Baseline
      Profile (point ouvert 12) ; vérifier 60 images/s sur 500 pages, et le gros PDF de test
      sur appareil.
@@ -42,19 +47,19 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
    - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
-   - épingler les actions GitHub par SHA ;
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
-   - passer `ContentOpener` et `DocumentDispatcherFactory` en `internal`.
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0010) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0011) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
   - **ADR 0010** : couleurs dynamiques désactivables, activées par défaut ; police du système
-    conservée (pas de Roboto embarquée).
+    conservée (pas de Roboto embarquée) ;
+  - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
+    de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
 - Points encore ouverts : 1, 2, 3, 6, 8, 11 à 14 (`docs/open-questions.md`).
@@ -78,6 +83,13 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 - **Dependabot sur le sous-module MuPDF** : il propose la pointe de la branche de développement,
   refusée par `verifyMupdfVersion`. Fermer ces PR sans les merger (suivi retiré de
   `.github/dependabot.yml`).
+- **Tests Compose sous Robolectric** :
+  - `waitForIdle()` n'avance pas l'horloge à travers un `delay()` (rendu de détail après
+    150 ms) : utiliser `composeRule.mainClock.advanceTimeBy(…)` puis `waitForIdle()` ;
+  - le qualificatif `ldrtl` ne passe pas Compose en droite à gauche dans un module de
+    bibliothèque : fournir `LocalLayoutDirection` dans le test ;
+  - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
+    `EOFException` sur `testDebugUnitTest`).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
@@ -85,7 +97,9 @@ Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dep
 
 Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
 
-1. **SDK Android** : outils en ligne de commande dans `/opt/android-sdk/cmdline-tools/latest`,
+1. **SDK Android** : outils en ligne de commande dans `/opt/android-sdk/cmdline-tools/latest`
+   (archive `commandlinetools-linux-14742923_latest.zip`, 172 Mo : l'index XML de
+   dl.google.com ne liste que d'anciennes versions, il faut le nom exact),
    puis `sdkmanager "platform-tools" "platforms;android-37.0" "build-tools;37.0.0"
    "ndk;28.2.13676358" "cmake;3.22.1"`. Créer ensuite `local.properties` avec
    `sdk.dir=/opt/android-sdk`. Ce fichier est ignoré par Git.
@@ -95,9 +109,12 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
    `~/.gradle/init.d/central-mirror.init.gradle.kts`. Il ajoute en premier le miroir
    `https://maven-central.storage-download.googleapis.com/maven2/` à `pluginManagement` et à
    `dependencyResolutionManagement`, et remet `gradlePluginPortal()` quand `pluginManagement` n'a
-   pas d'autre dépôt.
+   pas d'autre dépôt. Sans ce miroir, le symptôme n'est pas forcément une erreur 429 : la
+   configuration échoue avec `Plugin [id: 'io.github.takahirom.roborazzi', …] was not found`.
 4. **Vérifier** : `./gradlew check assembleRelease :dokkaGenerate`, comme la CI. Compter 5 à
-   10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte.
+   10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte
+   et pour les trois ABI. Un agent dont les commandes au premier plan sont limitées à
+   10 minutes doit lancer cette première compilation en arrière-plan.
 5. **Captures d'écran** : après un changement visuel voulu, `./gradlew recordRoborazziDebug`,
    puis relire les images avant de les committer.
 

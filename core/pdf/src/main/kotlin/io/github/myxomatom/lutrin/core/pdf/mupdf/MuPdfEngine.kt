@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
 private const val PDF_MIME_TYPE = "application/pdf"
 
 /** Opens the file descriptor of a content URI; abstracted so that the engine is testable. */
-fun interface ContentOpener {
+internal fun interface ContentOpener {
     /**
      * Opens [uri] for reading.
      *

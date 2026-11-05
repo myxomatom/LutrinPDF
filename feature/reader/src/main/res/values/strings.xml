@@ -7,6 +7,12 @@
     <string name="reader_page_indicator">%1$d / %2$d</string>
     <string name="reader_page_slider">Go to page</string>
     <string name="reader_fit_width">Fit to width</string>
+    <string name="reader_more_options">More options</string>
+    <string name="reader_fit_page">Fit page to screen</string>
+    <string name="reader_options_title">Display</string>
+    <string name="reader_options_scrolling">Scrolling</string>
+    <string name="reader_scroll_continuous">Continuous</string>
+    <string name="reader_scroll_paged">Page by page</string>
     <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
     <string name="reader_error_title">This document cannot be opened</string>
     <string name="reader_error_unreadable">The file may be damaged or incomplete.</string>

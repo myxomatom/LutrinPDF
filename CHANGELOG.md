@@ -10,6 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Lecteur : mode **page par page** horizontal (F03, ADR 0011). Une page par écran, ajustée à
+  l'écran, changée d'un glissement ; zoom au pincement et double tap dans la page (le
+  glissement entre pages reprend une fois revenu à la page entière) ; curseur, indicateur,
+  plein écran et rendu net de la partie visible dans les deux modes. Le changement de mode
+  garde la page courante.
+- Lecteur : bouton « Plus d'options » et feuille « Affichage » (V6), réduite pour l'instant à
+  la section « Défilement » (Continu / Page par page). Le choix est enregistré pour tous les
+  documents ; continu par défaut.
 - Paramètres (E3), section « Apparence » : interrupteur « Couleurs dynamiques » (Material You,
   Android 12+), activé par défaut ; désactivé, l'application reprend la palette Lutrin des
   maquettes. Ouvert par l'icône engrenage de la bibliothèque (ADR 0010).
@@ -57,6 +65,8 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Lecteur : après un saut de page avec le curseur, l'indicateur et la description TalkBack
+  affichaient parfois la page précédente.
 - Moteur PDF : un échec natif pendant la fermeture d'un document ne fait plus planter
   l'application ; il est intercepté et signalé (type d'exception seul dans le journal).
 - Lecteur : le zoom au pincement hésitait entre zoomer et déplacer la page. Le geste gardait
@@ -71,7 +81,9 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
 - APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
+- `ContentOpener` et `DocumentDispatcherFactory` (core:pdf) passent en `internal` : le moteur PDF n'expose plus ces détails d'implémentation.
 
 ### Sécurité
 - JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.

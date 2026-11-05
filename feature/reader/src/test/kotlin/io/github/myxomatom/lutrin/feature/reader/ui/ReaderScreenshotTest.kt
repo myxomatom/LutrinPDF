@@ -2,9 +2,14 @@
 package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import io.github.myxomatom.lutrin.feature.reader.ReaderError
@@ -33,13 +38,25 @@ class ReaderScreenshotTest {
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
-    private fun ready(): ReaderUiState {
+    private fun ready(scrollMode: ScrollMode = ScrollMode.CONTINUOUS): ReaderUiState {
         val document = FakePdfDocument()
         return ReaderUiState.Ready(
             "Contrat de location",
             document.pageSizes,
             PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
+            scrollMode,
         )
+    }
+
+    /** The display options sheet (V6) over the reader; the sheet is a separate window. */
+    @OptIn(ExperimentalRoborazziApi::class)
+    private fun captureOptions(name: String, darkTheme: Boolean) {
+        composeRule.setContent {
+            LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { ReaderScreen(ready(), onBack = {}) }
+        }
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.waitForIdle()
+        captureScreenRoboImage("src/test/screenshots/$name.png")
     }
 
     @Test
@@ -47,6 +64,15 @@ class ReaderScreenshotTest {
 
     @Test
     fun readerDark() = capture("reader_dark", ready(), darkTheme = true)
+
+    @Test
+    fun readerPaged() = capture("reader_paged_light", ready(ScrollMode.PAGED))
+
+    @Test
+    fun options() = captureOptions("reader_options_light", darkTheme = false)
+
+    @Test
+    fun optionsDark() = captureOptions("reader_options_dark", darkTheme = true)
 
     @Test
     fun error() = capture("reader_error_light", ReaderUiState.Error(ReaderError.UNREADABLE))

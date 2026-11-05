@@ -25,3 +25,15 @@ class SetDynamicColorUseCase @Inject constructor(private val repository: Setting
         repository.setDynamicColor(enabled)
     }
 }
+
+/**
+ * Chooses how the reader lays out the pages: continuous scroll or page by page (F03, ADR 0011).
+ *
+ * @param repository where the settings are stored.
+ */
+class SetScrollModeUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param mode the layout to use for every document from now on. */
+    suspend operator fun invoke(mode: ScrollMode) {
+        repository.setScrollMode(mode)
+    }
+}

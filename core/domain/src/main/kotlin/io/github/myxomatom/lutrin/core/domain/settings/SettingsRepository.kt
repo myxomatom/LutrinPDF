@@ -14,4 +14,11 @@ interface SettingsRepository {
      * @param enabled whether colours follow the wallpaper.
      */
     suspend fun setDynamicColor(enabled: Boolean)
+
+    /**
+     * Chooses how the reader lays out the pages, for every document.
+     *
+     * @param mode continuous vertical scroll or one page per screen.
+     */
+    suspend fun setScrollMode(mode: ScrollMode)
 }

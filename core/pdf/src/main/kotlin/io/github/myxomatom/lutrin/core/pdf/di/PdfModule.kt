@@ -44,7 +44,7 @@ internal abstract class PdfModule {
          * @throws SecurityException if the read permission was revoked.
          */
         @Provides
-        fun provideContentOpener(@ApplicationContext context: Context): ContentOpener = ContentOpener { uri ->
+        internal fun provideContentOpener(@ApplicationContext context: Context): ContentOpener = ContentOpener { uri ->
             context.contentResolver.openFileDescriptor(uri, "r")
                 ?: throw FileNotFoundException("No content provider for the document")
         }

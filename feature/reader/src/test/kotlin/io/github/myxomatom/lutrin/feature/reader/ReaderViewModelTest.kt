@@ -6,10 +6,15 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
+import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
+import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,13 +40,42 @@ class ReaderViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun TestScope.viewModel(engine: FakePdfEngine): ReaderViewModel =
-        ReaderViewModel(SavedStateHandle(mapOf(READER_URI_ARG to uri)), engine, dispatcher).also { advanceUntilIdle() }
+    private fun newViewModel(engine: FakePdfEngine, settings: FakeSettingsRepository = FakeSettingsRepository()) =
+        ReaderViewModel(
+            SavedStateHandle(mapOf(READER_URI_ARG to uri)),
+            engine,
+            dispatcher,
+            ObserveSettingsUseCase(settings),
+            SetScrollModeUseCase(settings),
+        )
+
+    private fun TestScope.viewModel(
+        engine: FakePdfEngine,
+        settings: FakeSettingsRepository = FakeSettingsRepository(),
+    ): ReaderViewModel = newViewModel(engine, settings).also { advanceUntilIdle() }
+
+    private fun TestScope.openDocument(
+        pageCount: Int = 3,
+        settings: FakeSettingsRepository = FakeSettingsRepository(),
+    ): ReaderViewModel = viewModel(
+        FakePdfEngine(
+            Result.success(
+                FakePdfDocument(
+                    pageSizes = List(pageCount) {
+                        A4
+                    },
+                ),
+            ),
+        ),
+        settings,
+    )
+
+    private val ReaderViewModel.ready: ReaderUiState.Ready get() = uiState.value as ReaderUiState.Ready
 
     @Test
     fun `starts loading and opens the document from its URI`() = runTest(dispatcher) {
         val engine = FakePdfEngine()
-        val viewModel = ReaderViewModel(SavedStateHandle(mapOf(READER_URI_ARG to uri)), engine, dispatcher)
+        val viewModel = newViewModel(engine)
 
         assertThat(viewModel.uiState.value).isEqualTo(ReaderUiState.Loading)
         advanceUntilIdle()
@@ -105,5 +139,108 @@ class ReaderViewModelTest {
             displayName("content://provider/tree/primary%3ADocs%2Frapport%20final.pdf"),
         ).isEqualTo("rapport final.pdf")
         assertThat(displayName("file:///sdcard/a.pdf")).isEqualTo("a.pdf")
+    }
+
+    @Test
+    fun `starts on the first page, scrolling continuously by default`() = runTest(dispatcher) {
+        val state = openDocument().ready
+
+        assertThat(state.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        assertThat(state.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `exposes the stored scroll mode`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository(AppSettings(scrollMode = ScrollMode.PAGED))
+
+        assertThat(openDocument(settings = settings).ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `choosing a scroll mode stores it and shows it`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
+        assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `switching scroll mode keeps the current page`() = runTest(dispatcher) {
+        val viewModel = openDocument(pageCount = 5)
+
+        viewModel.onPageChange(3)
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+        assertThat(viewModel.ready.currentPage).isEqualTo(3)
+
+        viewModel.onScrollModeChange(ScrollMode.CONTINUOUS)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(3)
+    }
+
+    @Test
+    fun `switching scroll mode on the last page stays on it`() = runTest(dispatcher) {
+        val viewModel = openDocument(pageCount = 3)
+
+        viewModel.onPageChange(2)
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(2)
+    }
+
+    @Test
+    fun `a reported page is clamped to the document`() = runTest(dispatcher) {
+        val viewModel = openDocument(pageCount = 3)
+
+        viewModel.onPageChange(7)
+        advanceUntilIdle()
+        assertThat(viewModel.ready.currentPage).isEqualTo(2)
+
+        viewModel.onPageChange(-1)
+        advanceUntilIdle()
+        assertThat(viewModel.ready.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `a one-page document always stays on its page`() = runTest(dispatcher) {
+        val viewModel = openDocument(pageCount = 1)
+
+        viewModel.onPageChange(1)
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(0)
+        assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `a page reported before the document is open is ignored`() = runTest(dispatcher) {
+        val viewModel = newViewModel(FakePdfEngine())
+
+        viewModel.onPageChange(2)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `an error stays an error whatever the scroll mode`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = viewModel(FakePdfEngine(Result.failure(PdfError.Unreadable())), settings)
+
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        viewModel.onPageChange(1)
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value).isEqualTo(ReaderUiState.Error(ReaderError.UNREADABLE))
+        assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
     }
 }

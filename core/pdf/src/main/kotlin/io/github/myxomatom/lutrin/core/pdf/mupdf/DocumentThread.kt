@@ -11,7 +11,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
  * Creates the single-thread dispatcher that owns one document. MuPDF objects are not
  * thread-safe (ADR 0001): every call on a document runs on its own thread.
  */
-fun interface DocumentDispatcherFactory {
+internal fun interface DocumentDispatcherFactory {
     /** Returns a new dispatcher backed by exactly one thread; the caller closes it. */
     fun create(): ExecutorCoroutineDispatcher
 }

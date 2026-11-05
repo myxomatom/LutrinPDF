@@ -16,6 +16,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0008](0008-rendu-du-lecteur.md) | Rendu des pages dans le lecteur (base + détail visible) | Accepté |
 | [0009](0009-ecarts-maquettes-m2.md) | Écarts assumés entre les maquettes et l'application (M2) | Accepté |
 | [0010](0010-couleurs-dynamiques-et-police.md) | Couleurs dynamiques désactivables et police du système | Accepté |
+| [0011](0011-lecture-page-par-page.md) | Mode de lecture page par page et options d'affichage (V6) | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

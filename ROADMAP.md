@@ -15,7 +15,7 @@
 |-------|------|---------------|
 | M0 Fondations | ✅ Terminé | Module `:benchmark` (Macrobenchmark, Baseline Profile) et vérification de reproductibilité F-Droid, reportés (points ouverts 12 et 13) |
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
-| M2 Lecteur de base | 🚧 1re partie fusionnée (PR #6), zoom corrigé (PR #9) | Mode page par page horizontal, module `:benchmark` et mesure des 60 images/s, gros PDF sur appareil réel |
+| M2 Lecteur de base | 🚧 Lecteur complet : défilement continu et page par page (ADR 0011), zoom, plein écran, curseur | Module `:benchmark` et mesure des 60 images/s, gros PDF sur appareil réel |
 | M3 Fichiers et récents | ⏳ À faire | E1 existe déjà dans son état vide (ADR 0009) |
 | M4 à M8 | ⏳ À faire | — |
 
@@ -24,7 +24,8 @@
 | Vue | État | Remarques |
 |-----|------|-----------|
 | E1 Bibliothèque | 🟡 Partielle | État vide, « Ouvrir un fichier » (sélecteur système) et accès aux paramètres ; récents en M3, outils en M6 |
-| E2 Lecteur | 🟡 Partielle | Défilement continu, zoom 25–800 % net, plein écran, curseur et indicateur de page ; recherche, table des matières, menu en M4 / M5 |
+| E2 Lecteur | 🟡 Partielle | Défilement continu ou page par page, zoom 25–800 % net, plein écran, curseur et indicateur de page, « Plus d'options » ; recherche, table des matières en M4 |
+| V6 Options d'affichage | 🟡 Partielle | Section « Défilement » seulement (ADR 0011) ; ajustement, couleurs, plein écran, orientation en M5 |
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible, protégé ; « Retirer des récents » en M3 |
 | E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; thème, rendu, lecture, données en M5 |
 | Autres (E4–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
