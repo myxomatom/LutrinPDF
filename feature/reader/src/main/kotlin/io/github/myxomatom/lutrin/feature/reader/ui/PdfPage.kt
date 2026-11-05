@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.feature.reader.ui
 
 import android.graphics.Bitmap
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -51,7 +52,8 @@ private val PAPER_NIGHT = Color(0xFF16181C)
 /**
  * One page: a base rendering of the whole page, stretched to the displayed size, and, when
  * zoomed in beyond "fit width", a sharp rendering of the visible part drawn on top (F02).
- * Both renderings are cancelled when the page leaves the screen.
+ * Both renderings are cancelled when the page leaves the screen. The activity is reported
+ * fully drawn once the pages first shown have their base rendering.
  */
 @Composable
 internal fun PdfPage(
@@ -70,6 +72,10 @@ internal fun PdfPage(
     val base by produceState<Bitmap?>(null, pageIndex, baseWidth, nightMode) {
         value = renderer.renderPage(pageIndex, baseWidth, nightMode)
     }
+    // The activity reports itself fully drawn once every page first shown has its rendering:
+    // the end of "open a document" for the startup metrics of :benchmark (ADR 0012).
+    // A no-op after that first report, and outside an activity.
+    ReportDrawnWhen { base != null }
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val detail =
         rememberDetail(
