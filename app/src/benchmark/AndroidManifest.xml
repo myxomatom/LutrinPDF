@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Merged into the benchmarkRelease and nonMinifiedRelease builds only (app/build.gradle.kts,
+     ADR 0012): never into the release build. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Exported so that Macrobenchmark can start it with "am start" from the shell. It takes
+             no URI and no file from the caller: it only opens the test document it bundles. -->
+        <activity
+            android:name=".BenchmarkReaderActivity"
+            android:exported="true" />
+    </application>
+</manifest>

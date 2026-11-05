@@ -51,6 +51,10 @@ gradlePlugin {
             id = libs.plugins.lutrin.android.library.get().pluginId
             implementationClass = "AndroidLibraryConventionPlugin"
         }
+        register("androidTest") {
+            id = libs.plugins.lutrin.android.test.get().pluginId
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("androidCompose") {
             id = libs.plugins.lutrin.android.compose.get().pluginId
             implementationClass = "AndroidComposeConventionPlugin"
