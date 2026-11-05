@@ -11,7 +11,6 @@ puis déplacé dans la section « Tranchés ».
 | 3 | Dossier de sortie | ROADMAP le place dans E10 (Assistants IA), SPEC dans les paramètres, les maquettes dans E5 (Outils). | M6 |
 | 8 | Polices de secours CJK | Le build Android de MuPDF exclut les polices de secours (Noto, CJK, SIL) : un texte chinois / japonais / coréen dont la police n'est pas incorporée au PDF s'affiche en carrés. Les ajouter coûterait plusieurs Mo par ABI (limite de 15 Mo, `SPEC.md` §3). | M4 |
 | 11 | URI non seekables | L'ouverture d'un `content://` suppose un descripteur seekable ; un fournisseur qui renvoie un tube (pipe) donne « Document indisponible ». Repli possible : copie dans `cacheDir`, supprimée à la fermeture (`AGENTS.md` §9). | M3 |
-| 12 | Benchmark et Baseline Profile | Aucun module `:benchmark` (`AGENTS.md` §5.1, §8) alors que M0 demandait « un test de chaque type » et que M2 demande des benchmarks de défilement et d'ouverture. | M2 |
 | 13 | Reproductibilité F-Droid | Pas de drapeaux de compilation déterministe pour MuPDF (`-ffile-prefix-map`, `--build-id=none`) ni de job CI qui compile deux fois et compare les APK (`ROADMAP.md` §4). | Publication v1.0 |
 | 14 | Suivi des versions de MuPDF | Dependabot ne sait suivre un sous-module que sur la pointe de sa branche, pas sur les tags publiés (PR #8 refusée par `verifyMupdfVersion`). Option : un job CI planifié qui compare le tag épinglé au dernier tag `1.x.y` d'Artifex et ouvre une issue. | Publication v1.0 |
 | 6 | Licence affichée dans E4 | La maquette E4 indique « GNU GPL v3 » ; SPEC §7 demande de mentionner la distribution sous AGPL v3. | M5 |
@@ -25,4 +24,5 @@ puis déplacé dans la section « Tranchés ».
 | 9 | Réglage « Couleurs dynamiques » | Interrupteur dans E3, activé par défaut — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
 | 10 | Police | Police du système conservée, pas de Roboto embarquée — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
 | 15 | Échec natif à la fermeture d'un document | Intercepté (décision du 2026-11-04) : chaque étape de libération s'exécute même si la précédente échoue ; l'échec est signalé à `ReleaseFailureReporter`, qui écrit seulement le type d'exception dans le journal (`AGENTS.md` §1.8), au lieu de faire planter l'application |
+| 12 | Benchmark et Baseline Profile | Module `:benchmark` (Macrobenchmark 1.5.0) et plugin `androidx.baselineprofile` ; ouverture du gros PDF de test par une activité présente dans les seuls builds de benchmark ; pas de benchmark en CI ; profil généré sur appareil par le mainteneur — [ADR 0012](adr/0012-benchmark-et-baseline-profile.md) |
 | 7 | Schéma de couleurs sombre | Schéma M3 complet généré depuis `#2A5B8C`, dans `design-tokens.json` et `core:ui` |

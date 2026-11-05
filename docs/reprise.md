@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-04.**
+> session de travail. **Dernière mise à jour : 2026-11-05.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -9,9 +9,9 @@
 
 | Jalon | État |
 |-------|------|
-| M0 Fondations | ✅ Terminé (sauf `:benchmark` et la vérification de reproductibilité F-Droid, reportés) |
+| M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
-| M2 Lecteur de base | 🚧 Lecteur complet ; reste le module `:benchmark` et les mesures |
+| M2 Lecteur de base | 🚧 Code terminé, module `:benchmark` compris (ADR 0012) ; restent les mesures sur appareil |
 | M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -30,16 +30,31 @@ Sur la branche de la session suivante, testé seulement sous Robolectric : **mod
 « Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
 glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
 
+Module `:benchmark` (ADR 0012, compilé mais **jamais exécuté** : pas d'appareil dans le
+conteneur cloud) : Macrobenchmark (démarrage, ouverture du PDF de 600 pages, défilement continu
+et page par page) et générateur du Baseline Profile. Les builds `benchmarkRelease` /
+`nonMinifiedRelease` de `:app` ont une activité réservée, `BenchmarkReaderActivity`
+(`app/src/benchmark/`), qui ouvre le PDF de test embarqué sans sélecteur ; `check` vérifie
+qu'elle n'est pas dans le build release.
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-1. **Finir M2** (`ROADMAP.md` §2) :
-   - module `:benchmark` : Macrobenchmark (démarrage, ouverture, défilement) et Baseline
-     Profile (point ouvert 12) ; vérifier 60 images/s sur 500 pages, et le gros PDF de test
-     sur appareil.
+1. **Finir M2 sur appareil réel (mainteneur)** — rien ne peut se faire dans le conteneur :
+   - téléphone branché en USB, débogage USB activé, écran déverrouillé ; désinstaller toute
+     version publiée de Lutrin (même identifiant, autre signature) ;
+   - `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest` ; lire
+     `benchmark/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/<appareil>/*-benchmarkData.json` :
+     `ScrollBenchmark` doit avoir `frameDurationCpuMs` P90 < 16 ms (60 images/s), aucun
+     benchmark ne doit planter (pas de crash mémoire sur le gros PDF) ;
+     `OpenDocumentBenchmark` : `timeToFullDisplayMs` ;
+   - `./gradlew :app:generateBaselineProfile` (Android 13+, ou 9+ rooté), puis committer
+     `app/src/release/generated/baselineProfiles/baseline-prof.txt` et `startup-prof.txt` ;
+   - relancer `StartupBenchmark` pour comparer `coldStartup` et `coldStartupWithoutProfile` ;
+   - reporter les chiffres et le modèle d'appareil dans `ROADMAP.md` §0, passer M2 à ✅.
 2. **M3 Fichiers et récents** :
    - « Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9) ;
@@ -52,17 +67,19 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0011) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0012) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
   - **ADR 0010** : couleurs dynamiques désactivables, activées par défaut ; police du système
     conservée (pas de Roboto embarquée) ;
+  - **ADR 0012** : module `:benchmark`, activité d'ouverture réservée aux builds de mesure,
+    plugin `androidx.baselineprofile`, pas de benchmark en CI ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
-- Points encore ouverts : 1, 2, 3, 6, 8, 11 à 14 (`docs/open-questions.md`).
+- Points encore ouverts : 1, 2, 3, 6, 8, 11, 13 et 14 (`docs/open-questions.md`).
 
 ## 4. Pièges déjà rencontrés
 
@@ -90,6 +107,9 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     bibliothèque : fournir `LocalLayoutDirection` dans le test ;
   - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
     `EOFException` sur `testDebugUnitTest`).
+- **Macrobenchmark** : les APK de mesure se compilent dans le conteneur
+  (`./gradlew :benchmark:assemble`), mais rien ne s'y exécute (ni KVM ni appareil). Ne pas
+  essayer de lancer les benchmarks en CI : sur émulateur, les temps n'ont pas de sens.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 

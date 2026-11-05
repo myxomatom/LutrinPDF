@@ -10,6 +10,17 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Module `:benchmark` (ADR 0012, point ouvert 12) : Macrobenchmark 1.5.0 pour le démarrage à
+  froid et tiède, l'ouverture du gros PDF de test (600 pages) jusqu'aux premières pages
+  rendues, et la fluidité du défilement continu et page par page ; générateur du Baseline
+  Profile (plugin `androidx.baselineprofile`). Lancés sur appareil réel par le mainteneur,
+  jamais en CI. Les builds `benchmarkRelease` et `nonMinifiedRelease` ont une activité
+  réservée qui ouvre le PDF de test sans sélecteur ; le build release ne la contient pas
+  (vérifié par `verifyReleaseNoBenchmarkEntryPoint` dans `check`).
+- `androidx.profileinstaller` : le Baseline Profile, une fois généré, est installé aussi hors
+  de Google Play.
+- Lecteur : l'activité se déclare « entièrement dessinée » quand les premières pages sont
+  rendues (`ReportDrawnWhen`), ce qui donne le temps d'ouverture d'un document.
 - Lecteur : mode **page par page** horizontal (F03, ADR 0011). Une page par écran, ajustée à
   l'écran, changée d'un glissement ; zoom au pincement et double tap dans la page (le
   glissement entre pages reprend une fois revenu à la page entière) ; curseur, indicateur,

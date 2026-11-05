@@ -7,15 +7,15 @@
 
 ## 0. État d'avancement
 
-> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-04**. Pour reprendre le travail
+> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-05**. Pour reprendre le travail
 > dans une nouvelle session : [`docs/reprise.md`](docs/reprise.md). Détail des constats :
 > [`docs/audits/2026-11-04-audit-m1.md`](docs/audits/2026-11-04-audit-m1.md).
 
 | Jalon | État | Reste à faire |
 |-------|------|---------------|
-| M0 Fondations | ✅ Terminé | Module `:benchmark` (Macrobenchmark, Baseline Profile) et vérification de reproductibilité F-Droid, reportés (points ouverts 12 et 13) |
+| M0 Fondations | ✅ Terminé | Vérification de reproductibilité F-Droid, reportée (point ouvert 13) ; module `:benchmark` livré en M2 |
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
-| M2 Lecteur de base | 🚧 Lecteur complet : défilement continu et page par page (ADR 0011), zoom, plein écran, curseur | Module `:benchmark` et mesure des 60 images/s, gros PDF sur appareil réel |
+| M2 Lecteur de base | 🚧 Code terminé : lecteur continu et page par page (ADR 0011), zoom, plein écran, curseur ; module `:benchmark` et Baseline Profile prêts (ADR 0012) | Sur appareil réel, par le mainteneur : lancer les benchmarks (60 images/s sur le PDF de 600 pages, pas de crash mémoire), générer et committer le Baseline Profile, reporter ici les chiffres et le modèle d'appareil |
 | M3 Fichiers et récents | ⏳ À faire | E1 existe déjà dans son état vide (ADR 0009) |
 | M4 à M8 | ⏳ À faire | — |
 

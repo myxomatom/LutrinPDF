@@ -28,6 +28,8 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | ViewModels dans Compose |
 | AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` |
 | Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte) |
+| AndroidX ProfileInstaller | 1.4.1 | Apache-2.0 | `app` | Installe le Baseline Profile sur les appareils sans Google Play (F-Droid, installation directe) ; aucune permission demandée (ADR 0012) |
+| AndroidX Activity Compose (`ReportDrawnWhen`) | 1.13.0 | Apache-2.0 | `feature:reader` | Signale la fin de l'ouverture d'un document (premières pages rendues), mesurée par `:benchmark` (ADR 0012) |
 
 Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 `./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
@@ -73,6 +75,8 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
 | AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
 | Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+| AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
+| AndroidX Test UiAutomator | 2.4.0 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) |
 
 ## Build et qualité (outils, jamais distribués)
 
@@ -86,6 +90,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Kover | 0.9.11 | Apache-2.0 |
 | Dokka | 2.2.0 | Apache-2.0 |
 | Licensee | 1.14.1 | Apache-2.0 |
+| Plugin Gradle Baseline Profile (`androidx.baselineprofile`) | 1.5.0 | Apache-2.0 (testé avec AGP < 10.0.0-alpha01) |
 | PyMuPDF / Pillow (génération des fichiers de test) | 2.1 / 13.0.0 | AGPL-3.0 / MIT-CMU |
 | Android NDK | 28.2.13676358 | Apache-2.0 (licence du SDK Android pour la distribution des binaires de l'outil) |
 | freetype2, OpenSSL, zlib du système (build hôte, tests JVM uniquement) | paquets Ubuntu | FTL/GPL-2.0+, Apache-2.0, Zlib |
