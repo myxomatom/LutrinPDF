@@ -159,6 +159,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     `generateBaselineProfile` affichent quand même BUILD SUCCESSFUL sans exécuter aucun test** :
     toujours vérifier que les fichiers de sortie existent (`benchmarkData.json`,
     `baselineProfiles/*.txt`).
+- **Fournisseur de contenu des tests instrumentés** (`TestDocumentProvider`, `app/src/androidTest`) :
+  il tourne dans le processus de l'APK de test, qui ne contient pas la bibliothèque standard
+  Kotlin (AGP retire les dépendances communes avec l'application). Écrit en Kotlin, il plantait
+  avec `NoClassDefFoundError: kotlin.jvm.internal.Intrinsics` et l'application affichait
+  « fichier introuvable ». Il est donc **en Java** (`src/androidTest/java`) : ne pas le
+  réécrire en Kotlin. Son autorité ne doit pas commencer par le paquet de l'application (ADR 0014).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 

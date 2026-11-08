@@ -41,12 +41,19 @@ class OpenWithInstrumentedTest {
 
     private fun waitForDescription(description: String) {
         composeRule.waitUntil(TIMEOUT_MS) {
-            composeRule.onAllNodesWithContentDescription(description).fetchSemanticsNodes().isNotEmpty()
+            hasNodes { composeRule.onAllNodesWithContentDescription(description).fetchSemanticsNodes() }
         }
     }
 
     private fun waitForText(text: String) {
-        composeRule.waitUntil(TIMEOUT_MS) { composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.waitUntil(TIMEOUT_MS) { hasNodes { composeRule.onAllNodesWithText(text).fetchSemanticsNodes() } }
+    }
+
+    /** False while the activity has no Compose hierarchy yet (the lookup then throws). */
+    private fun hasNodes(fetch: () -> List<*>): Boolean = try {
+        fetch().isNotEmpty()
+    } catch (@Suppress("SwallowedException") _: IllegalStateException) {
+        false
     }
 
     @Test
