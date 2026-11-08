@@ -10,6 +10,12 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Build sous Windows (ADR 0013) : les sources C des ressources embarquées par MuPDF sont
+  générées par une tâche Gradle en Kotlin (`generateMupdfResources`, plugin `lutrin.mupdf`)
+  au lieu de `make generate`, avec une sortie identique octet pour octet à `hexdump.sh`
+  (vérifié en CI) ; `make` n'est plus nécessaire pour l'APK. Hors Linux, la bibliothèque JNI
+  de la machine et les tests JVM du moteur de `core:pdf` sont sautés avec un message. Section
+  « Compiler sous Windows » dans le README.
 - Baseline Profile généré et embarqué (`app/src/release/generated/baselineProfiles/`), et mesures
   de fin de M2 sur appareil réel (Xiaomi 23013PC75G, Android 15) : défilement continu P90 de
   4,0 ms par image, page par page 6,6 ms, ouverture à froid du PDF de 600 pages en 1050 ms
@@ -81,6 +87,9 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- detekt : `jvmTarget` fixé à la version Java du projet (17) ; il échouait quand Gradle
+  tourne sous JDK 25 (`Invalid value (25) passed to --jvm-target`). detekt 1.23.8 reste
+  incompatible avec JDK 25 pour une autre raison : utiliser JDK 21.
 - Build : sous Windows, la compilation native de MuPDF n'échoue plus avec `make (e=87)` à
   l'archivage de `libmupdf_core.a` (ndk-build en commandes courtes, `APP_SHORT_COMMANDS`).
 - Lecteur : après un saut de page avec le curseur, l'indicateur et la description TalkBack

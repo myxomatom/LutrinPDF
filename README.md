@@ -64,7 +64,7 @@ Voir [`docs/architecture.md`](docs/architecture.md) et l'[ADR 0001](docs/adr/000
 
 Prérequis : JDK 21, le SDK Android (variable `ANDROID_HOME`) ; le wrapper télécharge Gradle
 et AGP télécharge le NDK. Les tests JVM du moteur compilent aussi MuPDF pour la machine
-(Linux) : il faut `make`, un compilateur C, `pkg-config` et les paquets de développement
+(Linux seulement) : il faut `make`, un compilateur C, `pkg-config` et les paquets de développement
 de freetype2, OpenSSL et zlib (`sudo apt install libfreetype-dev libssl-dev zlib1g-dev pkg-config`).
 
 ```bash
@@ -80,6 +80,34 @@ de freetype2, OpenSSL et zlib (`sudo apt install libfreetype-dev libssl-dev zlib
 `./gradlew check` lance ktlint, detekt, Android Lint, les tests unitaires, Robolectric et
 captures d'écran, les seuils de couverture Kover, la vérification des licences (Licensee)
 et l'absence de permission réseau dans le manifeste fusionné (`verifyReleasePermissions`).
+
+Les sources C des polices et motifs de césure embarqués par MuPDF (`libmupdf/generated/`) sont
+produites par la tâche Gradle `generateMupdfResources` : ni `make` ni `bash` ne sont
+nécessaires pour l'APK (ADR 0013).
+
+### Compiler sous Windows
+
+Prérequis :
+
+- **Git Bash** (Git pour Windows), pour lancer `./gradlew` et `./scripts/init-mupdf.sh` ;
+- un dépôt cloné dans un **chemin sans espace** (par exemple `D:\Dev\LutrinPDF`) : ndk-build
+  ne gère pas les espaces ;
+- le SDK Android (`ANDROID_HOME` ou `local.properties`) ; AGP télécharge le NDK ;
+- **JDK 21** pour exécuter Gradle (celui de la CI) : sous JDK 17, les tests Robolectric échouent
+  (`Android SDK 36 requires Java 21`) ; sous JDK 25, detekt 1.23.8 échoue
+  (`IllegalArgumentException: 25.0.3`, son compilateur Kotlin embarqué ne reconnaît pas ce JDK) ;
+- `make` n'est **pas** nécessaire.
+
+Ce qui ne tourne pas sous Windows (ADR 0013) :
+
+- la compilation de MuPDF pour la machine (`buildMupdfHostJni`) et les **tests JVM du moteur**
+  de `core:pdf` sont sautés, avec un message ; la CI (Linux) les exécute toujours ;
+- le test de comparaison avec `hexdump.sh` se saute si `bash` est introuvable ;
+- **échec connu** : les 3 tests de `DataStoreSettingsRepositoryTest` (`core:data`) échouent
+  sous Windows (`Unable to rename ...preferences_pb.tmp`) ; ils passent sous Linux.
+
+Pour lancer les benchmarks sur un téléphone Xiaomi / HyperOS, voir les pièges notés dans
+[`docs/reprise.md`](docs/reprise.md) §4.
 
 ### Mesures de performance et Baseline Profile (sur appareil réel)
 

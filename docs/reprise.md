@@ -43,14 +43,14 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-1. **Support du build sous Windows** : remplacer l'appel à `make generate` (génération des
-   sources de MuPDF) par une tâche Gradle en Kotlin, pour que le build ne dépende plus de `make`.
-2. **M3 Fichiers et récents** :
+1. **M3 Fichiers et récents** :
    - « Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9) ;
    - permissions persistantes, récents avec vignettes (Room), reprise de la dernière page ;
    - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
+2. **Windows** : `DataStoreSettingsRepositoryTest` (3 tests, `core:data`) échoue sous Windows
+   seulement (`Unable to rename ...preferences_pb.tmp`) ; décision du mainteneur attendue.
 3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
@@ -105,6 +105,21 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
   liste des centaines d'objets en chemin absolu). `third-party/mupdf/build.gradle.kts` passe
   `APP_SHORT_COMMANDS=true` à ndk-build sous Windows seulement (fichiers de réponse) ; ne pas
   modifier l'`Android.mk` du sous-module.
+- **Build sous Windows, autres pièges** (ADR 0013) :
+  - `make` n'est plus nécessaire : `generateMupdfResources` est une tâche Kotlin de
+    `build-logic` qui reproduit `scripts/hexdump.sh` octet pour octet ; à chaque mise à jour de
+    MuPDF, revoir sa liste (`MUPDF_EMBEDDED_RESOURCES`) face à `FONT_BIN` / `HYPH_BIN` du
+    `Makefile` ;
+  - avec `core.autocrlf=true`, Git réécrit en CRLF les fichiers de `libmupdf/generated/`
+    versionnés par MuPDF, puis la tâche les réécrit en LF : le sous-module apparaît modifié
+    (`git status`) sans différence de contenu (`git diff` vide). C'est sans conséquence ;
+  - `buildMupdfHostJni` et les tests JVM du moteur (`core:pdf`) sont sautés hors Linux, avec
+    un avertissement ; seule la CI les exécute ;
+  - detekt échouait avec `Invalid value (25) passed to --jvm-target` quand Gradle tourne sous
+    JDK 25 : son `jvmTarget` est désormais fixé à 17 dans `build-logic`. Mais detekt 1.23.8
+    échoue ensuite sous JDK 25 avec `IllegalArgumentException: 25.0.3` (son compilateur Kotlin
+    embarqué ne sait pas lire cette version) : exécuter Gradle avec un **JDK 21**. Sous JDK 17,
+    ce sont les tests Robolectric qui échouent (`Android SDK 36 requires Java 21`).
 - **Benchmarks sur Xiaomi / HyperOS** (constaté le 2026-11-08) :
   - activer dans les options pour les développeurs « Installer via USB » **et** « Débogage USB
     (paramètres de sécurité) », sinon `SecurityException ... INSTALL_GRANT_RUNTIME_PERMISSIONS`
@@ -145,7 +160,16 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
 5. **Captures d'écran** : après un changement visuel voulu, `./gradlew recordRoborazziDebug`,
    puis relire les images avant de les committer.
 
-## 6. Mettre ce fichier à jour
+## 6. Compiler sous Windows
+
+Git Bash, dépôt dans un chemin sans espace, SDK Android, **JDK 21** (ni 17 ni 25, voir §4) ; `make` n'est pas
+nécessaire (ADR 0013). Même commande que la CI :
+`./gradlew check assembleRelease :dokkaGenerate :benchmark:assemble --continue`. Attendu :
+tout passe sauf les 3 tests de `DataStoreSettingsRepositoryTest` (échec connu, §2) ; les
+tests JVM du moteur de `core:pdf` et `buildMupdfHostJni` sont sautés. Détails dans le README
+(« Compiler sous Windows ») et les pièges en §4.
+
+## 7. Mettre ce fichier à jour
 
 À la fin de chaque session :
 - mettre à jour la section 1 et la date ;
