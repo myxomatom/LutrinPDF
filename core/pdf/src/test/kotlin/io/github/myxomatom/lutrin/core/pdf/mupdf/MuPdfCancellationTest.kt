@@ -7,9 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Test
 
 class MuPdfCancellationTest {
+    @Before
+    fun requireHostEngine() = assumeHostEngine()
+
     @Test
     fun `a cancelled rendering leaves the document usable`() = runBlocking<Unit> {
         openTestPdf("pdfs/scanned_images_only.pdf").use { document ->

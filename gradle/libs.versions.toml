@@ -15,7 +15,7 @@ mupdf = "1.28.6"
 ndk = "28.2.13676358"
 
 # Build
-agp = "9.5.0"
+agp = "9.5.1"
 kotlin = "2.4.21"
 ksp = "2.3.13"
 hilt = "2.60.1"
@@ -154,3 +154,4 @@ lutrin-android-feature = { id = "lutrin.android.feature" }
 lutrin-jvm-library = { id = "lutrin.jvm.library" }
 lutrin-hilt = { id = "lutrin.hilt" }
 lutrin-android-robolectric = { id = "lutrin.android.robolectric" }
+lutrin-mupdf = { id = "lutrin.mupdf" }

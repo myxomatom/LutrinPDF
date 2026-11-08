@@ -45,6 +45,7 @@ class ChannelSeekableInputStreamTest {
 
     @Test
     fun `lets MuPDF open a document through a channel`() {
+        assumeHostEngine()
         val channel = RandomAccessFile(TestAssets.file("pdfs/links_internal_external.pdf"), "r").channel
         val document = Document.openDocument(ChannelSeekableInputStream(channel), "application/pdf")
         try {

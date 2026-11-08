@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.core.data.settings
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
@@ -19,7 +20,15 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
 
+/**
+ * Runs under Robolectric on purpose: DataStore replaces its file with `Files.move` only when
+ * `Build.VERSION.SDK_INT` is at least 26, and falls back to `File.renameTo` otherwise. On a plain
+ * JVM the stubbed SDK_INT is 0, and `renameTo` cannot overwrite a file on Windows, so every
+ * second write failed there.
+ */
+@RunWith(AndroidJUnit4::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class DataStoreSettingsRepositoryTest {
     @get:Rule

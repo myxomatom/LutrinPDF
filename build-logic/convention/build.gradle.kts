@@ -35,10 +35,25 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)
+    // Part of the Gradle distribution (no external artifact): runs the convention plugins in tests.
+    testImplementation(gradleTestKit())
 }
 
 ktlint {
     version.set(libs.versions.ktlint)
+}
+
+// The hexdump.sh comparison test reads MuPDF's sources (submodule of the parent build).
+val mupdfSources = rootDir.resolve("../third-party/mupdf/libmupdf").normalize()
+tasks.test {
+    systemProperty("lutrin.mupdfDir", mupdfSources.absolutePath)
+    inputs
+        .files(
+            fileTree(mupdfSources) {
+                include("scripts/hexdump.sh", "resources/fonts/**", "resources/hyphen/**")
+            },
+        ).withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("mupdfResources")
 }
 
 gradlePlugin {
@@ -74,6 +89,10 @@ gradlePlugin {
         register("hilt") {
             id = libs.plugins.lutrin.hilt.get().pluginId
             implementationClass = "HiltConventionPlugin"
+        }
+        register("mupdf") {
+            id = libs.plugins.lutrin.mupdf.get().pluginId
+            implementationClass = "MupdfConventionPlugin"
         }
     }
 }
