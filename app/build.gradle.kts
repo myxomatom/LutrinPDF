@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.lutrin.hilt)
     alias(libs.plugins.lutrin.android.robolectric)
     alias(libs.plugins.roborazzi)
+    alias(libs.plugins.baselineprofile)
 }
 
 /** Version code of the release; each per-ABI APK derives its own from it (see below). */
@@ -70,6 +71,91 @@ roborazzi {
     outputDir.set(file("src/test/screenshots"))
 }
 
+// Baseline Profile (ADR 0012): generated on a device by the maintainer with
+// ./gradlew :app:generateBaselineProfile, then committed under src/release/generated/.
+// The build never generates it by itself and works without it.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+    saveInSrc = true
+}
+
+/**
+ * Build types added by the Baseline Profile plugin for :benchmark: benchmarkRelease
+ * (measured, minified like release) and nonMinifiedRelease (profile generation), both
+ * profileable, not debuggable and signed with the debug key by the plugin.
+ * Only they get the benchmark entry point; the release build never contains it.
+ */
+val benchmarkBuildTypes = setOf("benchmarkRelease", "nonMinifiedRelease")
+
+/** Copies the large test document of core:testing into the assets of the benchmark builds. */
+abstract class CopyBenchmarkDocument : DefaultTask() {
+    /** The PDF to bundle. */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val document: RegularFileProperty
+
+    /** Asset directory added to the variant; the file lands in its pdfs/ folder. */
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    /** Replaces the directory content with the document. */
+    @TaskAction
+    fun copy() {
+        val target = outputDir.get().dir("pdfs").asFile
+        target.deleteRecursively()
+        target.mkdirs()
+        document.get().asFile.copyTo(target.resolve(document.get().asFile.name))
+    }
+}
+
+val benchmarkDocument =
+    tasks.register<CopyBenchmarkDocument>("copyBenchmarkDocument") {
+        document.set(rootProject.layout.projectDirectory.file("core/testing/src/main/assets/pdfs/large_600pages.pdf"))
+    }
+
+/** Fails if the benchmark entry point reached a manifest it must never be in (ADR 0012). */
+@CacheableTask
+abstract class VerifyNoBenchmarkEntryPoint : DefaultTask() {
+    /** Merged manifest of the release variant. */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val mergedManifest: RegularFileProperty
+
+    /** Written on success, so that the task can be up to date. */
+    @get:OutputFile
+    abstract val report: RegularFileProperty
+
+    /** Looks for the activity name in the merged manifest. */
+    @TaskAction
+    fun verify() {
+        if ("BenchmarkReaderActivity" in mergedManifest.get().asFile.readText()) {
+            throw GradleException("The benchmark entry point must never be part of a release build (ADR 0012).")
+        }
+        report.get().asFile.writeText("No benchmark entry point.\n")
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val taskName = "verify${variant.name.replaceFirstChar(Char::titlecase)}NoBenchmarkEntryPoint"
+        val verify =
+            tasks.register<VerifyNoBenchmarkEntryPoint>(taskName) {
+                group = "verification"
+                description = "Fails if the ${variant.name} merged manifest declares the benchmark entry point."
+                mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
+                report.set(layout.buildDirectory.file("reports/benchmark-entry-point/${variant.name}.txt"))
+            }
+        tasks.named("check").configure { dependsOn(verify) }
+    }
+    onVariants { variant ->
+        if (variant.buildType in benchmarkBuildTypes) {
+            variant.sources.kotlin?.addStaticSourceDirectory("src/benchmark/kotlin")
+            variant.sources.manifests.addStaticManifestFile("src/benchmark/AndroidManifest.xml")
+            variant.sources.assets?.addGeneratedSourceDirectory(benchmarkDocument, CopyBenchmarkDocument::outputDir)
+        }
+    }
+}
+
 dependencies {
     implementation(projects.core.ui)
     implementation(projects.core.domain)
@@ -85,6 +171,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // Installs the Baseline Profile on devices without Google Play (F-Droid, sideloading).
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.benchmark)
 
     // Leak detection in debug builds only (AGENTS.md §8); never in release.
     debugImplementation(libs.leakcanary.android)

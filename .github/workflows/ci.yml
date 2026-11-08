@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Continuous integration (AGENTS.md §7). Every push and pull request runs:
 # ktlint, detekt, Android Lint, unit / Robolectric / screenshot tests, coverage thresholds,
-# dependency license allow-list, forbidden-permission check, release build and Dokka.
+# dependency license allow-list, forbidden-permission check, release build, benchmark APKs
+# (compiled only) and Dokka.
 # MuPDF is compiled from its pinned submodule (ADR 0007): for Android with the NDK, and for
 # the runner itself so that the engine is tested on the JVM.
 name: CI
@@ -48,6 +49,11 @@ jobs:
 
       - name: Build release APK
         run: ./gradlew assembleRelease
+
+      # The benchmark APKs are only compiled: macrobenchmarks never run in CI, an emulator
+      # gives meaningless timings (ADR 0012). The maintainer runs them on a real device.
+      - name: Build benchmark APKs (compiled, not run)
+        run: ./gradlew :benchmark:assemble
 
       - name: Generate documentation (Dokka, warnings are errors)
         run: ./gradlew :dokkaGenerate

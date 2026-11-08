@@ -1,8 +1,9 @@
 # Architecture
 
 > Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 et se
-> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-04 : `feature:tools` et
-> `feature:assistant` sont encore vides.
+> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-05 : `feature:tools` et
+> `feature:assistant` sont encore vides ; le module de test `:benchmark` s'y ajoute en M2
+> (ADR 0012).
 
 ## Principes
 
@@ -28,6 +29,7 @@
 | `:feature:settings` | Paramètres, À propos, licences (E3, E4, E10) |
 | `:feature:tools` | Fusion, extraction, conversion, progression (E5–E9) |
 | `:feature:assistant` | AppFunctions, intents et raccourcis pour assistants IA |
+| `:benchmark` | Module de test (`com.android.test`) : Macrobenchmark et générateur du Baseline Profile, lancés sur appareil contre les builds `benchmarkRelease` / `nonMinifiedRelease` de `:app` (ADR 0012) |
 
 ## Dépendances entre modules
 
@@ -49,6 +51,7 @@ flowchart TD
     pdf --> mupdf[":third-party:mupdf"]
 
     testing[":core:testing"] -.tests.-> domain
+    bench[":benchmark"] -.mesure.-> app
 ```
 
 `core:pdf` et `core:data` implémentent les interfaces déclarées dans `core:domain` ;

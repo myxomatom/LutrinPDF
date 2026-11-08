@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Test APK only: never installed by users. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Lets Macrobenchmark find the launch intent of the app under test (Android 11+). -->
+    <queries>
+        <package android:name="io.github.myxomatom.lutrin" />
+    </queries>
+</manifest>

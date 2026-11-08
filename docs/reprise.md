@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-04.**
+> session de travail. **Dernière mise à jour : 2026-11-08.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -9,9 +9,9 @@
 
 | Jalon | État |
 |-------|------|
-| M0 Fondations | ✅ Terminé (sauf `:benchmark` et la vérification de reproductibilité F-Droid, reportés) |
+| M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
-| M2 Lecteur de base | 🚧 Lecteur complet ; reste le module `:benchmark` et les mesures |
+| M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -30,16 +30,21 @@ Sur la branche de la session suivante, testé seulement sous Robolectric : **mod
 « Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
 glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
 
+Module `:benchmark` (ADR 0012, exécuté le 2026-11-08 sur un Xiaomi 23013PC75G sous Android 15,
+chiffres dans l'ADR) : Macrobenchmark (démarrage, ouverture du PDF de 600 pages, défilement continu
+et page par page) et générateur du Baseline Profile. Les builds `benchmarkRelease` /
+`nonMinifiedRelease` de `:app` ont une activité réservée, `BenchmarkReaderActivity`
+(`app/src/benchmark/`), qui ouvre le PDF de test embarqué sans sélecteur ; `check` vérifie
+qu'elle n'est pas dans le build release.
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-1. **Finir M2** (`ROADMAP.md` §2) :
-   - module `:benchmark` : Macrobenchmark (démarrage, ouverture, défilement) et Baseline
-     Profile (point ouvert 12) ; vérifier 60 images/s sur 500 pages, et le gros PDF de test
-     sur appareil.
+1. **Support du build sous Windows** : remplacer l'appel à `make generate` (génération des
+   sources de MuPDF) par une tâche Gradle en Kotlin, pour que le build ne dépende plus de `make`.
 2. **M3 Fichiers et récents** :
    - « Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9) ;
@@ -52,17 +57,19 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0011) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0012) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
   - **ADR 0010** : couleurs dynamiques désactivables, activées par défaut ; police du système
     conservée (pas de Roboto embarquée) ;
+  - **ADR 0012** : module `:benchmark`, activité d'ouverture réservée aux builds de mesure,
+    plugin `androidx.baselineprofile`, pas de benchmark en CI ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
-- Points encore ouverts : 1, 2, 3, 6, 8, 11 à 14 (`docs/open-questions.md`).
+- Points encore ouverts : 1, 2, 3, 6, 8, 11, 13 et 14 (`docs/open-questions.md`).
 
 ## 4. Pièges déjà rencontrés
 
@@ -90,6 +97,26 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     bibliothèque : fournir `LocalLayoutDirection` dans le test ;
   - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
     `EOFException` sur `testDebugUnitTest`).
+- **Macrobenchmark** : les APK de mesure se compilent dans le conteneur
+  (`./gradlew :benchmark:assemble`), mais rien ne s'y exécute (ni KVM ni appareil). Ne pas
+  essayer de lancer les benchmarks en CI : sur émulateur, les temps n'ont pas de sens.
+- **Build natif sous Windows** : `make (e=87): Paramètre incorrect` sur `libmupdf_core.a`
+  vient de la limite de 32 767 caractères d'une ligne de commande Windows (la commande `ar`
+  liste des centaines d'objets en chemin absolu). `third-party/mupdf/build.gradle.kts` passe
+  `APP_SHORT_COMMANDS=true` à ndk-build sous Windows seulement (fichiers de réponse) ; ne pas
+  modifier l'`Android.mk` du sous-module.
+- **Benchmarks sur Xiaomi / HyperOS** (constaté le 2026-11-08) :
+  - activer dans les options pour les développeurs « Installer via USB » **et** « Débogage USB
+    (paramètres de sécurité) », sinon `SecurityException ... INSTALL_GRANT_RUNTIME_PERMISSIONS`
+    (le lanceur de tests installe avec `-g`) ; le réglage ne prend effet qu'après un
+    redémarrage du téléphone (vérifier : `adb shell getprop persist.security.adbinput` vaut 1) ;
+  - chaque installation affiche une confirmation sur le téléphone, à accepter vite, sinon
+    `INSTALL_FAILED_USER_RESTRICTED` ; `DELETE_FAILED_INTERNAL_ERROR` à la désinstallation veut
+    seulement dire que le paquet est absent ;
+  - **si l'installation échoue, `connectedBenchmarkReleaseAndroidTest` et
+    `generateBaselineProfile` affichent quand même BUILD SUCCESSFUL sans exécuter aucun test** :
+    toujours vérifier que les fichiers de sortie existent (`benchmarkData.json`,
+    `baselineProfiles/*.txt`).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 

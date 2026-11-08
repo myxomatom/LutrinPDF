@@ -81,6 +81,28 @@ de freetype2, OpenSSL et zlib (`sudo apt install libfreetype-dev libssl-dev zlib
 captures d'écran, les seuils de couverture Kover, la vérification des licences (Licensee)
 et l'absence de permission réseau dans le manifeste fusionné (`verifyReleasePermissions`).
 
+### Mesures de performance et Baseline Profile (sur appareil réel)
+
+Le module `:benchmark` (ADR 0012) mesure le démarrage, l'ouverture du gros PDF de test
+(600 pages) et la fluidité du défilement. Il se lance **sur un téléphone branché en USB**
+(débogage USB activé, écran allumé et déverrouillé), jamais en CI ni sur un émulateur, dont les
+temps n'ont pas de sens. La CI le compile seulement. Les builds de mesure ont le même identifiant
+que l'application publiée mais la clé de debug : désinstaller d'abord une version publiée de
+Lutrin présente sur le téléphone.
+
+```bash
+./gradlew :benchmark:assemble                              # compile les APK de mesure (fait par la CI)
+./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest  # tous les benchmarks
+./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=io.github.myxomatom.lutrin.benchmark.ScrollBenchmark
+./gradlew :app:generateBaselineProfile                     # Baseline Profile (Android 13+, ou 9+ rooté)
+```
+
+Résultats : `benchmark/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/<appareil>/`
+(fichiers `*-benchmarkData.json` et traces Perfetto). Le profil généré est écrit dans
+`app/src/release/generated/baselineProfiles/` (`baseline-prof.txt`, `startup-prof.txt`) et
+doit être committé ; le build fonctionne sans lui.
+
 ## Licence
 
 - Le code de ce dépôt est publié sous **GNU GPL v3 ou ultérieure**

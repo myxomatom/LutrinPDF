@@ -9,6 +9,7 @@ plugins {
 
 val mupdfDir = layout.projectDirectory.dir("libmupdf")
 val buildJobs = Runtime.getRuntime().availableProcessors()
+val isWindowsHost = providers.systemProperty("os.name").get().startsWith("Windows")
 
 android {
     namespace = "io.github.myxomatom.lutrin.thirdparty.mupdf"
@@ -24,6 +25,12 @@ android {
         externalNativeBuild {
             ndkBuild {
                 arguments += "-j$buildJobs"
+                // Windows limits a command line to 32 767 characters; the archive command of
+                // libmupdf_core.a lists hundreds of objects by absolute path and fails with
+                // "make (e=87)". Short commands pass the object lists through response files.
+                if (isWindowsHost) {
+                    arguments += "APP_SHORT_COMMANDS=true"
+                }
             }
         }
     }

@@ -17,7 +17,7 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | Fichier | Contenu | Attendu |
 |---------|---------|---------|
 | `simple_1page.pdf` | 1 page, texte seul | Ouverture, texte extractible |
-| `large_600pages.pdf` | 600 pages de texte | Pas d'`OutOfMemoryError`, défilement fluide |
+| `large_600pages.pdf` | 600 pages de texte | Pas d'`OutOfMemoryError`, défilement fluide ; document des benchmarks de `:benchmark`, copié dans les builds de mesure de l'application (ADR 0012) |
 | `nested_outline.pdf` | 6 pages, table des matières à 3 niveaux (15 entrées) | Arborescence F06 |
 | `links_internal_external.pdf` | 4 pages ; page 1 : lien vers la page 3 et vers `https://example.org/` | F09 (confirmation avant le lien externe) |
 | `encrypted_password_lutrin.pdf` | AES-256, mot de passe utilisateur **`lutrin`** | F10 ; un autre mot de passe est refusé |

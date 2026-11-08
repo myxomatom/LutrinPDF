@@ -34,16 +34,26 @@ private val COVERAGE_EXCLUDED_CLASSES =
  * Kover and Dokka (`AGENTS.md` §4–§6).
  */
 internal fun Project.configureQuality() {
+    configureStaticAnalysis()
     with(pluginManager) {
-        apply(libs.pluginId("ktlint"))
-        apply(libs.pluginId("detekt"))
         apply(libs.pluginId("kover"))
         apply(libs.pluginId("dokka"))
     }
-    configureKtlint()
-    configureDetekt()
     configureKover()
     configureDokka()
+}
+
+/**
+ * Applies the style and static analysis tools only (ktlint, detekt), for modules that ship
+ * neither code to cover nor API to document, such as the `:benchmark` test module.
+ */
+internal fun Project.configureStaticAnalysis() {
+    with(pluginManager) {
+        apply(libs.pluginId("ktlint"))
+        apply(libs.pluginId("detekt"))
+    }
+    configureKtlint()
+    configureDetekt()
 }
 
 private fun Project.configureKtlint() {
@@ -57,7 +67,8 @@ private fun Project.configureDetekt() {
         buildUponDefaultConfig = true
         parallel = true
         config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
-        source.setFrom("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin")
+        // src/benchmark: code of the app's benchmark builds only (ADR 0012).
+        source.setFrom("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin", "src/benchmark/kotlin")
     }
     dependencies {
         "detektPlugins"(libs.library("compose-rules-detekt"))
