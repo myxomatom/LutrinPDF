@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.feature.reader
 import android.net.Uri
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
@@ -12,11 +13,20 @@ import io.github.myxomatom.lutrin.feature.reader.ui.ReaderRoute
 /** Navigation argument holding the document URI, as a string. */
 const val READER_URI_ARG = "uri"
 
-private const val READER_ROUTE = "reader?$READER_URI_ARG={$READER_URI_ARG}"
+/** Navigation argument holding the zero-based page to open the document at (0 by default). */
+const val READER_PAGE_ARG = "page"
 
-/** Opens the reader on the document at [uri]. */
-fun NavController.navigateToReader(uri: Uri) {
-    navigate("reader?$READER_URI_ARG=${Uri.encode(uri.toString())}")
+private const val READER_ROUTE = "reader?$READER_URI_ARG={$READER_URI_ARG}&$READER_PAGE_ARG={$READER_PAGE_ARG}"
+
+/**
+ * Opens the reader on the document at [uri].
+ *
+ * @param uri the document, usually a `content://` URI granted to the app.
+ * @param page zero-based page shown first; the reader clamps it to the document.
+ * @param builder navigation options, for example to replace the screens below the reader.
+ */
+fun NavController.navigateToReader(uri: Uri, page: Int = 0, builder: NavOptionsBuilder.() -> Unit = {}) {
+    navigate("reader?$READER_URI_ARG=${Uri.encode(uri.toString())}&$READER_PAGE_ARG=$page", builder)
 }
 
 /**
@@ -27,7 +37,14 @@ fun NavController.navigateToReader(uri: Uri) {
 fun NavGraphBuilder.readerScreen(onBack: () -> Unit) {
     composable(
         route = READER_ROUTE,
-        arguments = listOf(navArgument(READER_URI_ARG) { type = NavType.StringType }),
+        arguments =
+            listOf(
+                navArgument(READER_URI_ARG) { type = NavType.StringType },
+                navArgument(READER_PAGE_ARG) {
+                    type = NavType.IntType
+                    defaultValue = 0
+                },
+            ),
     ) {
         ReaderRoute(onBack = onBack)
     }

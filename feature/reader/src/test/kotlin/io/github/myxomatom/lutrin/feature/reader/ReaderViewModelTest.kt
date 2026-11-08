@@ -17,8 +17,10 @@ import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -40,14 +42,17 @@ class ReaderViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun newViewModel(engine: FakePdfEngine, settings: FakeSettingsRepository = FakeSettingsRepository()) =
-        ReaderViewModel(
-            SavedStateHandle(mapOf(READER_URI_ARG to uri)),
-            engine,
-            dispatcher,
-            ObserveSettingsUseCase(settings),
-            SetScrollModeUseCase(settings),
-        )
+    private fun newViewModel(
+        engine: FakePdfEngine,
+        settings: FakeSettingsRepository = FakeSettingsRepository(),
+        page: Int? = null,
+    ) = ReaderViewModel(
+        SavedStateHandle(listOfNotNull(READER_URI_ARG to uri, page?.let { READER_PAGE_ARG to it }).toMap()),
+        engine,
+        dispatcher,
+        ObserveSettingsUseCase(settings),
+        SetScrollModeUseCase(settings),
+    )
 
     private fun TestScope.viewModel(
         engine: FakePdfEngine,
@@ -242,5 +247,41 @@ class ReaderViewModelTest {
 
         assertThat(viewModel.uiState.value).isEqualTo(ReaderUiState.Error(ReaderError.UNREADABLE))
         assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    private fun TestScope.openAtPage(page: Int?, pageCount: Int = 5): ReaderViewModel =
+        newViewModel(FakePdfEngine(Result.success(FakePdfDocument(List(pageCount) { A4 }))), page = page)
+            .also { advanceUntilIdle() }
+
+    @Test
+    fun `opens at the page given by the navigation`() = runTest(dispatcher) {
+        assertThat(openAtPage(page = 3).ready.currentPage).isEqualTo(3)
+    }
+
+    @Test
+    fun `opens at the first page without a page argument`() = runTest(dispatcher) {
+        assertThat(openAtPage(page = null).ready.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `a page beyond the document opens the last page`() = runTest(dispatcher) {
+        assertThat(openAtPage(page = 5, pageCount = 5).ready.currentPage).isEqualTo(4)
+        assertThat(openAtPage(page = Int.MAX_VALUE, pageCount = 5).ready.currentPage).isEqualTo(4)
+    }
+
+    @Test
+    fun `a negative page opens the first page`() = runTest(dispatcher) {
+        assertThat(openAtPage(page = -3).ready.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `the first ready state already shows the requested page`() = runTest(dispatcher) {
+        val viewModel = newViewModel(FakePdfEngine(Result.success(FakePdfDocument(List(5) { A4 }))), page = 2)
+        val states = mutableListOf<ReaderUiState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect { states += it } }
+
+        advanceUntilIdle()
+
+        assertThat(states.filterIsInstance<ReaderUiState.Ready>().map { it.currentPage }).containsExactly(2)
     }
 }
