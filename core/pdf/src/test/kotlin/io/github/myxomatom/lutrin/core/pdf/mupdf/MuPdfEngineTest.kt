@@ -11,11 +11,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class MuPdfEngineTest {
+    @Before
+    fun requireHostEngine() = assumeHostEngine()
+
     @get:Rule
     val folder = TemporaryFolder()
 

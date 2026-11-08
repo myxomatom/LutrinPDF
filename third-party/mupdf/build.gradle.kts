@@ -11,7 +11,11 @@ plugins {
 
 val mupdfDir = layout.projectDirectory.dir("libmupdf")
 val buildJobs = Runtime.getRuntime().availableProcessors()
-val isWindowsHost = providers.systemProperty("os.name").get().startsWith("Windows")
+val hostOs = providers.systemProperty("os.name").get()
+val isWindowsHost = hostOs.startsWith("Windows")
+
+// The desktop JNI library is only built on Linux (ADR 0013); core:pdf reads this flag.
+val isHostJniSupported = hostOs.startsWith("Linux")
 
 android {
     namespace = "io.github.myxomatom.lutrin.thirdparty.mupdf"
@@ -80,11 +84,23 @@ val generateMupdfResources = tasks.named("generateMupdfResources")
 tasks.named("preBuild") { dependsOn(generateMupdfResources, verifyMupdfVersion) }
 
 // Desktop (Linux x86_64) build of the same JNI library, so that core:pdf can test the engine
-// on the JVM without an emulator.
+// on the JVM without an emulator. Linux only: elsewhere the task is skipped, and so are the
+// engine JVM tests of core:pdf; the CI (Linux) always runs them (ADR 0013).
 val hostJniDir = layout.buildDirectory.dir("host-jni")
 val buildMupdfHostJni =
     tasks.register<Exec>("buildMupdfHostJni") {
-        description = "Builds libmupdf_java64.so for the build machine, used by JVM unit tests."
+        description = "Builds libmupdf_java64.so for the build machine (Linux only), used by JVM unit tests."
+        val supported = isHostJniSupported
+        onlyIf("the host JNI library is only built on Linux (ADR 0013)") { task ->
+            supported.also {
+                if (!it) {
+                    task.logger.warn(
+                        "Skipping ${task.path}: the desktop MuPDF library is only built on Linux. " +
+                            "The engine JVM tests of core:pdf are skipped too; the CI runs them (ADR 0013).",
+                    )
+                }
+            }
+        }
         dependsOn(generateMupdfResources, verifyMupdfVersion)
         inputs.file("build-host-jni.sh")
         inputs.dir(mupdfDir.dir("source"))
@@ -98,6 +114,9 @@ val buildMupdfHostJni =
 /** Directory containing the host JNI library, for `java.library.path` in tests. */
 extra["hostJniDir"] = hostJniDir
 extra["buildMupdfHostJni"] = buildMupdfHostJni
+
+/** Whether the host JNI library can be built here (Linux); otherwise the engine JVM tests are skipped. */
+extra["isHostJniSupported"] = isHostJniSupported
 
 // Third-party sources: audited upstream, not by our Lint configuration.
 tasks.matching { it.name.startsWith("lint") }.configureEach { enabled = false }

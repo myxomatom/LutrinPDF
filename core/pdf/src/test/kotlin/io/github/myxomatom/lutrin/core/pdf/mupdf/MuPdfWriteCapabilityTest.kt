@@ -6,6 +6,7 @@ import com.artifex.mupdf.fitz.DocumentWriter
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
 import com.google.common.truth.Truth.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -15,6 +16,9 @@ import org.junit.rules.TemporaryFolder
  * into a PDF. The real implementation comes with `PdfWriter` (M6).
  */
 class MuPdfWriteCapabilityTest {
+    @Before
+    fun requireHostEngine() = assumeHostEngine()
+
     @get:Rule
     val folder = TemporaryFolder()
 

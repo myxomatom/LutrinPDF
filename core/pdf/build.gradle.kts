@@ -15,6 +15,8 @@ android {
         val hostJniDir = mupdf.extra["hostJniDir"] as Provider<Directory>
         test.dependsOn(mupdf.extra["buildMupdfHostJni"] as TaskProvider<*>)
         test.systemProperty("java.library.path", hostJniDir.get().asFile.absolutePath)
+        // Outside Linux the library is not built: the engine tests skip themselves (ADR 0013).
+        test.systemProperty("lutrin.hostEngine", mupdf.extra["isHostJniSupported"].toString())
         test.systemProperty("lutrin.testAssets", rootProject.file("core/testing/src/main/assets").absolutePath)
     }
 }

@@ -27,12 +27,16 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertThrows
+import org.junit.Before
 import org.junit.Test
 
 /** Whole A4 page, used to select or render everything. */
 internal val wholePage = PdfRect(0f, 0f, 595f, 842f)
 
 class MuPdfDocumentTest {
+    @Before
+    fun requireHostEngine() = assumeHostEngine()
+
     @Test
     fun `reads the document information`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
