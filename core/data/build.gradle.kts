@@ -2,6 +2,7 @@
 plugins {
     alias(libs.plugins.lutrin.android.library)
     alias(libs.plugins.lutrin.hilt)
+    alias(libs.plugins.lutrin.android.robolectric)
 }
 
 android {
@@ -13,6 +14,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

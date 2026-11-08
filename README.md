@@ -103,8 +103,8 @@ Ce qui ne tourne pas sous Windows (ADR 0013) :
 - la compilation de MuPDF pour la machine (`buildMupdfHostJni`) et les **tests JVM du moteur**
   de `core:pdf` sont sautés, avec un message ; la CI (Linux) les exécute toujours ;
 - le test de comparaison avec `hexdump.sh` se saute si `bash` est introuvable ;
-- **échec connu** : les 3 tests de `DataStoreSettingsRepositoryTest` (`core:data`) échouent
-  sous Windows (`Unable to rename ...preferences_pb.tmp`) ; ils passent sous Linux.
+- `DataStoreSettingsRepositoryTest` (`core:data`) tourne sous Robolectric : sur une JVM nue,
+  DataStore remplace son fichier avec `File.renameTo`, qui ne peut pas écraser sous Windows.
 
 Pour lancer les benchmarks sur un téléphone Xiaomi / HyperOS, voir les pièges notés dans
 [`docs/reprise.md`](docs/reprise.md) §4.

@@ -87,6 +87,9 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Les 3 tests de `DataStoreSettingsRepositoryTest` passent sous Windows : ils tournent sous
+  Robolectric, car DataStore remplace son fichier avec `File.renameTo` (qui n'écrase pas sous
+  Windows) quand `Build.VERSION.SDK_INT` vaut 0, comme sur une JVM nue.
 - detekt : `jvmTarget` fixé à la version Java du projet (17) ; il échouait quand Gradle
   tourne sous JDK 25 (`Invalid value (25) passed to --jvm-target`). detekt 1.23.8 reste
   incompatible avec JDK 25 pour une autre raison : utiliser JDK 21.

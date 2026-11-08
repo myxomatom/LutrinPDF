@@ -49,8 +49,8 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - permissions persistantes, récents avec vignettes (Room), reprise de la dernière page ;
    - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
-2. **Windows** : `DataStoreSettingsRepositoryTest` (3 tests, `core:data`) échoue sous Windows
-   seulement (`Unable to rename ...preferences_pb.tmp`) ; décision du mainteneur attendue.
+2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
+   (SDK_INT 36) ; sur JVM nue, DataStore retombe sur `File.renameTo`, qui n'écrase pas sous Windows.
 3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
@@ -165,8 +165,7 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
 Git Bash, dépôt dans un chemin sans espace, SDK Android, **JDK 21** (ni 17 ni 25, voir §4) ; `make` n'est pas
 nécessaire (ADR 0013). Même commande que la CI :
 `./gradlew check assembleRelease :dokkaGenerate :benchmark:assemble --continue`. Attendu :
-tout passe sauf les 3 tests de `DataStoreSettingsRepositoryTest` (échec connu, §2) ; les
-tests JVM du moteur de `core:pdf` et `buildMupdfHostJni` sont sautés. Détails dans le README
+tout passe ; les tests JVM du moteur de `core:pdf` et `buildMupdfHostJni` sont sautés. Détails dans le README
 (« Compiler sous Windows ») et les pièges en §4.
 
 ## 7. Mettre ce fichier à jour
