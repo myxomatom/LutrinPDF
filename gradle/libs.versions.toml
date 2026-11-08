@@ -154,3 +154,4 @@ lutrin-android-feature = { id = "lutrin.android.feature" }
 lutrin-jvm-library = { id = "lutrin.jvm.library" }
 lutrin-hilt = { id = "lutrin.hilt" }
 lutrin-android-robolectric = { id = "lutrin.android.robolectric" }
+lutrin-mupdf = { id = "lutrin.mupdf" }

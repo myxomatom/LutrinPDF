@@ -5,6 +5,8 @@
 // apply here. Only core:pdf may depend on this module.
 plugins {
     alias(libs.plugins.android.library)
+    // Registers generateMupdfResources (ADR 0013).
+    alias(libs.plugins.lutrin.mupdf)
 }
 
 val mupdfDir = layout.projectDirectory.dir("libmupdf")
@@ -71,14 +73,10 @@ val verifyMupdfVersion =
         }
     }
 
-// MuPDF embeds fonts, CMaps and ICC profiles as generated C sources (generated/, ignored by its Git).
-val generateMupdfResources =
-    tasks.register<Exec>("generateMupdfResources") {
-        description = "Generates the C sources of the resources embedded in MuPDF."
-        workingDir = mupdfDir.asFile
-        commandLine("make", "-j$buildJobs", "generate")
-        outputs.dir(mupdfDir.dir("generated"))
-    }
+// MuPDF embeds fonts and hyphenation patterns as generated C sources (libmupdf/generated/).
+// Written by a Gradle task of build-logic instead of `make generate`, so that the build needs
+// neither make nor bash (ADR 0013).
+val generateMupdfResources = tasks.named("generateMupdfResources")
 tasks.named("preBuild") { dependsOn(generateMupdfResources, verifyMupdfVersion) }
 
 // Desktop (Linux x86_64) build of the same JNI library, so that core:pdf can test the engine
