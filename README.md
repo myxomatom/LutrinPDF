@@ -7,9 +7,10 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M2 (lecteur de base), en cours.** On peut ouvrir un PDF depuis la
-> bibliothèque (encore vide) et le lire : défilement continu ou page par page, zoom, plein écran. Documents récents au
-> jalon M3. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
+> 🚧 **Statut : jalon M3 (fichiers et récents), en cours.** On peut ouvrir un PDF depuis la
+> bibliothèque (encore vide), ou depuis une autre application avec « Ouvrir avec » ou
+> « Partager », et le lire : défilement continu ou page par page, zoom, plein écran. Documents
+> récents à la suite du jalon M3. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.
@@ -36,6 +37,12 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 - **v1.x** — signets, annotations, formulaires, miniatures, lecture à voix haute, mode tablette.
 
 Détails : [`SPEC.md`](SPEC.md).
+
+**Ouvrir un document depuis une autre application** : Lutrin répond à `ACTION_VIEW` (type
+`application/pdf`, URI `content://` seulement) et à `ACTION_SEND` (un PDF dans `EXTRA_STREAM`).
+L'extra facultatif `page` (`Int`, à partir de 1) ouvre `ACTION_VIEW` à cette page, par exemple
+`adb shell am start -a android.intent.action.VIEW -t application/pdf -d content://… --ei page 12`.
+Règles de validation : ADR 0014.
 
 ## Documentation du projet
 

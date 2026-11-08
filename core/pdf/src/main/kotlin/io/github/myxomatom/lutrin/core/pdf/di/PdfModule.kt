@@ -18,15 +18,24 @@ import io.github.myxomatom.lutrin.core.pdf.mupdf.SingleThreadDocumentDispatcherF
 import java.io.FileNotFoundException
 import javax.inject.Singleton
 
-/** Provides the PDF engine to the rest of the app. */
+/**
+ * Provides the PDF engine to the rest of the app. Public, unlike [PdfModule], only so that the
+ * tests of other modules can replace the engine with a fake (`@TestInstallIn`): the MuPDF
+ * native library cannot be loaded under Robolectric.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
-internal abstract class PdfModule {
+abstract class PdfEngineModule {
     /** The MuPDF engine, shared by the whole app (it holds no per-document state). */
     @Binds
     @Singleton
-    abstract fun bindEngine(engine: MuPdfEngine): PdfEngine
+    internal abstract fun bindEngine(engine: MuPdfEngine): PdfEngine
+}
 
+/** The parts of the MuPDF engine; internal to `core:pdf`. */
+@Module
+@InstallIn(SingletonComponent::class)
+internal abstract class PdfModule {
     /** One dedicated thread per open document (ADR 0007, point 6). */
     @Binds
     abstract fun bindDispatcherFactory(factory: SingleThreadDocumentDispatcherFactory): DocumentDispatcherFactory

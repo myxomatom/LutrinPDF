@@ -12,7 +12,8 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
+| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014), testés sous Robolectric et par un test instrumenté ; pas encore essayés sur appareil |
+| M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
 
@@ -37,6 +38,18 @@ et page par page) et générateur du Baseline Profile. Les builds `benchmarkRele
 (`app/src/benchmark/`), qui ouvre le PDF de test embarqué sans sélecteur ; `check` vérifie
 qu'elle n'est pas dans le build release.
 
+Sur la branche `feat/open-with` (pas encore sur appareil) : **« Ouvrir avec » et partage
+entrant** (F01, ADR 0014). `MainActivity` répond à `ACTION_VIEW` (`content://`, PDF) et
+`ACTION_SEND` (un PDF) ; le document s'ouvre seul dans le lecteur et le retour ramène à
+l'application appelante ; extra `page` à partir de 1 ; refus (`file://`, lien web, autre type,
+URI de Lutrin) avec un message sur la bibliothèque. Validation dans
+`ParseIncomingDocumentUseCase` (`core:domain`). **À essayer sur appareil** : ouvrir un PDF depuis
+Fichiers, Gmail et Drive avec « Ouvrir avec » puis avec « Partager », le retour arrière, une
+rotation pendant l'ouverture, et `adb shell am start -a android.intent.action.VIEW -t
+application/pdf -d <uri content://> --ei page 3`. **Mesurer aussi le temps d'ouverture par une
+vraie URI SAF** reçue d'une autre application (les benchmarks de l'ADR 0012 ouvrent un fichier du
+cache).
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
@@ -44,9 +57,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
 1. **M3 Fichiers et récents** :
-   - « Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
-     URI et des types MIME (`AGENTS.md` §9) ;
-   - permissions persistantes, récents avec vignettes (Room), reprise de la dernière page ;
+   - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
+     URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
+   - permissions persistantes (`takePersistableUriPermission`, volontairement pas encore appelé :
+     ADR 0014 §7), récents avec vignettes (Room) et nom réel du document
+     (`OpenableColumns.DISPLAY_NAME`, le titre est encore le dernier segment de l'URI), reprise
+     de la dernière page ;
    - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
@@ -57,7 +73,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0012) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0014) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -65,6 +81,11 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     conservée (pas de Roboto embarquée) ;
   - **ADR 0012** : module `:benchmark`, activité d'ouverture réservée aux builds de mesure,
     plugin `androidx.baselineprofile`, pas de benchmark en CI ;
+  - **ADR 0014** : « Ouvrir avec » et partage entrant ; `MainActivity` en mode `standard`, un
+    document reçu est la seule entrée de la pile (retour = application appelante), intent traité
+    une seule fois (`savedInstanceState`, `MainViewModel`), validation des URI et des types
+    dans `core:domain` ; `PdfEngineModule` public pour que les tests Robolectric de `app`
+    remplacent le moteur (`@TestInstallIn`) ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
@@ -97,6 +118,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     bibliothèque : fournir `LocalLayoutDirection` dans le test ;
   - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
     `EOFException` sur `testDebugUnitTest`).
+- **Tests Robolectric de `app` qui ouvrent un document** : la bibliothèque native de MuPDF ne se
+  charge pas sous Robolectric (`UnsatisfiedLinkError` dès la construction de `MuPdfEngine`).
+  Écrire un test `@HiltAndroidTest` avec `@Config(application = HiltTestApplication::class)` :
+  `FakePdfEngineModule` (`app/src/test`) remplace alors `PdfEngineModule` par un
+  `FakePdfEngine` injectable (ADR 0014). Les tests sans `@HiltAndroidTest` utilisent le vrai
+  graphe et ne doivent pas ouvrir de document.
 - **Macrobenchmark** : les APK de mesure se compilent dans le conteneur
   (`./gradlew :benchmark:assemble`), mais rien ne s'y exécute (ni KVM ni appareil). Ne pas
   essayer de lancer les benchmarks en CI : sur émulateur, les temps n'ont pas de sens.
@@ -132,6 +159,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     `generateBaselineProfile` affichent quand même BUILD SUCCESSFUL sans exécuter aucun test** :
     toujours vérifier que les fichiers de sortie existent (`benchmarkData.json`,
     `baselineProfiles/*.txt`).
+- **Fournisseur de contenu des tests instrumentés** (`TestDocumentProvider`, `app/src/androidTest`) :
+  il tourne dans le processus de l'APK de test, qui ne contient pas la bibliothèque standard
+  Kotlin (AGP retire les dépendances communes avec l'application). Écrit en Kotlin, il plantait
+  avec `NoClassDefFoundError: kotlin.jvm.internal.Intrinsics` et l'application affichait
+  « fichier introuvable ». Il est donc **en Java** (`src/androidTest/java`) : ne pas le
+  réécrire en Kotlin. Son autorité ne doit pas commencer par le paquet de l'application (ADR 0014).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 

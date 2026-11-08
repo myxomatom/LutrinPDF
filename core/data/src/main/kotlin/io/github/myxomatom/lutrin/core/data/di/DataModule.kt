@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.data.di
 
+import android.content.ContentResolver
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -12,8 +13,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.myxomatom.lutrin.core.data.document.ContentResolverDocumentTypeResolver
 import io.github.myxomatom.lutrin.core.data.settings.DataStoreSettingsRepository
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
+import io.github.myxomatom.lutrin.core.domain.document.DocumentTypeResolver
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,9 +31,17 @@ internal abstract class DataModule {
     @Binds
     abstract fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
 
+    /** MIME types of incoming documents, asked to their providers (ADR 0014). */
+    @Binds
+    abstract fun bindDocumentTypeResolver(resolver: ContentResolverDocumentTypeResolver): DocumentTypeResolver
+
     companion object {
         /** File name of the preferences, in the app's private files. */
         private const val SETTINGS_FILE = "settings"
+
+        /** The app's content resolver, to query the providers of documents sent by other apps. */
+        @Provides
+        fun provideContentResolver(@ApplicationContext context: Context): ContentResolver = context.contentResolver
 
         /**
          * The preferences file. DataStore requires a single instance per file in the process,

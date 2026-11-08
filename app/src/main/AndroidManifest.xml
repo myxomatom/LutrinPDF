@@ -17,12 +17,30 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Lutrin">
 
+        <!-- The only exported component. Standard launch mode on purpose: a document opened from
+             another app shows in that app's task, and back returns to it (ADR 0014). -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- « Ouvrir avec » (F01): PDF served by a content provider only. No file:// (it bypasses
+                 the Storage Access Framework), no web link, no BROWSABLE, no wildcard type. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:mimeType="application/pdf"
+                    android:scheme="content" />
+            </intent-filter>
+            <!-- « Partager » (F01): a single PDF in EXTRA_STREAM. SEND_MULTIPLE belongs to the merge
+                 tool (M6). The URI is checked by ParseIncomingDocumentUseCase. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
     </application>

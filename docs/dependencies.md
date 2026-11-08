@@ -18,7 +18,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 |------------|---------|----------------|-----------|---------------|
 | MuPDF (Artifex) | 1.28.6 (`da5f5eb89`) | AGPL-3.0-or-later | `third-party:mupdf` → `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001, 0007) |
 | Kotlin stdlib, kotlinx-coroutines | 2.4.21 / 1.11.0 | Apache-2.0 | tous | Langage, asynchronisme |
-| AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app` | Extensions Kotlin d'Android |
+| AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app`, `core:data`, `feature:reader` | Extensions Kotlin d'Android |
 | AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
 | Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
@@ -75,6 +75,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
 | AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
 | Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+| Hilt Android Testing (`hilt-android-testing`) | 2.60.1 | Apache-2.0 | Tests Robolectric de `app` : remplace le moteur MuPDF, que Robolectric ne peut pas charger, par un faux (`@TestInstallIn`, ADR 0014). Même projet et même licence que Hilt |
 | AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
 | AndroidX Test UiAutomator | 2.4.0 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) |
 

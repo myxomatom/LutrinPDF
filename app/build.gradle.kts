@@ -178,8 +178,13 @@ dependencies {
     // Leak detection in debug builds only (AGENTS.md §8); never in release.
     debugImplementation(libs.leakcanary.android)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.truth)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // The activity tests replace the MuPDF engine, which Robolectric cannot load, with a fake.
+    testImplementation(libs.hilt.android.testing)
+    kspTest(libs.hilt.compiler)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
@@ -187,6 +192,9 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
+    // Test PDF files (assets of core:testing), served by the test provider of src/androidTest.
+    androidTestImplementation(projects.core.testing)
+    androidTestImplementation(libs.truth)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)

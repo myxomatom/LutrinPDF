@@ -27,9 +27,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Opens the document given in the navigation arguments ([READER_URI_ARG]) and keeps it open
- * while the reader is shown; the document is closed with the ViewModel. Also follows the scroll
- * mode setting (F03) and remembers the current page, so that switching mode keeps it.
+ * Opens the document given in the navigation arguments ([READER_URI_ARG]) at the page of
+ * [READER_PAGE_ARG], clamped to the document, and keeps it open while the reader is shown; the
+ * document is closed with the ViewModel. Also follows the scroll mode setting (F03) and
+ * remembers the current page, so that switching mode keeps it.
  *
  * @param observeSettings reads the scroll mode, shared by every document (ADR 0011).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
@@ -45,6 +46,7 @@ constructor(
     private val setScrollMode: SetScrollModeUseCase,
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
+    private val initialPage: Int = savedStateHandle[READER_PAGE_ARG] ?: 0
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
     private var document: PdfDocument? = null
@@ -84,6 +86,8 @@ constructor(
             .onSuccess { opened ->
                 document = opened
                 val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
+                // Before the Ready state: the screen starts on the page of its first Ready state.
+                currentPage.value = initialPage.coerceIn(0, opened.pageCount - 1)
                 documentState.value =
                     ReaderUiState.Ready(
                         title = opened.metadata.title ?: displayName(uri),

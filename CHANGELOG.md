@@ -10,6 +10,20 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- « Ouvrir avec » et partage entrant (F01, ADR 0014) : un PDF envoyé par une autre application
+  (`ACTION_VIEW`, `ACTION_SEND` avec un seul document) s'ouvre directement dans le lecteur, et le
+  retour ramène à cette application. L'extra `page` (`Int`, à partir de 1) d'`ACTION_VIEW` ouvre
+  le document à cette page (`SPEC.md` §2.4), ramenée à la dernière page si elle la dépasse. Seules
+  les URI `content://` sont acceptées ; `file://`, les liens web, les URI des fournisseurs de
+  Lutrin et les types autres que PDF sont refusés avec un message sur la bibliothèque. Sans type
+  ou avec un type générique, l'en-tête `%PDF-` décide. Une rotation ne rouvre pas le document, un
+  nouvel intent remplace le document ouvert. Validation dans `ParseIncomingDocumentUseCase`
+  (`core:domain`), type demandé au fournisseur par `ContentResolverDocumentTypeResolver`
+  (`core:data`).
+- Lecteur : argument de navigation `page` (page de départ, ramenée au document).
+- Tests : `hilt-android-testing` pour remplacer le moteur MuPDF par un faux dans les tests
+  Robolectric de l'application ; fournisseur de documents de test et test instrumenté
+  d'« Ouvrir avec » et du partage.
 - Build sous Windows (ADR 0013) : les sources C des ressources embarquées par MuPDF sont
   générées par une tâche Gradle en Kotlin (`generateMupdfResources`, plugin `lutrin.mupdf`)
   au lieu de `make generate`, avec une sortie identique octet pour octet à `hexdump.sh`

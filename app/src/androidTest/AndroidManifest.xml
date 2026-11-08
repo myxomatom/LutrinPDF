@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Merged into the instrumented test APK only, never into the app. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Serves the test PDF files to the app under test, like a file manager would (F01).
+             Exported without permission: it only holds public test files. Its authority does
+             not start with the app's package name, which the app refuses (ADR 0014). -->
+        <provider
+            android:name="io.github.myxomatom.lutrin.TestDocumentProvider"
+            android:authorities="lutrin.androidtest.documents"
+            android:exported="true" />
+    </application>
+</manifest>
