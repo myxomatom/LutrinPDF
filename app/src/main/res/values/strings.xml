@@ -2,4 +2,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="app_name" translatable="false">Lutrin</string>
+    <!-- Documents sent by other apps with "Open with" or "Share" and refused (ADR 0014). -->
+    <string name="incoming_rejected_missing">No document was received from the other app.</string>
+    <string name="incoming_rejected_link">This link cannot be opened. Open the document from your files, or with “Open a file”.</string>
+    <string name="incoming_rejected_type">Lutrin only opens PDF documents.</string>
 </resources>

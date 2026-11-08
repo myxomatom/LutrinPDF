@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <!-- Non-breaking spaces inside the guillemets keep them next to their words (French typography). -->
+    <string name="incoming_rejected_missing">Aucun document n’a été reçu de l’autre application.</string>
+    <string name="incoming_rejected_link">Impossible d’ouvrir ce lien. Ouvrez le document depuis vos fichiers, ou avec « Ouvrir un fichier ».</string>
+    <string name="incoming_rejected_type">Lutrin n’ouvre que les documents PDF.</string>
+</resources>
