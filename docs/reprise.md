@@ -30,8 +30,8 @@ Sur la branche de la session suivante, testé seulement sous Robolectric : **mod
 « Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
 glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
 
-Module `:benchmark` (ADR 0012, compilé mais **jamais exécuté** : pas d'appareil dans le
-conteneur cloud) : Macrobenchmark (démarrage, ouverture du PDF de 600 pages, défilement continu
+Module `:benchmark` (ADR 0012, exécuté le 2026-11-08 sur un Xiaomi 23013PC75G sous Android 15,
+chiffres dans l'ADR) : Macrobenchmark (démarrage, ouverture du PDF de 600 pages, défilement continu
 et page par page) et générateur du Baseline Profile. Les builds `benchmarkRelease` /
 `nonMinifiedRelease` de `:app` ont une activité réservée, `BenchmarkReaderActivity`
 (`app/src/benchmark/`), qui ouvre le PDF de test embarqué sans sélecteur ; `check` vérifie
