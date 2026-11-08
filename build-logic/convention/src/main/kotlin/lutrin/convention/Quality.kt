@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package lutrin.convention
 
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.dokka.gradle.DokkaExtension
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
@@ -81,6 +84,11 @@ private fun Project.configureDetekt() {
             if (requested.group == "org.jetbrains.kotlin") useVersion(detektKotlin)
         }
     }
+    // detekt defaults its --jvm-target to the JVM running Gradle, and its compiler rejects
+    // recent ones ("Invalid value (25) passed to --jvm-target"): analyse at the project level.
+    val jvmTarget = JAVA_VERSION.toString()
+    tasks.withType<Detekt>().configureEach { this.jvmTarget = jvmTarget }
+    tasks.withType<DetektCreateBaselineTask>().configureEach { this.jvmTarget = jvmTarget }
 }
 
 private fun Project.configureKover() {
