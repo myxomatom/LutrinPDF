@@ -83,7 +83,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Outil | Version | Licence |
 |-------|---------|---------|
 | Gradle | 9.8.2 | Apache-2.0 |
-| Android Gradle Plugin | 9.5.0 | Apache-2.0 |
+| Android Gradle Plugin | 9.5.1 | Apache-2.0 |
 | KSP | 2.3.13 | Apache-2.0 |
 | ktlint / plugin Gradle ktlint | 1.8.0 / 14.2.0 | MIT |
 | detekt / compose-rules | 1.23.8 / 0.4.27 | Apache-2.0 |

@@ -114,6 +114,7 @@ changement y est signalé.
 - CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
 - APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
 - `ContentOpener` et `DocumentDispatcherFactory` (core:pdf) passent en `internal` : le moteur PDF n'expose plus ces détails d'implémentation.
+- Android Gradle Plugin 9.5.0 → 9.5.1 ; synchronisation Gradle en parallèle dans Android Studio (`org.gradle.tooling.parallel`).
 
 ### Sécurité
 - JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.
