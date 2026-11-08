@@ -76,6 +76,8 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Build : sous Windows, la compilation native de MuPDF n'échoue plus avec `make (e=87)` à
+  l'archivage de `libmupdf_core.a` (ndk-build en commandes courtes, `APP_SHORT_COMMANDS`).
 - Lecteur : après un saut de page avec le curseur, l'indicateur et la description TalkBack
   affichaient parfois la page précédente.
 - Moteur PDF : un échec natif pendant la fermeture d'un document ne fait plus planter

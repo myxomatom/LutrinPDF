@@ -110,6 +110,11 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 - **Macrobenchmark** : les APK de mesure se compilent dans le conteneur
   (`./gradlew :benchmark:assemble`), mais rien ne s'y exécute (ni KVM ni appareil). Ne pas
   essayer de lancer les benchmarks en CI : sur émulateur, les temps n'ont pas de sens.
+- **Build natif sous Windows** : `make (e=87): Paramètre incorrect` sur `libmupdf_core.a`
+  vient de la limite de 32 767 caractères d'une ligne de commande Windows (la commande `ar`
+  liste des centaines d'objets en chemin absolu). `third-party/mupdf/build.gradle.kts` passe
+  `APP_SHORT_COMMANDS=true` à ndk-build sous Windows seulement (fichiers de réponse) ; ne pas
+  modifier l'`Android.mk` du sous-module.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
