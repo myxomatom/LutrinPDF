@@ -133,3 +133,24 @@ embarqué ; M2 demande des benchmarks d'ouverture et de défilement. Aucun modul
   par un URI de contenu.
 - Documents mis à jour : `docs/open-questions.md` (point 12 tranché), `docs/dependencies.md`,
   `docs/architecture.md`, `README.md`, `CHANGELOG.md`, `ROADMAP.md` §0, `docs/reprise.md`.
+
+## Mesures (2026-11-08)
+
+Appareil : Xiaomi 23013PC75G, Android 15 / HyperOS OS3.0.2.0, build `benchmarkRelease`.
+Aucun benchmark n'a planté. Objectif de M2 (P90 < 16 ms, pas de plantage) atteint.
+
+| Benchmark | Résultat |
+|-----------|----------|
+| `ScrollBenchmark.continuousScroll` (PDF de 600 pages, environ 1924 images) | `frameDurationCpuMs` P50 2,9 / P90 4,0 / P95 6,0 / P99 8,7 ms ; `frameOverrunMs` P90 -2,7 / P99 -1,5 ms |
+| `ScrollBenchmark.pageByPage` | `frameDurationCpuMs` P50 3,3 / P90 6,6 / P95 8,8 / P99 11,8 ms ; `frameOverrunMs` P99 0,9 ms |
+| `OpenDocumentBenchmark.openLargeDocumentCold` | `timeToFullDisplayMs` médiane 1050 (min 869, max 1578) ; `timeToInitialDisplayMs` médiane 457 ms |
+| `StartupBenchmark`, sans profil existant | à froid 369,4 ms, `coldWithoutProfile` 372,5 ms, tiède 129,5 ms (médianes) |
+| `StartupBenchmark`, avec le Baseline Profile | `coldStartup` 357,8 ms (min 347, max 396), `coldStartupWithoutProfile` 367,1 ms (min 339,5, max 464,5), tiède 117,7 ms (médianes) |
+
+Le profil réduit le démarrage à froid d'environ 2,5 % en médiane, surtout sur la queue de
+distribution (maximum 396 contre 465 ms). Le gain est modeste parce que l'écran de démarrage
+(E1, bibliothèque) est petit ; il grandira avec M3.
+
+Le profil généré (`app/src/release/generated/baselineProfiles/baseline-prof.txt`, 17 344 lignes,
+et `startup-prof.txt`, 11 320 lignes) contient aussi des règles pour `BenchmarkReaderActivity`,
+classe absente du build release : ces règles sont ignorées, sans conséquence.

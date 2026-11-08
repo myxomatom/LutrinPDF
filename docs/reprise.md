@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-05.**
+> session de travail. **Dernière mise à jour : 2026-11-08.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -11,7 +11,7 @@
 |-------|------|
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
-| M2 Lecteur de base | 🚧 Code terminé, module `:benchmark` compris (ADR 0012) ; restent les mesures sur appareil |
+| M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 à M8 | ⏳ À faire (E1 et E3 existent déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -43,18 +43,8 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-1. **Finir M2 sur appareil réel (mainteneur)** — rien ne peut se faire dans le conteneur :
-   - téléphone branché en USB, débogage USB activé, écran déverrouillé ; désinstaller toute
-     version publiée de Lutrin (même identifiant, autre signature) ;
-   - `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest` ; lire
-     `benchmark/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/<appareil>/*-benchmarkData.json` :
-     `ScrollBenchmark` doit avoir `frameDurationCpuMs` P90 < 16 ms (60 images/s), aucun
-     benchmark ne doit planter (pas de crash mémoire sur le gros PDF) ;
-     `OpenDocumentBenchmark` : `timeToFullDisplayMs` ;
-   - `./gradlew :app:generateBaselineProfile` (Android 13+, ou 9+ rooté), puis committer
-     `app/src/release/generated/baselineProfiles/baseline-prof.txt` et `startup-prof.txt` ;
-   - relancer `StartupBenchmark` pour comparer `coldStartup` et `coldStartupWithoutProfile` ;
-   - reporter les chiffres et le modèle d'appareil dans `ROADMAP.md` §0, passer M2 à ✅.
+1. **Support du build sous Windows** : remplacer l'appel à `make generate` (génération des
+   sources de MuPDF) par une tâche Gradle en Kotlin, pour que le build ne dépende plus de `make`.
 2. **M3 Fichiers et récents** :
    - « Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9) ;
@@ -115,6 +105,18 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
   liste des centaines d'objets en chemin absolu). `third-party/mupdf/build.gradle.kts` passe
   `APP_SHORT_COMMANDS=true` à ndk-build sous Windows seulement (fichiers de réponse) ; ne pas
   modifier l'`Android.mk` du sous-module.
+- **Benchmarks sur Xiaomi / HyperOS** (constaté le 2026-11-08) :
+  - activer dans les options pour les développeurs « Installer via USB » **et** « Débogage USB
+    (paramètres de sécurité) », sinon `SecurityException ... INSTALL_GRANT_RUNTIME_PERMISSIONS`
+    (le lanceur de tests installe avec `-g`) ; le réglage ne prend effet qu'après un
+    redémarrage du téléphone (vérifier : `adb shell getprop persist.security.adbinput` vaut 1) ;
+  - chaque installation affiche une confirmation sur le téléphone, à accepter vite, sinon
+    `INSTALL_FAILED_USER_RESTRICTED` ; `DELETE_FAILED_INTERNAL_ERROR` à la désinstallation veut
+    seulement dire que le paquet est absent ;
+  - **si l'installation échoue, `connectedBenchmarkReleaseAndroidTest` et
+    `generateBaselineProfile` affichent quand même BUILD SUCCESSFUL sans exécuter aucun test** :
+    toujours vérifier que les fichiers de sortie existent (`benchmarkData.json`,
+    `baselineProfiles/*.txt`).
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
