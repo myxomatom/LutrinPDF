@@ -24,6 +24,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
 | Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
 | AndroidX DataStore Preferences | 1.2.1 | Apache-2.0 | `core:data` | Préférences enregistrées sur l'appareil (`SPEC.md` §5, ADR 0010) |
+| AndroidX Room (`room-runtime`) | 2.8.5 | Apache-2.0 | `core:data` | Base locale des récents et des positions de lecture (`SPEC.md` §4.1, §5, ADR 0015). Tire AndroidX SQLite 2.6.2 (`sqlite`, `sqlite-framework`, SQLite du système, pas de SQLite embarqué), `room-common`, AndroidX Collection et Annotation, tous Apache-2.0 ; aucune permission. Licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
 | AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader` | Navigation entre écrans (`SPEC.md` §4.1) |
 | AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | ViewModels dans Compose |
 | AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` |
@@ -86,6 +87,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Gradle | 9.8.2 | Apache-2.0 |
 | Android Gradle Plugin | 9.5.1 | Apache-2.0 |
 | KSP | 2.3.13 | Apache-2.0 |
+| Room compiler (`room-compiler`, via KSP) et plugin Gradle Room (`androidx.room`, export du schéma dans `core/data/schemas/`) | 2.8.5 | Apache-2.0 |
 | ktlint / plugin Gradle ktlint | 1.8.0 / 14.2.0 | MIT |
 | detekt / compose-rules | 1.23.8 / 0.4.27 | Apache-2.0 |
 | Kover | 0.9.11 | Apache-2.0 |
@@ -107,4 +109,3 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Dépendance | Jalon | Licence | Usage |
 |------------|-------|---------|-------|
 | AboutLibraries | M5 | Apache-2.0 | Écran des licences tierces (ADR 0003) |
-| Room | M3 | Apache-2.0 | Persistance |
