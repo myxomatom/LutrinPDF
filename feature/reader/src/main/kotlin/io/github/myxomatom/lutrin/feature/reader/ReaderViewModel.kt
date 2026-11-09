@@ -32,8 +32,9 @@ import kotlinx.coroutines.launch
  * the reader is shown; the document is closed with the ViewModel. It opens at the page of
  * [READER_PAGE_ARG] when given, otherwise where the user stopped reading (F12), clamped to the
  * document. A successful opening is added to the recent list (F11) and the page shown is saved
- * as the user reads ([ReadingHistory]). Also follows the scroll mode setting (F03) and remembers
- * the current page, so that switching mode keeps it.
+ * as the user reads ([ReadingHistory]). A document that cannot be opened but is in the recent
+ * list can be removed from it from the error screen (V8, [onRemoveFromRecents]). Also follows the
+ * scroll mode setting (F03) and remembers the current page, so that switching mode keeps it.
  *
  * @param observeSettings reads the scroll mode, shared by every document (ADR 0011).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
@@ -85,6 +86,18 @@ constructor(
         viewModelScope.launch { setScrollMode(mode) }
     }
 
+    /**
+     * Removes the document that could not be opened from the recent list (V8, ADR 0016). The
+     * removal completes even if the reader closes right after. Ignored unless the error screen
+     * offers it.
+     */
+    fun onRemoveFromRecents() {
+        val error = documentState.value as? ReaderUiState.Error ?: return
+        if (!error.inRecents) return
+        history.remove(uri)
+        documentState.value = error.copy(inRecents = false)
+    }
+
     private suspend fun open() {
         engine
             .open(DocumentSource.FromUri(uri.toUri()))
@@ -102,7 +115,9 @@ constructor(
                     )
                 val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title)
                 viewModelScope.launch { history.follow(opening, currentPage) }
-            }.onFailure { error -> documentState.value = ReaderUiState.Error(error.toReaderError()) }
+            }.onFailure { error ->
+                documentState.value = ReaderUiState.Error(error.toReaderError(), inRecents = history.isRecent(uri))
+            }
     }
 
     override fun onCleared() {

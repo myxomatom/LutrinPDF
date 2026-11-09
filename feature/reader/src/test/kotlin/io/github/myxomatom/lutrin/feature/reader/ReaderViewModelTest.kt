@@ -7,8 +7,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
@@ -66,6 +68,8 @@ class ReaderViewModelTest {
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
             SaveLastPageUseCase(recents),
+            IsRecentDocumentUseCase(recents),
+            RemoveRecentDocumentUseCase(recents),
             // A child of the test, so that advanceUntilIdle runs the write done on closing.
             this,
         ),
@@ -466,4 +470,78 @@ class ReaderViewModelTest {
 
         assertThat(recents.recentDocuments.value).hasSize(1)
     }
+
+    // Removal from the error screen (V8, ADR 0016)
+
+    @Test
+    fun `a recent document that cannot be opened offers to remove it`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3)))
+
+        val state = viewModel(FakePdfEngine(Result.failure(PdfError.NotAccessible()))).uiState.value
+
+        assertThat(state).isEqualTo(ReaderUiState.Error(ReaderError.NOT_ACCESSIBLE, inRecents = true))
+    }
+
+    @Test
+    fun `a document out of the recent list does not offer to remove it`() = runTest(dispatcher) {
+        val state = viewModel(FakePdfEngine(Result.failure(PdfError.NotAccessible()))).uiState.value
+
+        assertThat(state).isEqualTo(ReaderUiState.Error(ReaderError.NOT_ACCESSIBLE, inRecents = false))
+    }
+
+    @Test
+    fun `removing from the error screen removes the entry, even once the reader is closed`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3)))
+        val store = ViewModelStore()
+        val viewModel = viewModel(FakePdfEngine(Result.failure(PdfError.Unreadable()))).also { store.put("reader", it) }
+
+        viewModel.onRemoveFromRecents()
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(recents.removals).containsExactly(documentIdFor(uri) to null)
+        assertThat(recents.recentDocuments.value).isEmpty()
+    }
+
+    @Test
+    fun `once removed, the error screen no longer offers it and a second removal does nothing`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3)))
+        val viewModel = viewModel(FakePdfEngine(Result.failure(PdfError.NotAccessible())))
+
+        viewModel.onRemoveFromRecents()
+        advanceUntilIdle()
+        viewModel.onRemoveFromRecents()
+        advanceUntilIdle()
+
+        assertThat(recents.removals).hasSize(1)
+        assertThat(viewModel.uiState.value)
+            .isEqualTo(ReaderUiState.Error(ReaderError.NOT_ACCESSIBLE, inRecents = false))
+    }
+
+    @Test
+    fun `removal is ignored when the error screen does not offer it`() = runTest(dispatcher) {
+        viewModel(FakePdfEngine(Result.failure(PdfError.NotAccessible()))).onRemoveFromRecents()
+        openWithHistory().onRemoveFromRecents()
+        advanceUntilIdle()
+
+        assertThat(recents.removals).isEmpty()
+        assertThat(recents.recentDocuments.value).hasSize(1)
+    }
+
+    @Test
+    fun `a reader open on a document removed meanwhile keeps working and does not bring it back`() =
+        runTest(dispatcher) {
+            val store = ViewModelStore()
+            val viewModel = openWithHistory(pageCount = 10).also { store.put("reader", it) }
+            recents.remove(documentIdFor(uri))
+
+            viewModel.onPageChange(4)
+            advanceTimeBy(ReadingHistory.SAVE_DELAY.inWholeMilliseconds + 1)
+            viewModel.onPageChange(7)
+            store.clear()
+            advanceUntilIdle()
+
+            assertThat(recents.savedPages).containsExactly(uri to 4, uri to 7).inOrder()
+            assertThat(recents.recentDocuments.value).isEmpty()
+        }
 }

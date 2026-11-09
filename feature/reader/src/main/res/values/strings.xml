@@ -14,6 +14,7 @@
     <string name="reader_scroll_continuous">Continuous</string>
     <string name="reader_scroll_paged">Page by page</string>
     <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
+    <string name="reader_remove_from_recents">Remove from recents</string>
     <string name="reader_error_title">This document cannot be opened</string>
     <string name="reader_error_unreadable">The file may be damaged or incomplete.</string>
     <string name="reader_error_unsupported">This file is not a PDF.</string>
