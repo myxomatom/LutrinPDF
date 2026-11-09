@@ -18,8 +18,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -29,10 +31,12 @@ import io.github.myxomatom.lutrin.R
 import io.github.myxomatom.lutrin.core.domain.document.IncomingDocumentResult
 import io.github.myxomatom.lutrin.core.domain.document.IncomingRejection
 import io.github.myxomatom.lutrin.feature.library.LibraryScreen
+import io.github.myxomatom.lutrin.feature.library.LibraryUiState
 import io.github.myxomatom.lutrin.feature.reader.navigateToReader
 import io.github.myxomatom.lutrin.feature.reader.readerScreen
 import io.github.myxomatom.lutrin.feature.settings.navigateToSettings
 import io.github.myxomatom.lutrin.feature.settings.settingsScreen
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /** Route of the library (E1), the start destination. */
@@ -47,16 +51,24 @@ private const val PDF_MIME_TYPE = "application/pdf"
  *
  * A document sent by another app replaces the whole back stack with its reader: back from it
  * leaves the activity and returns to that app. A refused request brings back the library, with
- * a message saying why.
+ * a message saying why. A document picked in the system file picker or tapped in the recent list
+ * opens in the reader at the page where the user stopped reading (ADR 0015).
  *
+ * @param libraryState the recent documents, collected while the library is shown.
  * @param modifier modifier applied to the screen.
+ * @param loadThumbnail reads the thumbnail file of a recent document.
+ * @param onThumbnailOutdated called with a recent document shown with a missing or outdated
+ *   thumbnail.
  * @param incomingRequest document request from another app not handled yet, or `null`.
  * @param onConsumeIncomingRequest called with [incomingRequest] once it is handled.
  * @param onExit leaves the activity, when back is pressed on the only screen left.
  */
 @Composable
 fun LutrinApp(
+    libraryState: StateFlow<LibraryUiState>,
     modifier: Modifier = Modifier,
+    loadThumbnail: suspend (String) -> ImageBitmap? = { null },
+    onThumbnailOutdated: (String) -> Unit = {},
     incomingRequest: IncomingDocumentResult? = null,
     onConsumeIncomingRequest: (IncomingDocumentResult) -> Unit = {},
     onExit: () -> Unit = {},
@@ -66,13 +78,18 @@ fun LutrinApp(
     Box(modifier.fillMaxSize()) {
         NavHost(navController, startDestination = LIBRARY_ROUTE, modifier = Modifier.fillMaxSize()) {
             composable(LIBRARY_ROUTE) {
+                val state by libraryState.collectAsStateWithLifecycle()
                 val picker =
                     rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
                         uri?.let { navController.navigateToReader(it) }
                     }
                 LibraryScreen(
+                    state = state,
                     onOpenFile = { picker.launch(arrayOf(PDF_MIME_TYPE)) },
                     onOpenSettings = navController::navigateToSettings,
+                    onOpenDocument = { navController.navigateToReader(it.toUri()) },
+                    loadThumbnail = loadThumbnail,
+                    onThumbnailOutdated = onThumbnailOutdated,
                 )
             }
             readerScreen(onBack = { navController.goBack(onExit) })

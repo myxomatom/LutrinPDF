@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import io.github.myxomatom.lutrin.feature.library.LibraryUiState
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,7 +29,9 @@ class LutrinAppScreenshotTest {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { LutrinApp() }
+                LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
+                    LutrinApp(libraryState = MutableStateFlow(LibraryUiState.Empty))
+                }
             }
         }
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
