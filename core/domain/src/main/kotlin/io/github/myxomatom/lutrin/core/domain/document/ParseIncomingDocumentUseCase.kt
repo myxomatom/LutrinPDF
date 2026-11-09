@@ -15,7 +15,8 @@ import javax.inject.Inject
  *   (`application/octet-stream`…): the engine then accepts the content only if it starts with
  *   the `%PDF-` header, and reports « not a PDF » otherwise;
  * - the `page` extra, one-based, is read for [IncomingIntent.ACTION_VIEW] only (`SPEC.md` §2.4);
- *   a missing, zero or negative page opens the first page.
+ *   a missing, zero or negative page is no page at all: the reader resumes the saved page, or
+ *   opens the first one (ADR 0015).
  *
  * @param typeResolver asks the provider for the MIME type when the sender's type is not PDF.
  */
@@ -142,6 +143,6 @@ private fun authorityProblem(hierarchical: String, receiverPackage: String): Inc
  * Zero-based page index of the one-based `page` extra.
  *
  * @param page the page number sent, or `null`.
- * @return `page - 1`, or 0 (first page) when [page] is missing, zero or negative.
+ * @return `page - 1`, or `null` (no explicit page) when [page] is missing, zero or negative.
  */
-internal fun pageIndex(page: Int?): Int = if (page != null && page >= 1) page - 1 else 0
+internal fun pageIndex(page: Int?): Int? = if (page != null && page >= 1) page - 1 else null
