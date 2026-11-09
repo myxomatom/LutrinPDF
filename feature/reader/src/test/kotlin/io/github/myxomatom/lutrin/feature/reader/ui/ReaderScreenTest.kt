@@ -114,8 +114,6 @@ class ReaderScreenTest {
             mapOf(
                 ReaderError.UNSUPPORTED_FORMAT to "This file is not a PDF.",
                 ReaderError.NOT_ACCESSIBLE to "The file was moved or deleted, or access to it was revoked.",
-                ReaderError.PASSWORD_REQUIRED to
-                    "This document is protected by a password. Opening protected documents is coming soon.",
             )
         var reason by mutableStateOf(ReaderError.UNSUPPORTED_FORMAT)
         composeRule.setContent {

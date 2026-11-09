@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.feature.reader
 
 import io.github.myxomatom.lutrin.core.domain.dispatchers.ApplicationScope
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
@@ -29,12 +30,16 @@ import kotlinx.coroutines.launch
  * outlives the reader. Saving a page never adds an entry: a document removed from the list
  * while a reader is open on it stays out of it.
  *
+ * Nothing here ever sees the password of a protected document (ADR 0017): an opening only says
+ * that one was needed.
+ *
  * @param getStartPage chooses the first page: explicit, saved, or the first one.
  * @param recordOpening adds the document to the recent list; its thumbnail is drawn later, by
  *   the library, so that it never competes with this opening (ADR 0015).
  * @param saveLastPage stores the page.
  * @param isRecentDocument tells whether a document is in the list.
  * @param removeRecentDocument removes a document from the list.
+ * @param getDocumentName names a document before it is open (password dialog).
  * @param applicationScope where the last write and the removal run once the reader is gone.
  */
 @Suppress("LongParameterList") // Use cases injected by Hilt.
@@ -44,6 +49,7 @@ class ReadingHistory @Inject constructor(
     private val saveLastPage: SaveLastPageUseCase,
     private val isRecentDocument: IsRecentDocumentUseCase,
     private val removeRecentDocument: RemoveRecentDocumentUseCase,
+    private val getDocumentName: GetDocumentNameUseCase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
 ) {
     /** Last page stored for the followed document; `null` until it is recorded. */
@@ -93,6 +99,15 @@ class ReadingHistory @Inject constructor(
      * @param uri the document.
      */
     suspend fun isRecent(uri: String): Boolean = isRecentDocument(uri)
+
+    /**
+     * The name of a document that is not open yet: its name in the recent list, or the one its
+     * provider gives.
+     *
+     * @param uri the document.
+     * @return the name, or `null` when none is known.
+     */
+    suspend fun documentName(uri: String): String? = getDocumentName(uri)
 
     /**
      * Removes the document from the recent list, with its saved page, permission and thumbnail

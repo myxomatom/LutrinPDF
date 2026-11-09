@@ -2,6 +2,8 @@
 package io.github.myxomatom.lutrin.core.domain.recents
 
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.document.DocumentNameResolver
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -150,6 +152,29 @@ class RecentDocumentsUseCasesTest {
         assertThat(drawn.copy(thumbnailDrawnAt = opened.minusSeconds(5)).isThumbnailOutdated).isTrue()
         assertThat(drawn.copy(thumbnailDrawnAt = null).isThumbnailOutdated).isTrue()
         assertThat(drawn.copy(thumbnailPath = null).isThumbnailOutdated).isTrue()
+    }
+
+    /** Provider names of a few URIs. */
+    private fun providerNames(vararg names: Pair<String, String>) = object : DocumentNameResolver {
+        override suspend fun nameOf(uri: String): String? = names.toMap()[uri]
+    }
+
+    @Test
+    fun `the name of a document comes from the recent list first`() = runTest {
+        val recents = InMemoryRecents(listOf(entry(URI, lastPage = 0).copy(displayName = "Relevé de compte")))
+
+        val name = GetDocumentNameUseCase(recents, providerNames(URI to "releve.pdf"))(URI)
+
+        assertThat(name).isEqualTo("Relevé de compte")
+    }
+
+    @Test
+    fun `the name of a new document comes from its provider`() = runTest {
+        val getName = GetDocumentNameUseCase(InMemoryRecents(), providerNames(URI to "Relevé", "content://b" to " "))
+
+        assertThat(getName(URI)).isEqualTo("Relevé")
+        assertThat(getName("content://b")).isNull()
+        assertThat(getName("content://unknown")).isNull()
     }
 
     @Test

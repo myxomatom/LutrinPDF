@@ -7,6 +7,7 @@ package io.github.myxomatom.lutrin.core.testing
 import android.graphics.Bitmap
 import io.github.myxomatom.lutrin.core.domain.pdf.OutlineItem
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
@@ -86,14 +87,30 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
  * [PdfEngine] for tests: returns [result] for every source and records the requests.
  *
  * @property result what `open` returns; a failure should hold a `PdfError`.
+ * @property password when set, the documents are encrypted with this user password, like the
+ *   real engine: no password gives [PdfError.PasswordRequired], another one
+ *   [PdfError.IncorrectPassword], and this one [result]. Test data, never a real secret.
  */
-class FakePdfEngine(var result: Result<PdfDocument> = Result.success(FakePdfDocument())) : PdfEngine {
+class FakePdfEngine(
+    var result: Result<PdfDocument> = Result.success(FakePdfDocument()),
+    var password: String? = null,
+) : PdfEngine {
     /** Every opened source, in order. */
     val openedSources: MutableList<DocumentSource> = CopyOnWriteArrayList()
 
-    /** Records [source] in [openedSources] and returns [result]. */
+    /** The password given to each call, in order (`null` when none). */
+    val givenPasswords: MutableList<String?> = CopyOnWriteArrayList()
+
+    /** Records the call in [openedSources] and [givenPasswords], then checks [password] and returns [result]. */
     override suspend fun open(source: DocumentSource, password: String?): Result<PdfDocument> {
         openedSources += source
-        return result
+        givenPasswords += password
+        val expected = this.password
+        return when {
+            expected == null -> result
+            password == null -> Result.failure(PdfError.PasswordRequired())
+            password != expected -> Result.failure(PdfError.IncorrectPassword())
+            else -> result
+        }
     }
 }

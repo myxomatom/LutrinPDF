@@ -21,6 +21,21 @@ sealed interface ReaderUiState {
     data class Error(val reason: ReaderError, val inRecents: Boolean = false) : ReaderUiState
 
     /**
+     * The document is encrypted and needs its user password (F10): the password dialog (V4)
+     * asks for it. The password itself is never part of the state (ADR 0017): it stays in the
+     * field of the dialog until it is tried, so that no state, log or `toString()` can hold it.
+     *
+     * @property documentName name of the document, shown in the question.
+     * @property isIncorrect whether the last password tried did not open the document.
+     * @property isChecking whether a password is being tried: the dialog ignores new attempts.
+     */
+    data class PasswordRequired(
+        val documentName: String,
+        val isIncorrect: Boolean = false,
+        val isChecking: Boolean = false,
+    ) : ReaderUiState
+
+    /**
      * The document is open.
      *
      * @property title document title, or file name.
@@ -39,11 +54,11 @@ sealed interface ReaderUiState {
     ) : ReaderUiState
 }
 
-/** Why a document could not be opened (`SPEC.md` §6). */
+/**
+ * Why a document could not be opened (`SPEC.md` §6). An encrypted document is not an error: the
+ * reader asks for its password ([ReaderUiState.PasswordRequired]).
+ */
 enum class ReaderError {
-    /** Encrypted document: the password dialog (F10) arrives with milestone M3. */
-    PASSWORD_REQUIRED,
-
     /** Damaged PDF. */
     UNREADABLE,
 

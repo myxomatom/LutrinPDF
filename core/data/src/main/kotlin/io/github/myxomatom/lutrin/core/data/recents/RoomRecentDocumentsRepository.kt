@@ -195,5 +195,6 @@ internal fun displayName(providerName: String?, fallback: String): String =
         ?: fallback.withoutPdfExtension().takeIf { it.isNotBlank() }
         ?: fallback
 
-private fun String.withoutPdfExtension(): String =
+/** This name without its `.pdf` extension, in any case, and without surrounding spaces. */
+internal fun String.withoutPdfExtension(): String =
     if (lowercase(Locale.ROOT).endsWith(PDF_EXTENSION)) dropLast(PDF_EXTENSION.length).trim() else trim()
