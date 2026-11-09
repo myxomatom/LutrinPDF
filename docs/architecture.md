@@ -1,7 +1,7 @@
 # Architecture
 
 > Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 et se
-> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-05 : `feature:tools` et
+> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-09 : `feature:tools` et
 > `feature:assistant` sont encore vides ; le module de test `:benchmark` s'y ajoute en M2
 > (ADR 0012).
 
@@ -47,6 +47,7 @@ flowchart TD
     fl & fr & fs & ft & fa --> domain[":core:domain"]
 
     data --> domain
+    data -->|"vignettes (PdfEngine)"| pdf
     pdf --> domain
     pdf --> mupdf[":third-party:mupdf"]
 
@@ -55,7 +56,9 @@ flowchart TD
 ```
 
 `core:pdf` et `core:data` implémentent les interfaces déclarées dans `core:domain` ;
-`:app` les relie par injection de dépendances. Les features ne connaissent que le domaine.
+`:app` les relie par injection de dépendances. Les features ne connaissent que le domaine
+(et `core:pdf` pour le lecteur). `core:data` utilise `PdfEngine` pour dessiner les vignettes
+des récents, sans voir aucun type MuPDF (ADR 0015).
 
 ## Moteur PDF (`core:pdf`)
 
@@ -126,6 +129,33 @@ flowchart LR
   façon ; le lecteur le lit et l'écrit par ses propres cas d'usage, sans dépendre de
   `feature:settings`.
 
+## Récents et reprise de lecture (`feature:library`, `feature:reader`, `core:data`)
+
+```mermaid
+flowchart LR
+    picker["Sélecteur / Ouvrir avec / Partager"] --> rvm["ReaderViewModel"]
+    rvm -->|"GetStartPageUseCase"| repo["RecentDocumentsRepository (Room)"]
+    rvm -->|"ReadingHistory : RecordDocumentOpening, SaveLastPage (1 s, fermeture)"| repo
+    repo -->|"takePersistableUriPermission / release"| cr["ContentResolver"]
+    repo -->|"Flow&lt;List&lt;RecentDocument&gt;&gt;"| lvm["LibraryViewModel"]
+    lvm -->|"LibraryUiState"| e1["LibraryScreen (E1)"]
+    e1 -->|"ligne sans vignette à jour"| lvm
+    lvm -->|"UpdateThumbnailUseCase"| repo
+    repo -->|"PdfThumbnailRenderer"| engine["PdfEngine"]
+    repo --> files["noBackupFilesDir/thumbnails/*.png"]
+    e1 -->|"toucher : URI"| rvm
+```
+
+- Table `recent_documents` (schéma exporté dans `core/data/schemas/`), au plus 50 entrées ;
+  une entrée qui sort rend sa permission persistante et supprime sa vignette.
+- Le lecteur part de la page demandée (extra `page`), sinon de la page enregistrée, ramenée
+  au document ; il enregistre la page une seconde après le dernier changement et à sa
+  fermeture (portée `@ApplicationScope`).
+- Les vignettes sont dessinées quand la bibliothèque montre une ligne dont la vignette manque
+  ou date d'avant la dernière ouverture, jamais pendant l'ouverture du lecteur.
+- `LibraryViewModel` est rattaché à `MainActivity` ; `LutrinApp` reçoit son état en
+  `StateFlow` et reste testable sans Hilt.
+
 ## Flux de données d'un écran
 
 ```mermaid
@@ -155,7 +185,7 @@ sequenceDiagram
   | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` |
   | `lutrin.jvm.library` | `core:domain` | Kotlin/JVM pur |
   | `lutrin.hilt` | `app`, `feature:*` | Hilt + KSP |
-  | `lutrin.android.robolectric` | `app`, `core:ui` | Robolectric hors ligne (jars Android résolus par Gradle) |
+  | `lutrin.android.robolectric` | `app`, `core:ui`, `core:data`, `feature:library`, `feature:reader`, `feature:settings` | Robolectric hors ligne (jars Android résolus par Gradle) |
 
   Tous appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17.
 - Versions : uniquement dans `gradle/libs.versions.toml`. Dépôts : uniquement dans

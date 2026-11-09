@@ -29,6 +29,7 @@ navigation = "2.10.2"
 hiltLifecycle = "1.4.0"
 coroutines = "1.11.0"
 datastore = "1.2.1"
+room = "2.8.5"
 profileinstaller = "1.4.1"
 javaxInject = "1"
 
@@ -87,6 +88,8 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 androidx-hilt-lifecycle-viewmodel-compose = { module = "androidx.hilt:hilt-lifecycle-viewmodel-compose", version.ref = "hiltLifecycle" }
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
@@ -145,6 +148,7 @@ kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 licensee = { id = "app.cash.licensee", version.ref = "licensee" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+room = { id = "androidx.room", version.ref = "room" }
 
 # Convention plugins (build-logic)
 lutrin-android-application = { id = "lutrin.android.application" }

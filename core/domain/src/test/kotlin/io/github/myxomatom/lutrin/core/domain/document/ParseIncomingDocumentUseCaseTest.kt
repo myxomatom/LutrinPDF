@@ -37,12 +37,12 @@ class ParseIncomingDocumentUseCaseTest {
 
     @Test
     fun `view with a PDF content URI is accepted at the first page`() = runTest {
-        assertThat(parse(view())).isEqualTo(Accepted(pdfUri, pageIndex = 0))
+        assertThat(parse(view())).isEqualTo(Accepted(pdfUri, pageIndex = null))
     }
 
     @Test
     fun `send with a PDF stream is accepted`() = runTest {
-        assertThat(parse(send())).isEqualTo(Accepted(pdfUri, pageIndex = 0))
+        assertThat(parse(send())).isEqualTo(Accepted(pdfUri, pageIndex = null))
     }
 
     @Test
@@ -251,9 +251,10 @@ class ParseIncomingDocumentUseCaseTest {
     }
 
     @Test
-    fun `zero or negative page opens the first page`() = runTest {
+    fun `zero or negative page is ignored, as if no page was given`() = runTest {
+        // No explicit page: the reader resumes the saved page, or opens the first one (ADR 0015).
         listOf(0, -1, Int.MIN_VALUE).forEach { page ->
-            assertThat(parse(view(page = page))).isEqualTo(Accepted(pdfUri, pageIndex = 0))
+            assertThat(parse(view(page = page))).isEqualTo(Accepted(pdfUri, pageIndex = null))
         }
     }
 
@@ -264,7 +265,7 @@ class ParseIncomingDocumentUseCaseTest {
 
     @Test
     fun `page extra is ignored when sharing`() = runTest {
-        assertThat(parse(send(page = 5))).isEqualTo(Accepted(pdfUri, pageIndex = 0))
+        assertThat(parse(send(page = 5))).isEqualTo(Accepted(pdfUri, pageIndex = null))
     }
 
     private companion object {

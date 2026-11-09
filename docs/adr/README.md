@@ -20,6 +20,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0012](0012-benchmark-et-baseline-profile.md) | Module `:benchmark`, ouverture d'un document sans sélecteur, Baseline Profile | Accepté |
 | [0013](0013-build-sous-windows.md) | Build sous Windows : ressources de MuPDF générées par Gradle, tests JVM du moteur sous Linux seulement | Accepté |
 | [0014](0014-ouvrir-avec-et-partage-entrant.md) | « Ouvrir avec » et partage entrant : routage des intents, mode de lancement, validation des URI | Accepté |
+| [0015](0015-recents-et-reprise-de-lecture.md) | Récents (Room), `documentId`, permissions persistées, vignettes, reprise de la dernière page | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

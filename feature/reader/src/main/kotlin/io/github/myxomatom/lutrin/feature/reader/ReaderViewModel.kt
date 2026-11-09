@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
+import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
@@ -27,13 +28,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Opens the document given in the navigation arguments ([READER_URI_ARG]) at the page of
- * [READER_PAGE_ARG], clamped to the document, and keeps it open while the reader is shown; the
- * document is closed with the ViewModel. Also follows the scroll mode setting (F03) and
- * remembers the current page, so that switching mode keeps it.
+ * Opens the document given in the navigation arguments ([READER_URI_ARG]) and keeps it open while
+ * the reader is shown; the document is closed with the ViewModel. It opens at the page of
+ * [READER_PAGE_ARG] when given, otherwise where the user stopped reading (F12), clamped to the
+ * document. A successful opening is added to the recent list (F11) and the page shown is saved
+ * as the user reads ([ReadingHistory]). Also follows the scroll mode setting (F03) and remembers
+ * the current page, so that switching mode keeps it.
  *
  * @param observeSettings reads the scroll mode, shared by every document (ADR 0011).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
+ * @param history the recent list and the reading position of this document.
  */
 @HiltViewModel
 class ReaderViewModel
@@ -44,9 +48,10 @@ constructor(
     @param:DefaultDispatcher private val renderDispatcher: CoroutineDispatcher,
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
+    private val history: ReadingHistory,
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
-    private val initialPage: Int = savedStateHandle[READER_PAGE_ARG] ?: 0
+    private val requestedPage: Int? = savedStateHandle.get<Int>(READER_PAGE_ARG)?.takeIf { it >= 0 }
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
     private var document: PdfDocument? = null
@@ -86,24 +91,32 @@ constructor(
             .onSuccess { opened ->
                 document = opened
                 val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
+                val title = opened.metadata.title ?: displayName(uri)
                 // Before the Ready state: the screen starts on the page of its first Ready state.
-                currentPage.value = initialPage.coerceIn(0, opened.pageCount - 1)
+                currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
                 documentState.value =
                     ReaderUiState.Ready(
-                        title = opened.metadata.title ?: displayName(uri),
+                        title = title,
                         pageSizes = sizes,
                         renderer = PageRenderer(opened, sizes, renderDispatcher),
                     )
+                val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title)
+                viewModelScope.launch { history.follow(opening, currentPage) }
             }.onFailure { error -> documentState.value = ReaderUiState.Error(error.toReaderError()) }
     }
 
     override fun onCleared() {
+        // The debounced save is cancelled with the ViewModel: the page shown last is written now.
+        if (document != null) history.saveOnClose(uri, currentPage.value)
         document?.close()
         document = null
     }
 }
 
-/** Last path segment of a URI, decoded; good enough as a title until recents store names (M3). */
+/**
+ * Last path segment of a URI, decoded: the title of a document without one, and the name of its
+ * recent entry when its provider gives none.
+ */
 internal fun displayName(uri: String): String = Uri.decode(uri.substringAfterLast('/').substringAfterLast("%2F"))
 
 /** Maps an engine failure to what the screen explains. */

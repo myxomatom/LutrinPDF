@@ -119,7 +119,9 @@ private fun BenchmarkReader(document: Uri, onExit: () -> Unit) {
                     exit()
                 } else {
                     opened = true
-                    navController.navigateToReader(document)
+                    // Always the first page: resuming the page saved by the previous iteration
+                    // would make every measurement start elsewhere (ADR 0015).
+                    navController.navigateToReader(document, page = 0)
                 }
             }
         }

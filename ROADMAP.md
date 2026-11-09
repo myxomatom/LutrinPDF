@@ -7,7 +7,7 @@
 
 ## 0. État d'avancement
 
-> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-08**. Pour reprendre le travail
+> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-09**. Pour reprendre le travail
 > dans une nouvelle session : [`docs/reprise.md`](docs/reprise.md). Détail des constats :
 > [`docs/audits/2026-11-04-audit-m1.md`](docs/audits/2026-11-04-audit-m1.md).
 
@@ -16,14 +16,14 @@
 | M0 Fondations | ✅ Terminé | Vérification de reproductibilité F-Droid, reportée (point ouvert 13) ; module `:benchmark` livré en M2 |
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
 | M2 Lecteur de base | ✅ Terminé (mesuré le 2026-11-08 sur un Xiaomi 23013PC75G, Android 15 / HyperOS, build `benchmarkRelease`) | Défilement continu (PDF de 600 pages) : `frameDurationCpuMs` P50 2,9 / P90 4,0 / P99 8,7 ms, objectif P90 < 16 ms atteint ; page par page : P90 6,6 ms ; ouverture à froid du gros PDF : `timeToFullDisplayMs` médiane 1050 ms ; aucun plantage. Baseline Profile committé ; gain au démarrage à froid d'environ 2,5 % (357,8 contre 367,1 ms), voir ADR 0012 |
-| M3 Fichiers et récents | 🟡 En cours | F01 « Ouvrir avec » et partage entrant faits (ADR 0014). Reste : permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page ; dialogue de mot de passe (V4) et « Retirer des récents » ; copie dans `cacheDir` des URI non seekables (point ouvert 11) |
+| M3 Fichiers et récents | 🟡 En cours | F01 « Ouvrir avec » et partage entrant faits (ADR 0014) ; permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page faits (ADR 0015), testés sous Robolectric. Reste : « Retirer des récents » (V8, menu de ligne) et « Vider les récents » ; dialogue de mot de passe (V4) ; copie dans `cacheDir` des URI non seekables (point ouvert 11) ; zoom et décalage de F12 et empreinte des documents (point ouvert 16) reportés |
 | M4 à M8 | ⏳ À faire | — |
 
 ### Vues
 
 | Vue | État | Remarques |
 |-----|------|-----------|
-| E1 Bibliothèque | 🟡 Partielle | État vide, « Ouvrir un fichier » (sélecteur système), accès aux paramètres, message quand un document reçu d'une autre application est refusé (ADR 0014) ; récents en M3, outils en M6 |
+| E1 Bibliothèque | 🟡 Partielle | Liste des récents de la maquette (vignette, nom, page, date, progression ; ADR 0015), état vide, chargement et erreur, « Ouvrir un fichier » (sélecteur système, bouton flottant au-dessus de la liste), accès aux paramètres, message quand un document reçu d'une autre application est refusé (ADR 0014) ; menu « ⋮ » / « Retirer des récents » en M3, grille (V10) en v1.x, outils en M6 |
 | E2 Lecteur | 🟡 Partielle | Défilement continu ou page par page, zoom 25–800 % net, plein écran, curseur et indicateur de page, « Plus d'options » ; recherche, table des matières en M4 |
 | V6 Options d'affichage | 🟡 Partielle | Section « Défilement » seulement (ADR 0011) ; ajustement, couleurs, plein écran, orientation en M5 |
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible, protégé ; « Retirer des récents » en M3 |

@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -101,8 +102,18 @@ class MainActivityIncomingIntentTest {
         composeRule.onNodeWithContentDescription(description).assertExists()
     }
 
+    /** Waits for a text: the recent list is read by Room on a background thread. */
+    private fun waitForText(text: String) {
+        composeRule.waitUntil(TIMEOUT_MS) { composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    /**
+     * The library and the refusal message. « Open a file » is in both states of the library: the
+     * empty one, and the list when a document was opened earlier in the test (ADR 0015).
+     */
     private fun assertLibraryShows(message: String) {
-        composeRule.onNodeWithText("No recent documents").assertIsDisplayed()
+        waitForText("Open a file")
+        composeRule.onNodeWithText("Open a file").assertIsDisplayed()
         composeRule.onNodeWithText(message).assertIsDisplayed()
     }
 
@@ -211,6 +222,7 @@ class MainActivityIncomingIntentTest {
     @Config(qualifiers = "fr")
     fun `the refusal is explained in French`() {
         launch(view(type = "image/png"))
+        waitForText("Lutrin n’ouvre que les documents PDF.")
 
         composeRule.onNodeWithText("Lutrin n’ouvre que les documents PDF.").assertIsDisplayed()
     }
@@ -229,6 +241,7 @@ class MainActivityIncomingIntentTest {
         launch(view().addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY))
 
         assertThat(engine.openedSources).isEmpty()
+        waitForText("No recent documents")
         composeRule.onNodeWithText("No recent documents").assertIsDisplayed()
     }
 
@@ -237,6 +250,7 @@ class MainActivityIncomingIntentTest {
         launch(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER))
 
         assertThat(engine.openedSources).isEmpty()
+        waitForText("No recent documents")
         composeRule.onNodeWithText("No recent documents").assertIsDisplayed()
     }
 

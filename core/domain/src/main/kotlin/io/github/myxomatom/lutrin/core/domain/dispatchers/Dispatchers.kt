@@ -15,3 +15,12 @@ annotation class DefaultDispatcher
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class IoDispatcher
+
+/**
+ * Marks the injected `CoroutineScope` that lives as long as the application: for short writes
+ * that must finish after the screen that asked for them is gone, such as saving the reading
+ * position when the reader closes (ADR 0015). Never for long work.
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ApplicationScope

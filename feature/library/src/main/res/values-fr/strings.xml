@@ -7,4 +7,18 @@
     <string name="library_open_file">Ouvrir un fichier</string>
     <string name="library_offline_notice">Fonctionne entièrement hors ligne. Aucune donnée collectée.</string>
     <string name="library_settings">Paramètres</string>
+    <string name="library_loading">Chargement des documents récents</string>
+    <string name="library_error_title">Documents récents indisponibles</string>
+    <string name="library_error_message">La liste des documents récents n’a pas pu être lue. Vous pouvez toujours ouvrir un fichier.</string>
+    <string name="library_recents">Récents</string>
+    <plurals name="library_document_count">
+        <item quantity="one">%d document</item>
+        <item quantity="many">%d de documents</item>
+        <item quantity="other">%d documents</item>
+    </plurals>
+    <string name="library_recent_details">Page %1$d / %2$d · %3$s</string>
+    <string name="library_opened_today">Aujourd’hui, %s</string>
+    <string name="library_opened_yesterday">Hier</string>
+    <string name="library_thumbnail">Première page de %s</string>
+    <string name="library_open_document">Ouvrir</string>
 </resources>

@@ -6,14 +6,21 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
+import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
+import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
+import io.github.myxomatom.lutrin.core.testing.FAKE_NOW
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
+import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -42,7 +50,9 @@ class ReaderViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun newViewModel(
+    private var recents = FakeRecentDocumentsRepository()
+
+    private fun TestScope.newViewModel(
         engine: FakePdfEngine,
         settings: FakeSettingsRepository = FakeSettingsRepository(),
         page: Int? = null,
@@ -52,6 +62,13 @@ class ReaderViewModelTest {
         dispatcher,
         ObserveSettingsUseCase(settings),
         SetScrollModeUseCase(settings),
+        ReadingHistory(
+            GetStartPageUseCase(recents),
+            RecordDocumentOpeningUseCase(recents),
+            SaveLastPageUseCase(recents),
+            // A child of the test, so that advanceUntilIdle runs the write done on closing.
+            this,
+        ),
     )
 
     private fun TestScope.viewModel(
@@ -283,5 +300,170 @@ class ReaderViewModelTest {
         advanceUntilIdle()
 
         assertThat(states.filterIsInstance<ReaderUiState.Ready>().map { it.currentPage }).containsExactly(2)
+    }
+
+    // Recent documents and reading position (F11, F12, ADR 0015)
+
+    private fun TestScope.openWithHistory(pageCount: Int = 5, page: Int? = null): ReaderViewModel {
+        val document = FakePdfDocument(List(pageCount) { A4 }, title = "Contrat")
+        return newViewModel(FakePdfEngine(Result.success(document)), page = page).also { advanceUntilIdle() }
+    }
+
+    private fun recordedPage(): Int? = recents.recentDocuments.value.firstOrNull { it.uri == uri }?.lastPage
+
+    private fun recentEntry(lastPage: Int, pageCount: Int = 10) = RecentDocument(
+        documentId = documentIdFor(uri),
+        uri = uri,
+        displayName = "Contrat",
+        sizeBytes = null,
+        pageCount = pageCount,
+        lastOpenedAt = FAKE_NOW,
+        lastPage = lastPage,
+        thumbnailPath = null,
+    )
+
+    @Test
+    fun `a successful opening is recorded with its start page, its thumbnail left to the library`() =
+        runTest(dispatcher) {
+            openWithHistory(pageCount = 5, page = 2)
+
+            val entry = recents.recentDocuments.value.single()
+            assertThat(entry.uri).isEqualTo(uri)
+            assertThat(entry.pageCount).isEqualTo(5)
+            assertThat(entry.lastPage).isEqualTo(2)
+            assertThat(entry.displayName).isEqualTo("Contrat")
+            assertThat(recents.thumbnailRequests).isEmpty()
+        }
+
+    @Test
+    fun `a document without title is recorded under its file name`() = runTest(dispatcher) {
+        viewModel(FakePdfEngine(Result.success(FakePdfDocument(title = null))))
+
+        assertThat(recents.recentDocuments.value.single().displayName).isEqualTo("contrat de location.pdf")
+    }
+
+    @Test
+    fun `a document that fails to open is not recorded`() = runTest(dispatcher) {
+        listOf(PdfError.NotAccessible(), PdfError.Unreadable(), PdfError.PasswordRequired()).forEach { error ->
+            viewModel(FakePdfEngine(Result.failure(error)))
+        }
+
+        assertThat(recents.recentDocuments.value).isEmpty()
+        assertThat(recents.thumbnailRequests).isEmpty()
+    }
+
+    @Test
+    fun `resumes at the saved page without an explicit page`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3)))
+
+        assertThat(openWithHistory(pageCount = 10).ready.currentPage).isEqualTo(3)
+    }
+
+    @Test
+    fun `an explicit page wins over the saved page`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3)))
+
+        val viewModel = openWithHistory(pageCount = 10, page = 7)
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(7)
+        assertThat(recordedPage()).isEqualTo(7)
+    }
+
+    @Test
+    fun `a saved page beyond a document that got shorter opens its last page`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 40, pageCount = 50)))
+
+        val viewModel = openWithHistory(pageCount = 6)
+
+        assertThat(viewModel.ready.currentPage).isEqualTo(5)
+        assertThat(recents.recentDocuments.value.single().pageCount).isEqualTo(6)
+    }
+
+    @Test
+    fun `the page is saved once the user stops changing page`() = runTest(dispatcher) {
+        val viewModel = openWithHistory(pageCount = 10)
+
+        viewModel.onPageChange(1)
+        advanceTimeBy(ReadingHistory.SAVE_DELAY / 2)
+        viewModel.onPageChange(2)
+        viewModel.onPageChange(3)
+        advanceTimeBy(ReadingHistory.SAVE_DELAY / 2)
+        assertThat(recents.savedPages).isEmpty()
+
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).containsExactly(uri to 3)
+        assertThat(recordedPage()).isEqualTo(3)
+    }
+
+    @Test
+    fun `coming back to the saved page writes nothing`() = runTest(dispatcher) {
+        val viewModel = openWithHistory(pageCount = 10)
+
+        viewModel.onPageChange(4)
+        viewModel.onPageChange(0)
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).isEmpty()
+    }
+
+    @Test
+    fun `closing the reader saves the page shown last`() = runTest(dispatcher) {
+        val store = ViewModelStore()
+        val viewModel = openWithHistory(pageCount = 10).also { store.put("reader", it) }
+
+        viewModel.onPageChange(6)
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).containsExactly(uri to 6)
+    }
+
+    @Test
+    fun `closing the reader on the saved page writes nothing more`() = runTest(dispatcher) {
+        val store = ViewModelStore()
+        val viewModel = openWithHistory(pageCount = 10).also { store.put("reader", it) }
+        viewModel.onPageChange(6)
+        advanceUntilIdle()
+
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).containsExactly(uri to 6)
+    }
+
+    @Test
+    fun `closing a reader that could not open the document saves nothing`() = runTest(dispatcher) {
+        val store = ViewModelStore()
+        store.put("reader", viewModel(FakePdfEngine(Result.failure(PdfError.NotAccessible()))))
+
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).isEmpty()
+    }
+
+    @Test
+    fun `a document the storage could not record is read without saving pages`() = runTest(dispatcher) {
+        recents.failRecording = true
+        val store = ViewModelStore()
+        val viewModel = openWithHistory(pageCount = 10).also { store.put("reader", it) }
+
+        viewModel.onPageChange(4)
+        advanceUntilIdle()
+        assertThat(viewModel.ready.currentPage).isEqualTo(4)
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(recents.savedPages).isEmpty()
+        assertThat(recents.thumbnailRequests).isEmpty()
+    }
+
+    @Test
+    fun `opening the same document twice keeps a single entry`() = runTest(dispatcher) {
+        openWithHistory(pageCount = 10)
+        openWithHistory(pageCount = 10)
+
+        assertThat(recents.recentDocuments.value).hasSize(1)
     }
 }

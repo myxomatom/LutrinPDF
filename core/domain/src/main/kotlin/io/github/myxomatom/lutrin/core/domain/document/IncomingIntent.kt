@@ -46,10 +46,12 @@ sealed interface IncomingDocumentResult {
      * yet: the PDF engine checks it when it opens the document (header, damage, password).
      *
      * @property uri the `content://` URI of the document.
-     * @property pageIndex zero-based page to open the document at; 0 when the intent gave no
-     *   valid page. It may exceed the page count, which only the reader knows: the reader clamps it.
+     * @property pageIndex zero-based page to open the document at; `null` when the intent gave no
+     *   valid page, and the reader then resumes where the user stopped reading, or opens the first
+     *   page (ADR 0015). It may exceed the page count, which only the reader knows: the reader
+     *   clamps it.
      */
-    data class Accepted(val uri: String, val pageIndex: Int = 0) : IncomingDocumentResult
+    data class Accepted(val uri: String, val pageIndex: Int? = null) : IncomingDocumentResult
 
     /**
      * The intent cannot be honoured; the user is told why and stays in (or returns to) the library.

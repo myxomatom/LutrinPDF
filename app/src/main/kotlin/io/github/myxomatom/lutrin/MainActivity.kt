@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import io.github.myxomatom.lutrin.feature.library.LibraryViewModel
 import io.github.myxomatom.lutrin.ui.LutrinApp
 import javax.inject.Inject
 
@@ -32,6 +33,10 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    // Scoped to the activity rather than to the library destination, so that LutrinApp stays a
+    // plain composable that tests can show without Hilt (ADR 0015).
+    private val libraryViewModel: LibraryViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -44,6 +49,9 @@ class MainActivity : ComponentActivity() {
             val incomingRequest by viewModel.incomingRequest.collectAsStateWithLifecycle()
             LutrinTheme(dynamicColor = settings.dynamicColor) {
                 LutrinApp(
+                    libraryState = libraryViewModel.uiState,
+                    loadThumbnail = libraryViewModel::loadThumbnail,
+                    onRefreshThumbnail = libraryViewModel::onThumbnailOutdated,
                     incomingRequest = incomingRequest,
                     onConsumeIncomingRequest = viewModel::onIncomingRequestHandled,
                     onExit = ::finish,

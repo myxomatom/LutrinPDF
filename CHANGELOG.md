@@ -10,6 +10,19 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Documents récents (F11, ADR 0015) : la bibliothèque (E1) liste les 50 derniers documents
+  ouverts, du plus récent au plus ancien, avec la vignette de la première page, le nom donné par
+  le fournisseur, la page atteinte, la date de dernière ouverture et une barre de progression ;
+  un toucher rouvre le document. Chaque ouverture réussie (sélecteur, « Ouvrir avec »,
+  « Partager ») ajoute ou remonte le document et garde une permission de lecture persistante
+  quand le système l'accorde ; un document qui sort de la liste rend sa permission et perd sa
+  vignette. Base Room (`core:data`, schéma 1 exporté dans `core/data/schemas/`), vignettes PNG
+  dessinées par `PdfEngine` dans `noBackupFilesDir`, quand la bibliothèque les montre. États
+  chargement, vide, erreur et liste ; français et anglais ; captures d'écran clair, sombre,
+  grande police et français.
+- Reprise de lecture (F12, ADR 0015) : le lecteur rouvre un document à la page où l'utilisateur
+  s'est arrêté, ramenée au document s'il a changé ; la page est enregistrée une seconde après
+  le dernier changement et à la fermeture du lecteur. Le zoom n'est pas encore restauré.
 - « Ouvrir avec » et partage entrant (F01, ADR 0014) : un PDF envoyé par une autre application
   (`ACTION_VIEW`, `ACTION_SEND` avec un seul document) s'ouvre directement dans le lecteur, et le
   retour ramène à cette application. L'extra `page` (`Int`, à partir de 1) d'`ACTION_VIEW` ouvre
@@ -125,6 +138,9 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document
+  s'ouvre à la page enregistrée, sinon à la première ; l'extra `page` reste prioritaire.
+  L'argument de navigation `page` du lecteur vaut `NO_PAGE` (-1) par défaut.
 - CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
 - APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
 - `ContentOpener` et `DocumentDispatcherFactory` (core:pdf) passent en `internal` : le moteur PDF n'expose plus ces détails d'implémentation.

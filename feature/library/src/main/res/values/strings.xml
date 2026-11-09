@@ -7,4 +7,18 @@
     <string name="library_open_file">Open a file</string>
     <string name="library_offline_notice">Works fully offline. No data collected.</string>
     <string name="library_settings">Settings</string>
+    <string name="library_loading">Loading recent documents</string>
+    <string name="library_error_title">Recent documents unavailable</string>
+    <string name="library_error_message">The list of recent documents could not be read. You can still open a file.</string>
+    <string name="library_recents">Recent</string>
+    <plurals name="library_document_count">
+        <item quantity="one">%d document</item>
+        <item quantity="other">%d documents</item>
+    </plurals>
+    <!-- Page reached, page count, date of the last opening. -->
+    <string name="library_recent_details">Page %1$d / %2$d · %3$s</string>
+    <string name="library_opened_today">Today, %s</string>
+    <string name="library_opened_yesterday">Yesterday</string>
+    <string name="library_thumbnail">First page of %s</string>
+    <string name="library_open_document">Open</string>
 </resources>
