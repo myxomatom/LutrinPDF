@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-08.**
+> session de travail. **Dernière mise à jour : 2026-11-09.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -12,7 +12,7 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014), testés sous Robolectric et par un test instrumenté ; pas encore essayés sur appareil |
+| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, branche `feat/recents`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil |
 | M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -50,6 +50,19 @@ application/pdf -d <uri content://> --ei page 3`. **Mesurer aussi le temps d'ouv
 vraie URI SAF** reçue d'une autre application (les benchmarks de l'ADR 0012 ouvrent un fichier du
 cache).
 
+Sur la branche `feat/recents` (pas encore sur appareil) : **récents et reprise de lecture**
+(F11, F12, ADR 0015). Base Room `lutrin.db` (`core:data`, schéma exporté dans
+`core/data/schemas/`), au plus 50 récents ; chaque ouverture réussie prend une permission
+persistante quand le système l'accorde (sélecteur) ; la bibliothèque liste les récents comme la
+maquette E1 et dessine les vignettes (par `PdfEngine`, dans `noBackupFilesDir/thumbnails/`)
+quand elle les montre ; le lecteur reprend à la page enregistrée (une seconde après le dernier
+changement, et à la fermeture), l'extra `page` d'« Ouvrir avec » restant prioritaire. **À
+essayer sur appareil** : ouvrir par le sélecteur, quitter, redémarrer le téléphone, rouvrir
+depuis la liste (permission persistée) ; un document d'« Ouvrir avec » Gmail ou Drive dans la
+liste après fermeture de l'application (attendu : écran V8 « inaccessible ») ; un fichier
+supprimé depuis « Fichiers » ; la vignette qui apparaît au retour dans la bibliothèque ; la
+reprise après rotation et après la mort du processus ; grande police et thème sombre.
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
@@ -59,11 +72,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 1. **M3 Fichiers et récents** :
    - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
-   - permissions persistantes (`takePersistableUriPermission`, volontairement pas encore appelé :
-     ADR 0014 §7), récents avec vignettes (Room) et nom réel du document
-     (`OpenableColumns.DISPLAY_NAME`, le titre est encore le dernier segment de l'URI), reprise
-     de la dernière page ;
-   - dialogue de mot de passe (V4), « Retirer des récents » dans V8 ;
+   - ~~permissions persistantes, récents avec vignettes (Room), nom réel du document dans la
+     liste, reprise de la dernière page~~ **Fait** (ADR 0015, branche `feat/recents`) ; le titre
+     de la barre du lecteur reste le titre du PDF, sinon le dernier segment de l'URI ;
+   - « Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents » ;
+   - dialogue de mot de passe (V4) ;
+   - reportés par l'ADR 0015 : zoom et décalage de F12, empreinte des documents (point ouvert 16) ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
    (SDK_INT 36) ; sur JVM nue, DataStore retombe sur `File.renameTo`, qui n'écrase pas sous Windows.
@@ -73,7 +87,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0014) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0015) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -86,11 +100,16 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     une seule fois (`savedInstanceState`, `MainViewModel`), validation des URI et des types
     dans `core:domain` ; `PdfEngineModule` public pour que les tests Robolectric de `app`
     remplacent le moteur (`@TestInstallIn`) ;
+  - **ADR 0015** : récents dans Room (`core:data`), `documentId` = SHA-256 tronqué de l'URI,
+    50 récents au plus (permission rendue et vignette supprimée au-delà), vignettes dessinées par
+    `PdfEngine` quand la bibliothèque les montre, page enregistrée après 1 s de calme et à la
+    fermeture (`@ApplicationScope`), extra `page` absent = « pas de page » (amende l'ADR 0014) ;
+    `LibraryViewModel` rattaché à `MainActivity` ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
-- Points encore ouverts : 1, 2, 3, 6, 8, 11, 13 et 14 (`docs/open-questions.md`).
+- Points encore ouverts : 1, 2, 3, 6, 8, 11, 13, 14 et 16 (`docs/open-questions.md`).
 
 ## 4. Pièges déjà rencontrés
 
@@ -165,6 +184,22 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
   avec `NoClassDefFoundError: kotlin.jvm.internal.Intrinsics` et l'application affichait
   « fichier introuvable ». Il est donc **en Java** (`src/androidTest/java`) : ne pas le
   réécrire en Kotlin. Son autorité ne doit pas commencer par le paquet de l'application (ADR 0014).
+- **Tests et récents** (ADR 0015) :
+  - `FakePdfEngine.openedSources` compte aussi les ouvertures faites pour dessiner une vignette,
+    déclenchées par la bibliothèque quand elle montre une ligne sans vignette à jour ; un test qui
+    compte les ouvertures ne doit pas afficher une telle ligne ;
+  - dans les tests Robolectric de `app`, la liste est lue par Room sur un vrai thread :
+    attendre le texte (`waitUntil`) avant de vérifier « Aucun document récent » ;
+  - `advanceUntilIdle()` n'exécute pas les tâches de `backgroundScope` : passer la `TestScope`
+    elle-même comme portée d'application dans les tests du lecteur ;
+  - `ExtendedFloatingActionButton(text = …, icon = …)` : sous Robolectric, le libellé n'était
+    pas fusionné dans le bouton (bouton sans nom) ; la bibliothèque utilise la variante à
+    contenu.
+- **Disque système plein sous Windows** (constaté le 2026-11-09) : Robolectric écrit ses
+  dossiers de données et sa bibliothèque native dans `%TEMP%` ; avec un disque C: plein, tous les
+  tests Robolectric échouent (`Espace insuffisant sur le disque`, `Unable to load Robolectric
+  native runtime library`). Rediriger `TMP` et `TEMP` vers un autre disque avant Gradle, par
+  exemple `export TMP='D:\Dev\LutrinPDF\build\test-tmp' TEMP="$TMP"`.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
