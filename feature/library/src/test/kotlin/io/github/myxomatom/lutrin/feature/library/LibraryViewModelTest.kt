@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.library
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
@@ -8,6 +11,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.ObserveRecentDocumentsUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
+import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.UpdateThumbnailUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.testing.FAKE_NOW
@@ -50,11 +54,14 @@ class LibraryViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
+    // The test scope stands for the application scope: advanceUntilIdle runs the removals.
     private fun TestScope.viewModel(repository: RecentDocumentsRepository) = LibraryViewModel(
         ObserveRecentDocumentsUseCase(repository),
         UpdateThumbnailUseCase(repository),
+        RemoveRecentDocumentUseCase(repository),
         ThumbnailLoader(StandardTestDispatcher(testScheduler)),
         clock,
+        this,
     )
 
     private fun document(id: Int, openedAt: Instant = FAKE_NOW, thumbnail: String? = null) = RecentDocument(
@@ -198,4 +205,161 @@ class LibraryViewModelTest {
     private companion object {
         fun uri(id: Int) = "content://com.example.files/document/$id"
     }
+
+    @Test
+    fun `removing hides the row at once and offers to undo it`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(2), document(1)))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(2)))
+
+            val content = awaitItem() as LibraryUiState.Content
+            assertThat(content.documents.map { it.uri }).containsExactly(uri(1))
+            assertThat(viewModel.pendingRemoval.value).isEqualTo(removal(2))
+            advanceUntilIdle()
+            assertThat(repository.removals).isEmpty()
+            assertThat(repository.recentDocuments.value).hasSize(2)
+        }
+    }
+
+    @Test
+    fun `undoing brings the row back and removes nothing`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(2), document(1)))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(2)))
+            skipItems(1)
+
+            viewModel.onUndoRemoval(removal(2))
+
+            val content = awaitItem() as LibraryUiState.Content
+            assertThat(content.documents.map { it.uri }).containsExactly(uri(2), uri(1)).inOrder()
+            assertThat(viewModel.pendingRemoval.value).isNull()
+            advanceUntilIdle()
+            assertThat(repository.removals).isEmpty()
+        }
+    }
+
+    @Test
+    fun `confirming removes the entry as it was when removed`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(2), document(1)))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(2)))
+            skipItems(1)
+
+            viewModel.onConfirmRemoval(removal(2))
+            advanceUntilIdle()
+
+            assertThat(repository.removals).containsExactly(documentIdFor(uri(2)) to FAKE_NOW)
+            assertThat(repository.recentDocuments.value.map { it.uri }).containsExactly(uri(1))
+            assertThat(viewModel.pendingRemoval.value).isNull()
+            // The row stays hidden: no flash of the removed row.
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `removing the last row shows the empty state`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeRecentDocumentsRepository(listOf(document(1))))
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(1)))
+
+            assertThat(awaitItem()).isEqualTo(LibraryUiState.Empty)
+        }
+    }
+
+    @Test
+    fun `a second removal confirms the first one`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(3), document(2), document(1)))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(3)))
+            viewModel.onRemove(documentIdFor(uri(2)))
+            advanceUntilIdle()
+
+            assertThat(repository.removals).containsExactly(documentIdFor(uri(3)) to FAKE_NOW)
+            assertThat(viewModel.pendingRemoval.value).isEqualTo(removal(2))
+            // The first message, cancelled by the second one, confirms nothing more.
+            viewModel.onConfirmRemoval(removal(3))
+            viewModel.onUndoRemoval(removal(3))
+            advanceUntilIdle()
+            assertThat(repository.removals).hasSize(1)
+            assertThat(viewModel.pendingRemoval.value).isEqualTo(removal(2))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `removing a row that is not shown does nothing`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeRecentDocumentsRepository(listOf(document(1))))
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove("unknown")
+
+            assertThat(viewModel.pendingRemoval.value).isNull()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `a document opened again during the undo delay shows again and is kept`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(1)))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(1)))
+            assertThat(awaitItem()).isEqualTo(LibraryUiState.Empty)
+
+            repository.clock = Clock.offset(clock, Duration.ofMinutes(1))
+            repository.recordOpening(DocumentOpening(uri(1), pageCount = 8, page = 0, fallbackName = "Document 1"))
+            assertThat((awaitItem() as LibraryUiState.Content).documents.single().uri).isEqualTo(uri(1))
+
+            viewModel.onConfirmRemoval(removal(1))
+            advanceUntilIdle()
+            assertThat(repository.recentDocuments.value.map { it.uri }).containsExactly(uri(1))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a removal still pending is confirmed when the view model is cleared`() = runTest(dispatcher) {
+        val repository = FakeRecentDocumentsRepository(listOf(document(1)))
+        val store = ViewModelStore()
+        val created = viewModel(repository)
+        val viewModel =
+            ViewModelProvider(
+                store,
+                object : ViewModelProvider.Factory {
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T = created as T
+                },
+            )[LibraryViewModel::class.java]
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(1)))
+            skipItems(1)
+            cancelAndIgnoreRemainingEvents()
+        }
+        store.clear()
+        advanceUntilIdle()
+
+        assertThat(repository.removals).containsExactly(documentIdFor(uri(1)) to FAKE_NOW)
+        assertThat(repository.recentDocuments.value).isEmpty()
+    }
+
+    private fun removal(id: Int) = PendingRemoval(documentIdFor(uri(id)), "Document $id", FAKE_NOW)
 }

@@ -21,4 +21,8 @@
     <string name="library_opened_yesterday">Hier</string>
     <string name="library_thumbnail">Première page de %s</string>
     <string name="library_open_document">Ouvrir</string>
+    <string name="library_row_menu">Plus d’actions pour %s</string>
+    <string name="library_remove">Retirer des récents</string>
+    <string name="library_removed">« %s » retiré des récents</string>
+    <string name="library_undo">Annuler</string>
 </resources>

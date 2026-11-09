@@ -4,15 +4,19 @@ package io.github.myxomatom.lutrin.feature.library
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTouchHeightIsEqualTo
+import androidx.compose.ui.test.assertTouchWidthIsEqualTo
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Rule
@@ -32,9 +36,13 @@ class LibraryScreenTest {
     private var settingsClicks = 0
     private val openedDocuments = mutableListOf<String>()
     private val outdatedThumbnails = mutableListOf<String>()
+    private val removed = mutableListOf<String>()
+    private val undone = mutableListOf<PendingRemoval>()
+    private val confirmed = mutableListOf<PendingRemoval>()
 
     private fun show(
         state: LibraryUiState = LibraryUiState.Empty,
+        pendingRemoval: PendingRemoval? = null,
         loadThumbnail: suspend (String) -> ImageBitmap? = {
             null
         },
@@ -48,6 +56,10 @@ class LibraryScreenTest {
                     onOpenDocument = { openedDocuments += it },
                     loadThumbnail = loadThumbnail,
                     onRefreshThumbnail = { outdatedThumbnails += it },
+                    pendingRemoval = pendingRemoval,
+                    onRemove = { removed += it },
+                    onUndoRemoval = { undone += it },
+                    onConfirmRemoval = { confirmed += it },
                 )
             }
         }
@@ -228,5 +240,89 @@ class LibraryScreenTest {
         assertThat(outdatedThumbnails).containsExactly(invoice.documentId)
         composeRule.onNodeWithContentDescription("First page of Facture octobre 2026", useUnmergedTree = true)
             .assertDoesNotExist()
+    }
+
+    @Test
+    fun `each row has a menu button named after its document, with a 48 dp touch target`() {
+        show(LibraryUiState.Content(listOf(contract, invoice)))
+
+        composeRule.onNodeWithContentDescription("More actions for Contrat de location")
+            .assertHasClickAction()
+            .assertTouchWidthIsEqualTo(48.dp)
+            .assertTouchHeightIsEqualTo(48.dp)
+        composeRule.onNodeWithContentDescription("More actions for Facture octobre 2026").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the row menu removes the document from the recents`() {
+        show(LibraryUiState.Content(listOf(contract, invoice)))
+
+        composeRule.onNodeWithContentDescription("More actions for Facture octobre 2026").performClick()
+        composeRule.onNodeWithText("Remove from recents").assertIsDisplayed().performClick()
+
+        assertThat(removed).containsExactly(invoice.documentId)
+        assertThat(openedDocuments).isEmpty()
+        composeRule.onNodeWithText("Remove from recents").assertDoesNotExist()
+    }
+
+    @Test
+    fun `opening the row menu does not open the document`() {
+        show(LibraryUiState.Content(listOf(contract)))
+
+        composeRule.onNodeWithContentDescription("More actions for Contrat de location").performClick()
+
+        assertThat(openedDocuments).isEmpty()
+        assertThat(removed).isEmpty()
+    }
+
+    @Test
+    fun `a pending removal offers to undo it`() {
+        show(LibraryUiState.Content(listOf(invoice)), pendingRemoval = removal)
+
+        composeRule.onNodeWithText("“Contrat de location” removed from recents").assertIsDisplayed()
+        composeRule.onNodeWithText("Undo").performClick()
+        composeRule.waitForIdle()
+
+        assertThat(undone).containsExactly(removal)
+        assertThat(confirmed).isEmpty()
+    }
+
+    @Test
+    fun `a removal not undone is confirmed when its message times out`() {
+        show(LibraryUiState.Empty, pendingRemoval = removal)
+        composeRule.onNodeWithText("“Contrat de location” removed from recents").assertIsDisplayed()
+
+        composeRule.mainClock.advanceTimeBy(MESSAGE_TIMEOUT_MS)
+        composeRule.waitForIdle()
+
+        assertThat(confirmed).containsExactly(removal)
+        assertThat(undone).isEmpty()
+        composeRule.onNodeWithText("“Contrat de location” removed from recents").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without pending removal no message is shown`() {
+        show(LibraryUiState.Content(listOf(contract)))
+
+        composeRule.onNodeWithText("Undo").assertDoesNotExist()
+        assertThat(confirmed).isEmpty()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the row menu and the undo message are translated in French`() {
+        show(LibraryUiState.Content(listOf(contract)), pendingRemoval = removal.copy(name = "Facture"))
+
+        composeRule.onNodeWithText("« Facture » retiré des récents").assertIsDisplayed()
+        composeRule.onNodeWithText("Annuler").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Plus d’actions pour Contrat de location").performClick()
+        composeRule.onNodeWithText("Retirer des récents").assertIsDisplayed()
+    }
+
+    private val removal = PendingRemoval(contract.documentId, contract.name, Instant.parse("2026-11-09T20:41:00Z"))
+
+    private companion object {
+        /** Longer than a long snackbar (10 s). */
+        const val MESSAGE_TIMEOUT_MS = 11_000L
     }
 }

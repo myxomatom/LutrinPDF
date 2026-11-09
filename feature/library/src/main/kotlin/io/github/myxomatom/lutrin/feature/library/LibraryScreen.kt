@@ -23,9 +23,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -55,7 +63,8 @@ private val FabIconSpacing = 12.dp
  * empty state of `E1-Bibliotheque-Vide.png` when there are none, or a message when the list
  * cannot be read. « Ouvrir un fichier » is a button of the empty state and a floating button
  * over the list. The tools and display actions of the mock-up appear with their screens
- * (ADR 0009, 0015).
+ * (ADR 0009, 0015). Each row has a « ⋮ » menu with « Retirer des récents »; a removed row
+ * disappears at once and a message offers « Annuler » while [pendingRemoval] is set (ADR 0016).
  *
  * @param state what to show.
  * @param onOpenFile called when the user asks to pick a PDF with the system file picker.
@@ -65,6 +74,11 @@ private val FabIconSpacing = 12.dp
  * @param loadThumbnail reads a thumbnail file, off the main thread; `null` when it cannot.
  * @param onRefreshThumbnail called with the identifier of a row shown with a missing or
  *   outdated thumbnail.
+ * @param pendingRemoval the removal for which « Annuler » is offered, or `null`.
+ * @param onRemove called with the identifier of the row whose « Retirer des récents » is chosen.
+ * @param onUndoRemoval called when the user taps « Annuler ».
+ * @param onConfirmRemoval called when the offer to undo ends without undo: timeout, swipe, or
+ *   the screen leaving the composition.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +90,13 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     loadThumbnail: suspend (String) -> ImageBitmap? = { null },
     onRefreshThumbnail: (String) -> Unit = {},
+    pendingRemoval: PendingRemoval? = null,
+    onRemove: (String) -> Unit = {},
+    onUndoRemoval: (PendingRemoval) -> Unit = {},
+    onConfirmRemoval: (PendingRemoval) -> Unit = {},
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    RemovalMessageEffect(pendingRemoval, snackbarHostState, onUndoRemoval, onConfirmRemoval)
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -89,6 +109,7 @@ fun LibraryScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = { if (state is LibraryUiState.Content) OpenFileFab(onOpenFile) },
     ) { innerPadding ->
         val content = Modifier.fillMaxSize().padding(innerPadding)
@@ -100,7 +121,42 @@ fun LibraryScreen(
             LibraryUiState.Error -> ErrorContent(onOpenFile, content)
 
             is LibraryUiState.Content ->
-                RecentDocumentList(state.documents, onOpenDocument, loadThumbnail, onRefreshThumbnail, content)
+                RecentDocumentList(
+                    documents = state.documents,
+                    onOpen = onOpenDocument,
+                    onRemove = onRemove,
+                    loadThumbnail = loadThumbnail,
+                    onRefreshThumbnail = onRefreshThumbnail,
+                    modifier = content,
+                )
+        }
+    }
+}
+
+/**
+ * Shows « “name” retiré des récents » with « Annuler » while [removal] is pending, then reports
+ * how the offer ended. Any other ending than « Annuler » confirms the removal, including this
+ * effect leaving the composition (another removal, navigation, rotation): the row never comes
+ * back without the user asking for it.
+ */
+@Composable
+private fun RemovalMessageEffect(
+    removal: PendingRemoval?,
+    hostState: SnackbarHostState,
+    onUndo: (PendingRemoval) -> Unit,
+    onConfirm: (PendingRemoval) -> Unit,
+) {
+    val message = removal?.let { stringResource(R.string.library_removed, it.name) }
+    val undo = stringResource(R.string.library_undo)
+    val currentOnUndo by rememberUpdatedState(onUndo)
+    val currentOnConfirm by rememberUpdatedState(onConfirm)
+    LaunchedEffect(removal) {
+        if (removal == null || message == null) return@LaunchedEffect
+        var result: SnackbarResult? = null
+        try {
+            result = hostState.showSnackbar(message, actionLabel = undo, duration = SnackbarDuration.Long)
+        } finally {
+            if (result == SnackbarResult.ActionPerformed) currentOnUndo(removal) else currentOnConfirm(removal)
         }
     }
 }

@@ -32,10 +32,12 @@ import io.github.myxomatom.lutrin.core.domain.document.IncomingDocumentResult
 import io.github.myxomatom.lutrin.core.domain.document.IncomingRejection
 import io.github.myxomatom.lutrin.feature.library.LibraryScreen
 import io.github.myxomatom.lutrin.feature.library.LibraryUiState
+import io.github.myxomatom.lutrin.feature.library.PendingRemoval
 import io.github.myxomatom.lutrin.feature.reader.navigateToReader
 import io.github.myxomatom.lutrin.feature.reader.readerScreen
 import io.github.myxomatom.lutrin.feature.settings.navigateToSettings
 import io.github.myxomatom.lutrin.feature.settings.settingsScreen
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -44,6 +46,9 @@ private const val LIBRARY_ROUTE = "library"
 
 /** MIME type offered by the system file picker (F01). */
 private const val PDF_MIME_TYPE = "application/pdf"
+
+/** Default of [LutrinApp]'s `pendingRemoval`: nothing to undo. */
+private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null)
 
 /**
  * Root composable: the navigation graph between the library (E1), the reader (E2) and the
@@ -59,6 +64,10 @@ private const val PDF_MIME_TYPE = "application/pdf"
  * @param loadThumbnail reads the thumbnail file of a recent document.
  * @param onRefreshThumbnail called with a recent document shown with a missing or outdated
  *   thumbnail.
+ * @param pendingRemoval the removal of a recent document for which « Annuler » is offered.
+ * @param onRemoveRecent called with a recent document the user removes from the library.
+ * @param onUndoRemoval called when the user undoes a removal.
+ * @param onConfirmRemoval called when the offer to undo a removal ends without undo.
  * @param incomingRequest document request from another app not handled yet, or `null`.
  * @param onConsumeIncomingRequest called with [incomingRequest] once it is handled.
  * @param onExit leaves the activity, when back is pressed on the only screen left.
@@ -69,6 +78,10 @@ fun LutrinApp(
     modifier: Modifier = Modifier,
     loadThumbnail: suspend (String) -> ImageBitmap? = { null },
     onRefreshThumbnail: (String) -> Unit = {},
+    pendingRemoval: StateFlow<PendingRemoval?> = NoPendingRemoval,
+    onRemoveRecent: (String) -> Unit = {},
+    onUndoRemoval: (PendingRemoval) -> Unit = {},
+    onConfirmRemoval: (PendingRemoval) -> Unit = {},
     incomingRequest: IncomingDocumentResult? = null,
     onConsumeIncomingRequest: (IncomingDocumentResult) -> Unit = {},
     onExit: () -> Unit = {},
@@ -79,6 +92,7 @@ fun LutrinApp(
         NavHost(navController, startDestination = LIBRARY_ROUTE, modifier = Modifier.fillMaxSize()) {
             composable(LIBRARY_ROUTE) {
                 val state by libraryState.collectAsStateWithLifecycle()
+                val removal by pendingRemoval.collectAsStateWithLifecycle()
                 val picker =
                     rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
                         uri?.let { navController.navigateToReader(it) }
@@ -90,6 +104,10 @@ fun LutrinApp(
                     onOpenDocument = { navController.navigateToReader(it.toUri()) },
                     loadThumbnail = loadThumbnail,
                     onRefreshThumbnail = onRefreshThumbnail,
+                    pendingRemoval = removal,
+                    onRemove = onRemoveRecent,
+                    onUndoRemoval = onUndoRemoval,
+                    onConfirmRemoval = onConfirmRemoval,
                 )
             }
             readerScreen(onBack = { navController.goBack(onExit) })
