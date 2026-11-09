@@ -79,6 +79,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Hilt Android Testing (`hilt-android-testing`) | 2.60.1 | Apache-2.0 | Tests Robolectric de `app` : remplace le moteur MuPDF, que Robolectric ne peut pas charger, par un faux (`@TestInstallIn`, ADR 0014). Même projet et même licence que Hilt |
 | AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
 | AndroidX Test UiAutomator | 2.4.0 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) |
+| AndroidX Room Testing (`room-testing`) | 2.8.5 | Apache-2.0 | `core:data` : `MigrationTestHelper`, test de chaque migration de la base contre les schémas exportés (`core/data/schemas/`, ADR 0017). Même projet et même version que `room-runtime` ; licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
 
 ## Build et qualité (outils, jamais distribués)
 

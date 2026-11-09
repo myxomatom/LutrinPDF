@@ -8,6 +8,8 @@ plugins {
 
 android {
     namespace = "io.github.myxomatom.lutrin.core.data"
+    // The exported schemas are read by MigrationTestHelper from the test assets (ADR 0017).
+    sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
 }
 
 // Every schema version is committed, so that migrations can be written and tested against it.
@@ -30,6 +32,7 @@ dependencies {
     testImplementation(libs.truth)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.androidx.room.testing)
 }
 
 // Stricter than the global 70 % (AGENTS.md §5.2).

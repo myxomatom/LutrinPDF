@@ -153,6 +153,20 @@ class RecentDocumentsUseCasesTest {
     }
 
     @Test
+    fun `a protected document never needs a thumbnail`() {
+        val protected = entry(URI, lastPage = 0).copy(thumbnailPath = null, isProtected = true)
+
+        assertThat(protected.isThumbnailOutdated).isFalse()
+        assertThat(protected.copy(thumbnailDrawnAt = Instant.EPOCH).isThumbnailOutdated).isFalse()
+        assertThat(protected.copy(isProtected = false).isThumbnailOutdated).isTrue()
+    }
+
+    @Test
+    fun `an opening is not protected unless it says so`() {
+        assertThat(DocumentOpening(URI, pageCount = 1, page = 0, fallbackName = "a").isProtected).isFalse()
+    }
+
+    @Test
     fun `a document is recent only while it has an entry`() = runTest {
         val isRecent = IsRecentDocumentUseCase(InMemoryRecents(listOf(entry(URI, lastPage = 0))))
 

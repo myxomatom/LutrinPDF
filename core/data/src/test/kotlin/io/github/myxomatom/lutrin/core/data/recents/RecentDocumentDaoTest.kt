@@ -152,6 +152,27 @@ class RecentDocumentDaoTest {
         assertThat(stored?.thumbnailFile).isNull()
         assertThat(stored?.thumbnailDrawnAt).isNull()
     }
+
+    @Test
+    fun `stores whether an entry is protected`() = runTest {
+        val dao = dao()
+        dao.upsert(entity("a").copy(isProtected = true))
+        dao.upsert(entity("b"))
+
+        assertThat(dao.findById("a")?.isProtected).isTrue()
+        assertThat(dao.findById("b")?.isProtected).isFalse()
+    }
+
+    @Test
+    fun `a protected entry gets no thumbnail`() = runTest {
+        val dao = dao()
+        dao.upsert(entity("a").copy(isProtected = true))
+
+        val changed = dao.updateThumbnail("a", "a-1.png", drawnAt = 1)
+
+        assertThat(changed).isEqualTo(0)
+        assertThat(dao.findById("a")?.thumbnailFile).isNull()
+    }
 }
 
 /** An in-memory database whose queries run on the test scheduler. */

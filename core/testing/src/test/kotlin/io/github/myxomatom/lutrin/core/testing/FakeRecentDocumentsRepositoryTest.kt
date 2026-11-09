@@ -26,6 +26,18 @@ class FakeRecentDocumentsRepositoryTest {
     }
 
     @Test
+    fun `a protected opening is flagged and drops the thumbnail`() = runTest {
+        val drawn = checkNotNull(FakeRecentDocumentsRepository().recordOpening(opening(1)))
+        val repository = FakeRecentDocumentsRepository(listOf(drawn.copy(thumbnailPath = "/t/1.png")))
+
+        val entry = repository.recordOpening(opening(1).copy(isProtected = true))
+
+        assertThat(entry?.isProtected).isTrue()
+        assertThat(entry?.thumbnailPath).isNull()
+        assertThat(entry?.isThumbnailOutdated).isFalse()
+    }
+
+    @Test
     fun `saves pages and records thumbnail requests`() = runTest {
         val repository = FakeRecentDocumentsRepository()
         val entry = repository.recordOpening(opening(1))

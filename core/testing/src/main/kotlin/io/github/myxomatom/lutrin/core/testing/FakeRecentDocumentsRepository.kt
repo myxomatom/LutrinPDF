@@ -61,7 +61,10 @@ class FakeRecentDocumentsRepository(
     /** Looks the entry up in memory. */
     override suspend fun findByUri(uri: String): RecentDocument? = state.value.firstOrNull { it.uri == uri }
 
-    /** Moves or adds the entry to the top, keeping at most [RecentDocument.MAX_COUNT] entries. */
+    /**
+     * Moves or adds the entry to the top, keeping at most [RecentDocument.MAX_COUNT] entries; a
+     * protected opening drops the thumbnail, like the real repository (ADR 0017).
+     */
     override suspend fun recordOpening(opening: DocumentOpening): RecentDocument? {
         if (failRecording) return null
         val previous = findByUri(opening.uri)
@@ -74,8 +77,9 @@ class FakeRecentDocumentsRepository(
                 pageCount = opening.pageCount,
                 lastOpenedAt = clock.instant(),
                 lastPage = opening.page,
-                thumbnailPath = previous?.thumbnailPath,
-                thumbnailDrawnAt = previous?.thumbnailDrawnAt,
+                thumbnailPath = previous?.thumbnailPath?.takeUnless { opening.isProtected },
+                thumbnailDrawnAt = previous?.thumbnailDrawnAt?.takeUnless { opening.isProtected },
+                isProtected = opening.isProtected,
             )
         state.value = (listOf(entry) + state.value.filterNot { it.uri == opening.uri }).take(RecentDocument.MAX_COUNT)
         return entry

@@ -26,6 +26,11 @@ import kotlinx.coroutines.withContext
  * or removed by the user ([remove], [clear], ADR 0016), gives back its persisted read permission
  * and deletes its thumbnail, always through the same path.
  *
+ * A protected document (F10, ADR 0017) is listed like any other, but never gets a thumbnail: the
+ * renderer could not open it without its password, which is never stored, and its picture would
+ * show what the password protects. A thumbnail drawn before the document became protected is
+ * deleted at its next opening.
+ *
  * A singleton: thumbnails are drawn one at a time, under a single lock, so that the reader and
  * the library never draw the same one twice at once. Removals take the same lock, so that a
  * thumbnail drawn while its entry is removed is never left behind.
@@ -60,6 +65,8 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         access.keep(opening.uri)
         val details = access.details(opening.uri)
         val previous = dao.findById(documentIdFor(opening.uri))
+        // A protected document keeps no picture of its first page (ADR 0017).
+        val thumbnail = previous?.takeUnless { opening.isProtected }
         val entry =
             RecentDocumentEntity(
                 documentId = documentIdFor(opening.uri),
@@ -70,12 +77,17 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
                 lastOpenedAt = clock.millis(),
                 lastPage = opening.page.coerceIn(0, (opening.pageCount - 1).coerceAtLeast(0)),
                 // Kept until the library draws it again: it is now older than this opening.
-                thumbnailFile = previous?.thumbnailFile,
-                thumbnailDrawnAt = previous?.thumbnailDrawnAt,
+                thumbnailFile = thumbnail?.thumbnailFile,
+                thumbnailDrawnAt = thumbnail?.thumbnailDrawnAt,
+                isProtected = opening.isProtected,
             )
         try {
             dao.upsert(entry)
-            thumbnailLock.withLock { dao.findBeyond(RecentDocument.MAX_COUNT).forEach { release(it) } }
+            thumbnailLock.withLock {
+                // The picture of a document that became protected goes with this opening.
+                if (opening.isProtected) previous?.thumbnailFile?.let(thumbnails::delete)
+                dao.findBeyond(RecentDocument.MAX_COUNT).forEach { release(it) }
+            }
             entry.toDomain()
         } catch (expected: SQLiteException) {
             // Storage full or database unavailable: the document stays open, just not recorded.
@@ -120,8 +132,11 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
             withContext(ioDispatcher) {
                 val entry = dao.findById(documentId)
                 when {
-                    entry == null -> false
+                    // Never opened without its password, which is not stored (ADR 0017).
+                    entry == null || entry.isProtected -> false
+
                     onlyIfOutdated && !entry.toDomain().isThumbnailOutdated -> true
+
                     else -> drawThumbnail(entry)
                 }
             }
@@ -132,7 +147,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         val name = thumbnails.newName(entry.documentId, drawnAt)
         val rendered = renderer.render(entry.uri, thumbnails.file(name))
         val recorded = rendered && dao.updateThumbnail(entry.documentId, name, drawnAt) != 0
-        // Not recorded although drawn: the entry left the list while its thumbnail was drawn.
+        // Not recorded although drawn: the entry left the list, or became protected, meanwhile.
         if (rendered && !recorded) thumbnails.delete(name)
         if (recorded) entry.thumbnailFile?.takeIf { it != name }?.let(thumbnails::delete)
         return recorded
@@ -164,6 +179,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         lastPage = lastPage,
         thumbnailPath = thumbnailFile?.let(thumbnails::file)?.takeIf { it.exists() }?.absolutePath,
         thumbnailDrawnAt = thumbnailDrawnAt?.let(Instant::ofEpochMilli),
+        isProtected = isProtected,
     )
 }
 
