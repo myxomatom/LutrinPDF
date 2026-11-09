@@ -7,4 +7,15 @@
     <string name="settings_dynamic_color">Couleurs dynamiques</string>
     <string name="settings_dynamic_color_summary">Reprendre les couleurs de votre fond d’écran</string>
     <string name="settings_dynamic_color_unavailable">Disponible à partir d’Android 12</string>
+    <string name="settings_section_data">Données et confidentialité</string>
+    <string name="settings_clear_recents">Vider les récents</string>
+    <string name="settings_clear_recents_empty">Aucun document récent</string>
+    <string name="settings_clear_recents_title">Vider les récents ?</string>
+    <plurals name="settings_clear_recents_message">
+        <item quantity="one">%d document sera retiré de la liste, avec sa vignette et la page où vous vous étiez arrêté. Le fichier lui-même n’est pas supprimé.</item>
+        <item quantity="many">%d de documents seront retirés de la liste, avec leurs vignettes et les pages où vous vous étiez arrêté. Les fichiers eux-mêmes ne sont pas supprimés.</item>
+        <item quantity="other">%d documents seront retirés de la liste, avec leurs vignettes et les pages où vous vous étiez arrêté. Les fichiers eux-mêmes ne sont pas supprimés.</item>
+    </plurals>
+    <string name="settings_clear_recents_confirm">Vider</string>
+    <string name="settings_clear_recents_cancel">Annuler</string>
 </resources>
