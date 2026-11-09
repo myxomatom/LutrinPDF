@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -37,7 +38,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Recent documents (F11) and resuming reading (F12, ADR 0015) through the real activity,
- * navigation and Room database, with a fake engine.
+ * navigation and Room database, with a fake engine; removing one from the library or from the
+ * error screen, and clearing them from the settings (ADR 0016).
  */
 @HiltAndroidTest
 @Config(application = HiltTestApplication::class)
@@ -90,8 +92,20 @@ class RecentDocumentsTest {
         .setDataAndType(Uri.parse(DOCUMENT), "application/pdf")
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-    private fun record(page: Int) = runBlocking {
-        recents.recordOpening(DocumentOpening(DOCUMENT, PAGE_COUNT, page, fallbackName = "Contrat de location"))
+    private fun record(page: Int, uri: String = DOCUMENT, name: String = "Contrat de location") = runBlocking {
+        recents.recordOpening(DocumentOpening(uri, PAGE_COUNT, page, fallbackName = name))
+    }
+
+    private fun storedUris(): List<String> = runBlocking { recents.recentDocuments.first().map { it.uri } }
+
+    /** Waits for the removals, which run on the real threads of the application scope and Room. */
+    private fun waitForStoredUris(vararg uris: String) {
+        composeRule.waitUntil(TIMEOUT_MS) { storedUris() == uris.toList() }
+    }
+
+    private fun removeFromRowMenu(name: String) {
+        composeRule.onNodeWithContentDescription("More actions for $name").performClick()
+        composeRule.onNodeWithText("Remove from recents").performClick()
     }
 
     /** Room and DataStore work on real background threads, which `waitForIdle` does not wait for. */
@@ -174,9 +188,89 @@ class RecentDocumentsTest {
         composeRule.onNodeWithText("This document cannot be opened").assertIsDisplayed()
     }
 
+    @Test
+    fun `open, go back and remove the document, and the list no longer shows it`() {
+        val recorded = record(page = 0)
+        launch(launcher())
+        waitForText("Contrat de location")
+        composeRule.onNodeWithText("Contrat de location").performClick()
+        assertReaderShows(page = 1)
+        // The reader records its opening: the removal below is asked for this opening.
+        composeRule.waitUntil(TIMEOUT_MS) {
+            runBlocking { recents.findByUri(DOCUMENT) }?.lastOpenedAt != recorded?.lastOpenedAt
+        }
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        waitForText("Contrat de location")
+
+        removeFromRowMenu("Contrat de location")
+
+        waitForText("No recent documents")
+        composeRule.onNodeWithText("“Contrat de location” removed from recents").assertIsDisplayed()
+        assertThat(storedUris()).containsExactly(DOCUMENT)
+        composeRule.mainClock.advanceTimeBy(UNDO_TIMEOUT_MS)
+        waitForStoredUris()
+        composeRule.onNodeWithText("Contrat de location").assertDoesNotExist()
+    }
+
+    @Test
+    fun `undoing a removal brings the document back and keeps it`() {
+        record(page = 2)
+        launch(launcher())
+        waitForText("Contrat de location")
+
+        removeFromRowMenu("Contrat de location")
+        waitForText("No recent documents")
+        composeRule.onNodeWithText("Undo").performClick()
+
+        waitForText("Contrat de location")
+        composeRule.mainClock.advanceTimeBy(UNDO_TIMEOUT_MS)
+        composeRule.waitForIdle()
+        assertThat(storedUris()).containsExactly(DOCUMENT)
+        assertThat(runBlocking { recents.findByUri(DOCUMENT) }?.lastPage).isEqualTo(2)
+    }
+
+    @Test
+    fun `a recent document that cannot be read any more can be removed from the error screen`() {
+        record(page = 0)
+        record(page = 0, uri = OTHER_DOCUMENT, name = "Facture")
+        engine.result = Result.failure(PdfError.NotAccessible())
+        launch(launcher())
+        waitForText("Contrat de location")
+
+        composeRule.onNodeWithText("Contrat de location").performClick()
+        waitForText("Remove from recents")
+        composeRule.onNodeWithText("Remove from recents").performClick()
+
+        waitForText("Facture")
+        waitForStoredUris(OTHER_DOCUMENT)
+        composeRule.onNodeWithText("Contrat de location").assertDoesNotExist()
+    }
+
+    @Test
+    fun `clearing the recents from the settings empties the library`() {
+        record(page = 0)
+        record(page = 0, uri = OTHER_DOCUMENT, name = "Facture")
+        launch(launcher())
+        waitForText("2 documents")
+
+        composeRule.onNodeWithContentDescription("Settings").performClick()
+        composeRule.onNodeWithText("Clear recent documents").performScrollTo().performClick()
+        composeRule.onNodeWithText("Clear").performClick()
+
+        waitForStoredUris()
+        waitForText("No recent documents")
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        waitForText("Open a file")
+        composeRule.onNodeWithText("No recent documents").assertIsDisplayed()
+    }
+
     private companion object {
         const val PAGE_COUNT = 6
         const val TIMEOUT_MS = 5_000L
         const val DOCUMENT = "content://com.example.files/document/1"
+        const val OTHER_DOCUMENT = "content://com.example.files/document/2"
+
+        /** Longer than the message offering to undo a removal (10 s). */
+        const val UNDO_TIMEOUT_MS = 11_000L
     }
 }
