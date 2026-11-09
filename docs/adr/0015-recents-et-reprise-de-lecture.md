@@ -166,7 +166,8 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
   - une vignette est dessinée au premier affichage de la bibliothèque qui suit l'ouverture, donc
     avec un léger délai (l'image d'attente de la maquette s'affiche entre-temps).
 - Actions de suivi :
-  - « Retirer des récents » (V8 et menu de ligne) et « Vider les récents » (E3) ;
+  - ~~« Retirer des récents » (V8 et menu de ligne) et « Vider les récents » (E3)~~ : fait,
+    ADR 0016 ;
   - essais sur appareil : permission persistée après redémarrage, liste de plus de 50
     documents, document supprimé ou permission retirée depuis « Fichiers » ;
   - empreinte du contenu (point ouvert 16), zoom et décalage (F12).

@@ -81,8 +81,12 @@ class ReaderScreenTest {
         composeRule.waitForIdle()
     }
 
-    private fun show(state: ReaderUiState, onBack: () -> Unit = {}) {
-        composeRule.setContent { LutrinTheme(dynamicColor = false) { ReaderScreen(state, onBack) } }
+    private fun show(state: ReaderUiState, onBack: () -> Unit = {}, onRemoveFromRecents: () -> Unit = {}) {
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                ReaderScreen(state, onBack, onRemoveFromRecents = onRemoveFromRecents)
+            }
+        }
     }
 
     @Test
@@ -304,6 +308,39 @@ class ReaderScreenTest {
         composeRule.onNodeWithText("Défilement").assertIsDisplayed()
         composeRule.onNodeWithText("Continu").assertIsSelected()
         composeRule.onNodeWithText("Page par page").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the error screen of a recent document offers to remove it`() {
+        var removed = 0
+        var back = 0
+        show(
+            ReaderUiState.Error(ReaderError.NOT_ACCESSIBLE, inRecents = true),
+            onBack = { back++ },
+            onRemoveFromRecents = { removed++ },
+        )
+
+        composeRule.onNodeWithText("Remove from recents").assertIsDisplayed().performClick()
+
+        assertThat(removed).isEqualTo(1)
+        assertThat(back).isEqualTo(0)
+        composeRule.onNodeWithText("Back").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the error screen of a document out of the recent list has no remove button`() {
+        show(ReaderUiState.Error(ReaderError.NOT_ACCESSIBLE))
+
+        composeRule.onNodeWithText("Remove from recents").assertDoesNotExist()
+        composeRule.onNodeWithText("Back").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the remove button is translated into French`() {
+        show(ReaderUiState.Error(ReaderError.UNREADABLE, inRecents = true))
+
+        composeRule.onNodeWithText("Retirer des récents").assertIsDisplayed()
     }
 
     private companion object {

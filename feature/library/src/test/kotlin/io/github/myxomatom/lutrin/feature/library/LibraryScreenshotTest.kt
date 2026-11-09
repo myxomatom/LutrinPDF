@@ -10,11 +10,16 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Rule
@@ -25,7 +30,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Screenshot references of the library with recent documents (E1): light, dark, large font and
- * French. Rows with a thumbnail and rows still waiting for theirs (placeholder).
+ * French. Rows with a thumbnail and rows still waiting for theirs (placeholder); the row menu
+ * open, and the message offering to undo a removal (ADR 0016).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -79,22 +85,50 @@ class LibraryScreenshotTest {
         thumbnailPath = if (thumbnail) "/thumbnails/$id.png" else null,
     )
 
-    private fun capture(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
+    private fun show(
+        darkTheme: Boolean,
+        fontScale: Float = 1f,
+        shown: List<RecentDocumentItem> = documents,
+        pendingRemoval: PendingRemoval? = null,
+    ) {
         val page = fakePage()
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
                     LibraryScreen(
-                        state = LibraryUiState.Content(documents),
+                        state = LibraryUiState.Content(shown),
                         onOpenFile = {},
                         onOpenSettings = {},
                         onOpenDocument = {},
                         loadThumbnail = { page },
+                        pendingRemoval = pendingRemoval,
                     )
                 }
             }
         }
+    }
+
+    private fun capture(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
+        show(darkTheme, fontScale)
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    }
+
+    /** The menu of the first row, open; the menu is a separate window. */
+    @OptIn(ExperimentalRoborazziApi::class)
+    private fun captureMenu(name: String, darkTheme: Boolean, menuLabel: String, fontScale: Float = 1f) {
+        show(darkTheme, fontScale)
+        composeRule.onNodeWithContentDescription(menuLabel).performClick()
+        composeRule.waitForIdle()
+        captureScreenRoboImage("src/test/screenshots/$name.png")
+    }
+
+    /** The second row just removed: hidden, with the message offering to undo it. */
+    private fun captureRemoval(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
+        val removed = documents[1]
+        show(darkTheme, fontScale, documents - removed, PendingRemoval(removed.documentId, removed.name, REMOVED_AT))
+        composeRule.mainClock.advanceTimeBy(MESSAGE_ANIMATION_MS)
+        composeRule.waitForIdle()
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
@@ -130,7 +164,42 @@ class LibraryScreenshotTest {
     @Config(qualifiers = "+fr")
     fun french() = capture("library_recents_light_fr", darkTheme = false)
 
+    @Test
+    fun menu() = captureMenu("library_row_menu_light", darkTheme = false, MENU_EN)
+
+    @Test
+    fun menuDark() = captureMenu("library_row_menu_dark", darkTheme = true, MENU_EN)
+
+    // The menu is another window, which takes its font scale from the configuration.
+    @Test
+    @Config(fontScale = 2f)
+    fun menuLargeFont() = captureMenu("library_row_menu_light_font200", darkTheme = false, MENU_EN, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun menuFrench() = captureMenu("library_row_menu_light_fr", darkTheme = false, MENU_FR)
+
+    @Test
+    fun removal() = captureRemoval("library_removed_light", darkTheme = false)
+
+    @Test
+    fun removalDark() = captureRemoval("library_removed_dark", darkTheme = true)
+
+    @Test
+    fun removalLargeFont() = captureRemoval("library_removed_light_font200", darkTheme = false, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun removalFrench() = captureRemoval("library_removed_light_fr", darkTheme = false)
+
     private companion object {
+        const val MENU_EN = "More actions for Contrat de location"
+        const val MENU_FR = "Plus d’actions pour Contrat de location"
+        val REMOVED_AT: Instant = Instant.parse("2026-11-09T18:05:00Z")
+
+        /** Enough for the message to slide in, far below its 10 s timeout. */
+        const val MESSAGE_ANIMATION_MS = 1_000L
+
         const val PAGE_WIDTH = 164
         const val PAGE_HEIGHT = 232
         const val LINES = 10

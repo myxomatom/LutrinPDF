@@ -43,7 +43,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.feature.reader.R
-import io.github.myxomatom.lutrin.feature.reader.ReaderError
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
 import kotlin.math.roundToInt
@@ -58,6 +57,10 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onBack = onBack,
         onPageChange = viewModel::onPageChange,
         onScrollModeChange = viewModel::onScrollModeChange,
+        onRemoveFromRecents = {
+            viewModel.onRemoveFromRecents()
+            onBack()
+        },
     )
 }
 
@@ -69,6 +72,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param modifier modifier applied to the screen.
  * @param onPageChange called with the zero-based page shown, whenever it changes.
  * @param onScrollModeChange called with the scroll mode chosen in the options (V6).
+ * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
+ *   of the recent list that cannot be opened; the reader is expected to close.
  */
 @Composable
 fun ReaderScreen(
@@ -77,10 +82,11 @@ fun ReaderScreen(
     modifier: Modifier = Modifier,
     onPageChange: (Int) -> Unit = {},
     onScrollModeChange: (ScrollMode) -> Unit = {},
+    onRemoveFromRecents: () -> Unit = {},
 ) {
     when (state) {
         ReaderUiState.Loading -> LoadingContent(modifier)
-        is ReaderUiState.Error -> ReaderErrorContent(state.reason, onBack, modifier)
+        is ReaderUiState.Error -> ReaderErrorContent(state, onBack, onRemoveFromRecents, modifier)
         is ReaderUiState.Ready -> ReaderContent(state, onBack, onPageChange, onScrollModeChange, modifier)
     }
 }
@@ -255,10 +261,20 @@ private fun FullscreenPageIndicator(page: Int, pageCount: Int, modifier: Modifie
     )
 }
 
-/** Error screen (V8): what went wrong and a way back. */
+/** Error screen (V8): what went wrong, « Retirer des récents » for a recent document, a way back. */
 @Composable
-internal fun ReaderErrorContent(reason: ReaderError, onBack: () -> Unit, modifier: Modifier = Modifier) {
+internal fun ReaderErrorContent(
+    state: ReaderUiState.Error,
+    onBack: () -> Unit,
+    onRemoveFromRecents: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Scaffold(modifier = modifier, topBar = { ReaderTopBar(title = "", onBack = onBack) }) { padding ->
-        ErrorMessage(reason, onBack, Modifier.padding(padding))
+        ErrorMessage(
+            reason = state.reason,
+            onBack = onBack,
+            modifier = Modifier.padding(padding),
+            onRemoveFromRecents = onRemoveFromRecents.takeIf { state.inRecents },
+        )
     }
 }

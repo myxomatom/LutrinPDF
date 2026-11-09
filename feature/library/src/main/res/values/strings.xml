@@ -21,4 +21,10 @@
     <string name="library_opened_yesterday">Yesterday</string>
     <string name="library_thumbnail">First page of %s</string>
     <string name="library_open_document">Open</string>
+    <!-- Description of the « ⋮ » button of a recent row; %s is the document name. -->
+    <string name="library_row_menu">More actions for %s</string>
+    <string name="library_remove">Remove from recents</string>
+    <!-- Message after a removal, with an undo action; %s is the document name. -->
+    <string name="library_removed">“%s” removed from recents</string>
+    <string name="library_undo">Undo</string>
 </resources>

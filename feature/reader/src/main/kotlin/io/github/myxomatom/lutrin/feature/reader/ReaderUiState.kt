@@ -15,8 +15,10 @@ sealed interface ReaderUiState {
      * The document could not be opened (V8).
      *
      * @property reason what went wrong, mapped to a message by the screen.
+     * @property inRecents whether the document is in the recent list: the screen then offers
+     *   « Retirer des récents » (`SPEC.md` §6, ADR 0016).
      */
-    data class Error(val reason: ReaderError) : ReaderUiState
+    data class Error(val reason: ReaderError, val inRecents: Boolean = false) : ReaderUiState
 
     /**
      * The document is open.

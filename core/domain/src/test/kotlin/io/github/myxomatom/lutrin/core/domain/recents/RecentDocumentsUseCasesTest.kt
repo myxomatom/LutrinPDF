@@ -12,7 +12,9 @@ import org.junit.Test
 class RecentDocumentsUseCasesTest {
     /** Minimal in-memory repository: the use cases only forward to it, or read one entry. */
     private class InMemoryRecents(initial: List<RecentDocument> = emptyList()) : RecentDocumentsRepository {
-        override val recentDocuments: StateFlow<List<RecentDocument>> = MutableStateFlow(initial)
+        private val state = MutableStateFlow(initial)
+        override val recentDocuments: StateFlow<List<RecentDocument>> = state
+        val removals = mutableListOf<Pair<String, Instant?>>()
         val openings = mutableListOf<DocumentOpening>()
         val pages = mutableListOf<Pair<String, Int>>()
         val thumbnails = mutableListOf<Pair<String, Boolean>>()
@@ -33,6 +35,16 @@ class RecentDocumentsUseCasesTest {
             thumbnails += documentId to onlyIfOutdated
             return true
         }
+
+        override suspend fun remove(documentId: String, openedAt: Instant?): Boolean {
+            removals += documentId to openedAt
+            val before = state.value
+            state.value =
+                before.filterNot { it.documentId == documentId && (openedAt == null || it.lastOpenedAt == openedAt) }
+            return state.value.size != before.size
+        }
+
+        override suspend fun clear(): Int = state.value.size.also { state.value = emptyList() }
     }
 
     @Test
@@ -141,12 +153,55 @@ class RecentDocumentsUseCasesTest {
     }
 
     @Test
+    fun `a document is recent only while it has an entry`() = runTest {
+        val isRecent = IsRecentDocumentUseCase(InMemoryRecents(listOf(entry(URI, lastPage = 0))))
+
+        assertThat(isRecent(URI)).isTrue()
+        assertThat(isRecent("content://other/doc")).isFalse()
+    }
+
+    @Test
+    fun `removing forwards the entry and its opening date`() = runTest {
+        val repository = InMemoryRecents(listOf(entry(URI, lastPage = 0)))
+        val remove = RemoveRecentDocumentUseCase(repository)
+
+        assertThat(remove(documentIdFor(URI))).isTrue()
+        assertThat(remove(documentIdFor(URI), OPENED_AT)).isFalse()
+
+        assertThat(repository.removals)
+            .containsExactly(documentIdFor(URI) to null, documentIdFor(URI) to OPENED_AT)
+            .inOrder()
+        assertThat(repository.recentDocuments.value).isEmpty()
+    }
+
+    @Test
+    fun `removing an entry opened again since keeps it`() = runTest {
+        val repository = InMemoryRecents(listOf(entry(URI, lastPage = 0)))
+
+        val removed = RemoveRecentDocumentUseCase(repository)(documentIdFor(URI), OPENED_AT.minusSeconds(60))
+
+        assertThat(removed).isFalse()
+        assertThat(repository.recentDocuments.value).hasSize(1)
+    }
+
+    @Test
+    fun `clearing empties the list and counts the entries removed`() = runTest {
+        val repository = InMemoryRecents(listOf(entry(URI, lastPage = 0), entry("$URI/2", lastPage = 0)))
+        val clear = ClearRecentDocumentsUseCase(repository)
+
+        assertThat(clear()).isEqualTo(2)
+        assertThat(clear()).isEqualTo(0)
+        assertThat(repository.recentDocuments.value).isEmpty()
+    }
+
+    @Test
     fun `the list keeps at most fifty documents`() {
         assertThat(RecentDocument.MAX_COUNT).isEqualTo(50)
     }
 
     private companion object {
         const val URI = "content://com.example.files/document/contrat"
+        val OPENED_AT: Instant = Instant.parse("2026-11-09T20:41:00Z")
 
         fun entry(uri: String, lastPage: Int) = RecentDocument(
             documentId = documentIdFor(uri),
@@ -154,7 +209,7 @@ class RecentDocumentsUseCasesTest {
             displayName = "Contrat",
             sizeBytes = 1_024L,
             pageCount = 8,
-            lastOpenedAt = Instant.parse("2026-11-09T20:41:00Z"),
+            lastOpenedAt = OPENED_AT,
             lastPage = lastPage,
             thumbnailPath = null,
         )

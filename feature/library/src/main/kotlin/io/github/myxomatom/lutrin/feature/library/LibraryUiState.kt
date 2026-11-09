@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.library
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -76,3 +77,13 @@ sealed interface OpenedOn {
      */
     data class OtherYear(val date: LocalDate) : OpenedOn
 }
+
+/**
+ * A recent document removed by the user while « Annuler » is still offered (ADR 0016): its row
+ * is hidden, but the entry, its permission and its thumbnail are still there.
+ *
+ * @property documentId the entry.
+ * @property name its name, for the message.
+ * @property openedAt its last opening when it was removed: an entry opened again since is kept.
+ */
+data class PendingRemoval(val documentId: String, val name: String, val openedAt: Instant)

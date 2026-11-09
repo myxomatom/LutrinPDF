@@ -7,4 +7,14 @@
     <string name="settings_dynamic_color">Dynamic colours</string>
     <string name="settings_dynamic_color_summary">Use the colours of your wallpaper</string>
     <string name="settings_dynamic_color_unavailable">Available from Android 12</string>
+    <string name="settings_section_data">Data and privacy</string>
+    <string name="settings_clear_recents">Clear recent documents</string>
+    <string name="settings_clear_recents_empty">No recent documents</string>
+    <string name="settings_clear_recents_title">Clear recent documents?</string>
+    <plurals name="settings_clear_recents_message">
+        <item quantity="one">%d document will be removed from the list, with its thumbnail and the page where you stopped. The file itself is not deleted.</item>
+        <item quantity="other">%d documents will be removed from the list, with their thumbnails and the pages where you stopped. The files themselves are not deleted.</item>
+    </plurals>
+    <string name="settings_clear_recents_confirm">Clear</string>
+    <string name="settings_clear_recents_cancel">Cancel</string>
 </resources>

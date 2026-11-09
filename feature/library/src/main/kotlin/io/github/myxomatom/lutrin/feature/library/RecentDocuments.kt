@@ -20,15 +20,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +62,7 @@ import java.util.Locale
 private val ThumbnailWidth = 44.dp
 private val ThumbnailHeight = 58.dp
 
-/** Paddings of a row of the mock-up. */
+/** Paddings of a row of the mock-up; the « ⋮ » button brings its own 48 dp touch target. */
 private val RowVerticalPadding = 10.dp
 private val RowEndPadding = 4.dp
 private val RowGap = 16.dp
@@ -88,13 +97,16 @@ private val PlaceholderLineCorner = 2.dp
  *
  * @param documents rows to show; never empty.
  * @param onOpen called with the URI of the tapped document.
+ * @param onRemove called with the identifier of the row whose « Retirer des récents » is chosen.
  * @param loadThumbnail reads a thumbnail file.
  * @param onRefreshThumbnail called for a row shown with a missing or outdated thumbnail.
+ * @param modifier modifier applied to the list.
  */
 @Composable
 internal fun RecentDocumentList(
     documents: List<RecentDocumentItem>,
     onOpen: (String) -> Unit,
+    onRemove: (String) -> Unit,
     loadThumbnail: suspend (String) -> ImageBitmap?,
     onRefreshThumbnail: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -102,7 +114,7 @@ internal fun RecentDocumentList(
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         item(key = HEADER_KEY) { RecentHeader(documents.size) }
         items(documents, key = { it.documentId }) { document ->
-            RecentDocumentRow(document, onOpen, loadThumbnail, onRefreshThumbnail)
+            RecentDocumentRow(document, onOpen, { onRemove(document.documentId) }, loadThumbnail, onRefreshThumbnail)
         }
     }
 }
@@ -137,6 +149,7 @@ private fun RecentHeader(count: Int) {
 private fun RecentDocumentRow(
     document: RecentDocumentItem,
     onOpen: (String) -> Unit,
+    onRemove: () -> Unit,
     loadThumbnail: suspend (String) -> ImageBitmap?,
     onRefreshThumbnail: (String) -> Unit,
 ) {
@@ -156,6 +169,34 @@ private fun RecentDocumentRow(
     ) {
         Thumbnail(document, loadThumbnail, onRefreshThumbnail)
         RecentDocumentTexts(document, Modifier.weight(1f))
+        RowMenu(document.name, onRemove)
+    }
+}
+
+/**
+ * The « ⋮ » button of a row and its menu. The button is a separate 48 dp target, named after the
+ * document for screen readers (« Plus d'actions pour Contrat de location »).
+ */
+@Composable
+private fun RowMenu(name: String, onRemove: () -> Unit) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.library_row_menu, name),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.library_remove)) },
+                onClick = {
+                    expanded = false
+                    onRemove()
+                },
+            )
+        }
     }
 }
 
