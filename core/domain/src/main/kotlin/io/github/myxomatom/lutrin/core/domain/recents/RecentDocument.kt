@@ -17,6 +17,7 @@ import java.time.Instant
  * @property lastPage zero-based page the user was on, within `0 until pageCount`.
  * @property thumbnailPath absolute path of the picture of the first page, or `null` when it was
  *   not drawn yet or its file is gone.
+ * @property thumbnailDrawnAt when that picture was drawn, or `null` when there is none.
  */
 data class RecentDocument(
     val documentId: String,
@@ -27,7 +28,15 @@ data class RecentDocument(
     val lastOpenedAt: Instant,
     val lastPage: Int,
     val thumbnailPath: String?,
+    val thumbnailDrawnAt: Instant? = null,
 ) {
+    /**
+     * Whether the thumbnail has to be drawn (again): it is missing, or older than the last
+     * opening, after which the file may have changed (ADR 0015).
+     */
+    val isThumbnailOutdated: Boolean
+        get() = thumbnailPath == null || thumbnailDrawnAt?.isBefore(lastOpenedAt) != false
+
     /** Limits of the recent list. */
     companion object {
         /**

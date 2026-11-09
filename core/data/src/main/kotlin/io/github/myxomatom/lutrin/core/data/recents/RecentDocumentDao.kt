@@ -49,10 +49,13 @@ internal interface RecentDocumentDao {
     suspend fun updateLastPage(uri: String, page: Int): Int
 
     /**
-     * Changes the thumbnail file of an entry.
+     * Changes the thumbnail file of an entry and the date it was drawn.
      *
      * @return the number of entries changed, 0 when the entry is gone.
      */
-    @Query("UPDATE recent_documents SET thumbnail_file = :thumbnailFile WHERE document_id = :documentId")
-    suspend fun updateThumbnail(documentId: String, thumbnailFile: String?): Int
+    @Query(
+        "UPDATE recent_documents SET thumbnail_file = :thumbnailFile, thumbnail_drawn_at = :drawnAt " +
+            "WHERE document_id = :documentId",
+    )
+    suspend fun updateThumbnail(documentId: String, thumbnailFile: String?, drawnAt: Long?): Int
 }

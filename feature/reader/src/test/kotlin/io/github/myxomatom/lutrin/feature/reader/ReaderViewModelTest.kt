@@ -10,7 +10,6 @@ import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
-import io.github.myxomatom.lutrin.core.domain.recents.UpdateThumbnailUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
@@ -66,7 +65,6 @@ class ReaderViewModelTest {
         ReadingHistory(
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
-            UpdateThumbnailUseCase(recents),
             SaveLastPageUseCase(recents),
             // A child of the test, so that advanceUntilIdle runs the write done on closing.
             this,
@@ -325,7 +323,7 @@ class ReaderViewModelTest {
     )
 
     @Test
-    fun `a successful opening is recorded with its start page and draws the thumbnail`() = runTest(dispatcher) {
+    fun `a successful opening is recorded with its start page, its thumbnail left to the library`() = runTest(dispatcher) {
         openWithHistory(pageCount = 5, page = 2)
 
         val entry = recents.recentDocuments.value.single()
@@ -333,8 +331,7 @@ class ReaderViewModelTest {
         assertThat(entry.pageCount).isEqualTo(5)
         assertThat(entry.lastPage).isEqualTo(2)
         assertThat(entry.displayName).isEqualTo("Contrat")
-        assertThat(recents.thumbnailRequests)
-            .containsExactly(FakeRecentDocumentsRepository.ThumbnailRequest(entry.documentId, onlyIfMissing = false))
+        assertThat(recents.thumbnailRequests).isEmpty()
     }
 
     @Test

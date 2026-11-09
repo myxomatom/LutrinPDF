@@ -28,19 +28,20 @@ class RecordDocumentOpeningUseCase @Inject constructor(private val repository: R
 }
 
 /**
- * Draws the thumbnail of a recent document (F11): after each opening, so that it shows the
- * current file, or when the library finds it missing.
+ * Draws the thumbnail of a recent document (F11). The library asks for it when it shows an
+ * entry whose thumbnail is missing or older than its last opening (ADR 0015), so that the
+ * reader never competes with it while it opens a document.
  *
  * @param repository where the recent documents are stored.
  */
 class UpdateThumbnailUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
     /**
      * @param documentId the entry.
-     * @param onlyIfMissing keep an existing thumbnail instead of drawing it again.
+     * @param onlyIfOutdated keep a thumbnail that is up to date instead of drawing it again.
      * @return whether the entry has a thumbnail afterwards.
      */
-    suspend operator fun invoke(documentId: String, onlyIfMissing: Boolean = false): Boolean =
-        repository.updateThumbnail(documentId, onlyIfMissing)
+    suspend operator fun invoke(documentId: String, onlyIfOutdated: Boolean = false): Boolean =
+        repository.updateThumbnail(documentId, onlyIfOutdated)
 }
 
 /**

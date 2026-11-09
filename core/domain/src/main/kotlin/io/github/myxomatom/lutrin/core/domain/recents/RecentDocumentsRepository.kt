@@ -41,12 +41,14 @@ interface RecentDocumentsRepository {
     suspend fun saveLastPage(uri: String, page: Int)
 
     /**
-     * Draws the thumbnail of the first page of a recent document again, off the main thread.
+     * Draws the thumbnail of the first page of a recent document, off the main thread. The
+     * document is opened for this alone, through the PDF engine.
      *
      * @param documentId the entry.
-     * @param onlyIfMissing when `true`, an existing thumbnail file is kept and nothing is drawn.
+     * @param onlyIfOutdated when `true`, a thumbnail that is not [RecentDocument.isThumbnailOutdated]
+     *   is kept and nothing is drawn.
      * @return whether the entry has a thumbnail afterwards; `false` when the entry is gone or the
      *   document cannot be read any more (file deleted, permission revoked).
      */
-    suspend fun updateThumbnail(documentId: String, onlyIfMissing: Boolean): Boolean
+    suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean
 }

@@ -32,7 +32,7 @@ class PdfThumbnailRendererTest {
     private val destination get() = File(folder.root, "thumbnails/doc-1.png")
 
     private fun TestScope.renderer(engine: FakePdfEngine) =
-        PdfThumbnailRenderer(engine, StandardTestDispatcher(testScheduler))
+        PdfThumbnailRenderer({ engine }, StandardTestDispatcher(testScheduler))
 
     @Test
     fun `draws the first page of a portrait document into a PNG file`() = runTest {

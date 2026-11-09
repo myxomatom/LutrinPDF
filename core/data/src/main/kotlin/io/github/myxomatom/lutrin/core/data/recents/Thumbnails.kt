@@ -6,6 +6,7 @@ import android.graphics.Bitmap.CompressFormat.PNG
 import android.graphics.Color
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
+import dagger.Lazy
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
@@ -69,15 +70,16 @@ internal fun interface ThumbnailRenderer {
  * the densest screens (xxxhdpi, × 4). The PNG is written to a temporary file next to the
  * destination, then moved over it, so that no partial file is ever visible.
  *
- * @param engine opens the document a second time, independently of the reader.
+ * @param engine opens the document, independently of the reader. Lazy: the library must not load
+ *   the MuPDF native library at start-up, before a thumbnail is actually drawn.
  * @param ioDispatcher where the bitmap is allocated, encoded and written.
  */
 internal class PdfThumbnailRenderer @Inject constructor(
-    private val engine: PdfEngine,
+    private val engine: Lazy<PdfEngine>,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ThumbnailRenderer {
     override suspend fun render(uri: String, destination: File): Boolean {
-        val document = engine.open(DocumentSource.FromUri(uri.toUri())).getOrElse { return false }
+        val document = engine.get().open(DocumentSource.FromUri(uri.toUri())).getOrElse { return false }
         return document.use { draw(it, destination) }
     }
 

@@ -6,12 +6,10 @@ import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
-import io.github.myxomatom.lutrin.core.domain.recents.UpdateThumbnailUseCase
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -27,15 +25,14 @@ import kotlinx.coroutines.launch
  * outlives the reader.
  *
  * @param getStartPage chooses the first page: explicit, saved, or the first one.
- * @param recordOpening adds the document to the recent list.
- * @param updateThumbnail draws its thumbnail after each opening.
+ * @param recordOpening adds the document to the recent list; its thumbnail is drawn later, by
+ *   the library, so that it never competes with this opening (ADR 0015).
  * @param saveLastPage stores the page.
  * @param applicationScope where the last write runs once the reader is gone.
  */
 class ReadingHistory @Inject constructor(
     private val getStartPage: GetStartPageUseCase,
     private val recordOpening: RecordDocumentOpeningUseCase,
-    private val updateThumbnail: UpdateThumbnailUseCase,
     private val saveLastPage: SaveLastPageUseCase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
 ) {
@@ -54,9 +51,8 @@ class ReadingHistory @Inject constructor(
         getStartPage(uri, requestedPage, pageCount)
 
     /**
-     * Records [opening] in the recent list, draws the thumbnail, then saves the pages of
-     * [currentPage] until the calling coroutine is cancelled. Records nothing more if the
-     * opening could not be stored.
+     * Records [opening] in the recent list, then saves the pages of [currentPage] until the
+     * calling coroutine is cancelled. Records nothing more if the opening could not be stored.
      *
      * @param opening the document just opened, with its start page.
      * @param currentPage the zero-based page shown, starting with the start page.
@@ -65,10 +61,7 @@ class ReadingHistory @Inject constructor(
     suspend fun follow(opening: DocumentOpening, currentPage: Flow<Int>) {
         val recorded = recordOpening(opening) ?: return
         savedPage = recorded.lastPage
-        coroutineScope {
-            launch { updateThumbnail(recorded.documentId) }
-            currentPage.distinctUntilChanged().debounce(SAVE_DELAY).collect { save(opening.uri, it) }
-        }
+        currentPage.distinctUntilChanged().debounce(SAVE_DELAY).collect { save(opening.uri, it) }
     }
 
     /**

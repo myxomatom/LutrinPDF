@@ -35,8 +35,8 @@ class FakeRecentDocumentsRepositoryTest {
 
         assertThat(repository.findByUri("content://files/1")?.lastPage).isEqualTo(6)
         assertThat(repository.savedPages).containsExactly("content://files/1" to 6)
-        assertThat(repository.updateThumbnail(entry?.documentId.orEmpty(), onlyIfMissing = true)).isFalse()
-        assertThat(repository.thumbnailRequests.single().onlyIfMissing).isTrue()
+        assertThat(repository.updateThumbnail(entry?.documentId.orEmpty(), onlyIfOutdated = true)).isFalse()
+        assertThat(repository.thumbnailRequests.single().onlyIfOutdated).isTrue()
     }
 
     @Test

@@ -57,6 +57,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         // First, while the grant of the intent or of the picker is still valid.
         access.keep(opening.uri)
         val details = access.details(opening.uri)
+        val previous = dao.findById(documentIdFor(opening.uri))
         val entry =
             RecentDocumentEntity(
                 documentId = documentIdFor(opening.uri),
@@ -66,7 +67,9 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
                 pageCount = opening.pageCount,
                 lastOpenedAt = clock.millis(),
                 lastPage = opening.page.coerceIn(0, (opening.pageCount - 1).coerceAtLeast(0)),
-                thumbnailFile = dao.findById(documentIdFor(opening.uri))?.thumbnailFile,
+                // Kept until the library draws it again: it is now older than this opening.
+                thumbnailFile = previous?.thumbnailFile,
+                thumbnailDrawnAt = previous?.thumbnailDrawnAt,
             )
         try {
             dao.upsert(entry)
@@ -86,21 +89,29 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateThumbnail(documentId: String, onlyIfMissing: Boolean): Boolean = thumbnailLock.withLock {
-        val entry = dao.findById(documentId) ?: return@withLock false
-        val current = entry.thumbnailFile
-        if (onlyIfMissing && current != null && withContext(ioDispatcher) { thumbnails.file(current).exists() }) {
-            return@withLock true
+    override suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean =
+        thumbnailLock.withLock {
+            withContext(ioDispatcher) {
+                val entry = dao.findById(documentId)
+                when {
+                    entry == null -> false
+                    onlyIfOutdated && !entry.toDomain().isThumbnailOutdated -> true
+                    else -> drawThumbnail(entry)
+                }
+            }
         }
-        val name = thumbnails.newName(documentId, clock.millis())
-        if (!renderer.render(entry.uri, thumbnails.file(name))) return@withLock false
-        if (dao.updateThumbnail(documentId, name) == 0) {
+
+    private suspend fun drawThumbnail(entry: RecentDocumentEntity): Boolean {
+        val drawnAt = clock.millis()
+        val name = thumbnails.newName(entry.documentId, drawnAt)
+        if (!renderer.render(entry.uri, thumbnails.file(name))) return false
+        if (dao.updateThumbnail(entry.documentId, name, drawnAt) == 0) {
             // The entry left the list while its thumbnail was drawn.
             thumbnails.delete(name)
-            return@withLock false
+            return false
         }
-        if (current != null && current != name) thumbnails.delete(current)
-        true
+        entry.thumbnailFile?.takeIf { it != name }?.let(thumbnails::delete)
+        return true
     }
 
     private suspend fun remove(entry: RecentDocumentEntity) {
@@ -119,6 +130,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         lastOpenedAt = Instant.ofEpochMilli(lastOpenedAt),
         lastPage = lastPage,
         thumbnailPath = thumbnailFile?.let(thumbnails::file)?.takeIf { it.exists() }?.absolutePath,
+        thumbnailDrawnAt = thumbnailDrawnAt?.let(Instant::ofEpochMilli),
     )
 }
 

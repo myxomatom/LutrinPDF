@@ -192,7 +192,7 @@ class RoomRecentDocumentsRepositoryTest {
             repository.recordOpening(opening(it))
             clock.advance()
         }
-        repository.updateThumbnail(documentIdFor(uri(0)), onlyIfMissing = false)
+        repository.updateThumbnail(documentIdFor(uri(0)), onlyIfOutdated = false)
         val oldestThumbnail = repository.findByUri(uri(0))?.thumbnailPath
         assertThat(oldestThumbnail).isNotNull()
 
@@ -238,7 +238,7 @@ class RoomRecentDocumentsRepositoryTest {
         val repository = repository()
         repository.recordOpening(opening(1))
 
-        val drawn = repository.updateThumbnail(documentIdFor(uri(1)), onlyIfMissing = false)
+        val drawn = repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = false)
 
         val path = repository.findByUri(uri(1))?.thumbnailPath
         assertThat(drawn).isTrue()
@@ -252,11 +252,11 @@ class RoomRecentDocumentsRepositoryTest {
         val repository = repository()
         val id = documentIdFor(uri(1))
         repository.recordOpening(opening(1))
-        repository.updateThumbnail(id, onlyIfMissing = false)
+        repository.updateThumbnail(id, onlyIfOutdated = false)
         val first = repository.findByUri(uri(1))?.thumbnailPath.orEmpty()
         clock.advance()
 
-        repository.updateThumbnail(id, onlyIfMissing = false)
+        repository.updateThumbnail(id, onlyIfOutdated = false)
 
         val second = repository.findByUri(uri(1))?.thumbnailPath.orEmpty()
         assertThat(second).isNotEqualTo(first)
@@ -265,14 +265,51 @@ class RoomRecentDocumentsRepositoryTest {
     }
 
     @Test
-    fun `an existing thumbnail is kept when only missing ones are drawn`() = runTest {
+    fun `a drawn thumbnail is up to date until the document is opened again`() = runTest {
         val repository = repository()
         val id = documentIdFor(uri(1))
         repository.recordOpening(opening(1))
-        repository.updateThumbnail(id, onlyIfMissing = false)
+        assertThat(repository.findByUri(uri(1))?.isThumbnailOutdated).isTrue()
+
+        clock.advance()
+        repository.updateThumbnail(id, onlyIfOutdated = true)
+        val drawn = repository.findByUri(uri(1))
+        assertThat(drawn?.thumbnailDrawnAt).isEqualTo(clock.now)
+        assertThat(drawn?.isThumbnailOutdated).isFalse()
+
+        clock.advance()
+        repository.recordOpening(opening(1, page = 3))
+        val reopened = repository.findByUri(uri(1))
+        // The old picture stays visible until it is drawn again.
+        assertThat(reopened?.thumbnailPath).isEqualTo(drawn?.thumbnailPath)
+        assertThat(reopened?.isThumbnailOutdated).isTrue()
+    }
+
+    @Test
+    fun `an outdated thumbnail is drawn again when only outdated ones are asked for`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1))
+        repository.updateThumbnail(id, onlyIfOutdated = false)
+        clock.advance()
+        repository.recordOpening(opening(1))
         renderer.rendered.clear()
 
-        assertThat(repository.updateThumbnail(id, onlyIfMissing = true)).isTrue()
+        assertThat(repository.updateThumbnail(id, onlyIfOutdated = true)).isTrue()
+
+        assertThat(renderer.rendered).containsExactly(uri(1))
+        assertThat(repository.findByUri(uri(1))?.isThumbnailOutdated).isFalse()
+    }
+
+    @Test
+    fun `an up-to-date thumbnail is kept when only outdated ones are asked for`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1))
+        repository.updateThumbnail(id, onlyIfOutdated = false)
+        renderer.rendered.clear()
+
+        assertThat(repository.updateThumbnail(id, onlyIfOutdated = true)).isTrue()
         assertThat(renderer.rendered).isEmpty()
     }
 
@@ -281,14 +318,14 @@ class RoomRecentDocumentsRepositoryTest {
         val repository = repository()
         val id = documentIdFor(uri(1))
         repository.recordOpening(opening(1))
-        repository.updateThumbnail(id, onlyIfMissing = false)
+        repository.updateThumbnail(id, onlyIfOutdated = false)
         File(repository.findByUri(uri(1))?.thumbnailPath.orEmpty()).delete()
         renderer.rendered.clear()
 
         repository.recentDocuments.test {
             assertThat(awaitItem().single().thumbnailPath).isNull()
             clock.advance()
-            assertThat(repository.updateThumbnail(id, onlyIfMissing = true)).isTrue()
+            assertThat(repository.updateThumbnail(id, onlyIfOutdated = true)).isTrue()
             assertThat(awaitItem().single().thumbnailPath).isNotNull()
         }
         assertThat(renderer.rendered).containsExactly(uri(1))
@@ -300,7 +337,7 @@ class RoomRecentDocumentsRepositoryTest {
         repository.recordOpening(opening(1))
         renderer.unreadable += uri(1)
 
-        assertThat(repository.updateThumbnail(documentIdFor(uri(1)), onlyIfMissing = true)).isFalse()
+        assertThat(repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = true)).isFalse()
         assertThat(repository.findByUri(uri(1))?.thumbnailPath).isNull()
     }
 
@@ -308,7 +345,7 @@ class RoomRecentDocumentsRepositoryTest {
     fun `no thumbnail is drawn for an entry that is not in the list`() = runTest {
         val repository = repository()
 
-        assertThat(repository.updateThumbnail("unknown", onlyIfMissing = false)).isFalse()
+        assertThat(repository.updateThumbnail("unknown", onlyIfOutdated = false)).isFalse()
         assertThat(renderer.rendered).isEmpty()
     }
 

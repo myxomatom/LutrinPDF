@@ -19,6 +19,8 @@ import androidx.room.PrimaryKey
  * @property lastPage zero-based page the user was on.
  * @property thumbnailFile name of the thumbnail file in the thumbnail directory, or `null` when
  *   none was drawn yet.
+ * @property thumbnailDrawnAt when the thumbnail was drawn, in milliseconds since the epoch, or
+ *   `null`; a thumbnail older than [lastOpenedAt] is drawn again.
  */
 @Entity(
     tableName = "recent_documents",
@@ -42,4 +44,6 @@ internal data class RecentDocumentEntity(
     val lastPage: Int,
     @ColumnInfo(name = "thumbnail_file")
     val thumbnailFile: String?,
+    @ColumnInfo(name = "thumbnail_drawn_at")
+    val thumbnailDrawnAt: Long?,
 )

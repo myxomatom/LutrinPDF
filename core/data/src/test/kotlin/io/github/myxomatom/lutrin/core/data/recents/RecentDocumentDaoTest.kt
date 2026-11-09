@@ -110,9 +110,10 @@ class RecentDocumentDaoTest {
         val dao = dao()
         dao.upsert(entity("a"))
 
-        assertThat(dao.updateThumbnail("a", "a-1.png")).isEqualTo(1)
-        assertThat(dao.updateThumbnail("gone", "gone-1.png")).isEqualTo(0)
+        assertThat(dao.updateThumbnail("a", "a-1.png", drawnAt = 1)).isEqualTo(1)
+        assertThat(dao.updateThumbnail("gone", "gone-1.png", drawnAt = 1)).isEqualTo(0)
         assertThat(dao.findById("a")?.thumbnailFile).isEqualTo("a-1.png")
+        assertThat(dao.findById("a")?.thumbnailDrawnAt).isEqualTo(1)
     }
 
     @Test
@@ -131,12 +132,13 @@ class RecentDocumentDaoTest {
     @Test
     fun `keeps unknown sizes and thumbnails as null`() = runTest {
         val dao = dao()
-        dao.upsert(entity("a").copy(sizeBytes = null, thumbnailFile = null))
+        dao.upsert(entity("a").copy(sizeBytes = null, thumbnailFile = null, thumbnailDrawnAt = null))
 
         val stored = dao.findById("a")
 
         assertThat(stored?.sizeBytes).isNull()
         assertThat(stored?.thumbnailFile).isNull()
+        assertThat(stored?.thumbnailDrawnAt).isNull()
     }
 }
 
@@ -157,4 +159,5 @@ private fun entity(id: String, openedAt: Long = 1_000, lastPage: Int = 0) = Rece
     lastOpenedAt = openedAt,
     lastPage = lastPage,
     thumbnailFile = null,
+    thumbnailDrawnAt = null,
 )

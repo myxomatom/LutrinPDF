@@ -44,9 +44,9 @@ class FakeRecentDocumentsRepository(
      * One call to [updateThumbnail].
      *
      * @property documentId the entry.
-     * @property onlyIfMissing the flag given.
+     * @property onlyIfOutdated the flag given.
      */
-    data class ThumbnailRequest(val documentId: String, val onlyIfMissing: Boolean)
+    data class ThumbnailRequest(val documentId: String, val onlyIfOutdated: Boolean)
 
     /** Current entries; a [StateFlow], so tests can read [StateFlow.value] directly. */
     override val recentDocuments: StateFlow<List<RecentDocument>> = state
@@ -68,6 +68,7 @@ class FakeRecentDocumentsRepository(
                 lastOpenedAt = clock.instant(),
                 lastPage = opening.page,
                 thumbnailPath = previous?.thumbnailPath,
+                thumbnailDrawnAt = previous?.thumbnailDrawnAt,
             )
         state.value = (listOf(entry) + state.value.filterNot { it.uri == opening.uri }).take(RecentDocument.MAX_COUNT)
         return entry
@@ -80,8 +81,8 @@ class FakeRecentDocumentsRepository(
     }
 
     /** Records the call in [thumbnailRequests] and returns [thumbnailResult]. */
-    override suspend fun updateThumbnail(documentId: String, onlyIfMissing: Boolean): Boolean {
-        thumbnailRequests += ThumbnailRequest(documentId, onlyIfMissing)
+    override suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean {
+        thumbnailRequests += ThumbnailRequest(documentId, onlyIfOutdated)
         return thumbnailResult
     }
 }

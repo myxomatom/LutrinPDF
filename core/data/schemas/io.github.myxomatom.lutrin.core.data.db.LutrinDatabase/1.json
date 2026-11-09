@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "7bf30fdb5f6d7d6e2574abeca8a639cc",
+    "identityHash": "21fe662bca1e84bf2851ef6fc9844ef3",
     "entities": [
       {
         "tableName": "recent_documents",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`document_id` TEXT NOT NULL, `uri` TEXT NOT NULL, `display_name` TEXT NOT NULL, `size_bytes` INTEGER, `page_count` INTEGER NOT NULL, `last_opened_at` INTEGER NOT NULL, `last_page` INTEGER NOT NULL, `thumbnail_file` TEXT, PRIMARY KEY(`document_id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`document_id` TEXT NOT NULL, `uri` TEXT NOT NULL, `display_name` TEXT NOT NULL, `size_bytes` INTEGER, `page_count` INTEGER NOT NULL, `last_opened_at` INTEGER NOT NULL, `last_page` INTEGER NOT NULL, `thumbnail_file` TEXT, `thumbnail_drawn_at` INTEGER, PRIMARY KEY(`document_id`))",
         "fields": [
           {
             "fieldPath": "documentId",
@@ -53,6 +53,11 @@
             "fieldPath": "thumbnailFile",
             "columnName": "thumbnail_file",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "thumbnailDrawnAt",
+            "columnName": "thumbnail_drawn_at",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -85,7 +90,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7bf30fdb5f6d7d6e2574abeca8a639cc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '21fe662bca1e84bf2851ef6fc9844ef3')"
     ]
   }
 }

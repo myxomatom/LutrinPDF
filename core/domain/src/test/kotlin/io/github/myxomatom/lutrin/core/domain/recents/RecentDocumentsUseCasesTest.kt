@@ -29,8 +29,8 @@ class RecentDocumentsUseCasesTest {
             pages += uri to page
         }
 
-        override suspend fun updateThumbnail(documentId: String, onlyIfMissing: Boolean): Boolean {
-            thumbnails += documentId to onlyIfMissing
+        override suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean {
+            thumbnails += documentId to onlyIfOutdated
             return true
         }
     }
@@ -59,7 +59,7 @@ class RecentDocumentsUseCasesTest {
         val update = UpdateThumbnailUseCase(repository)
 
         update("a")
-        update("b", onlyIfMissing = true)
+        update("b", onlyIfOutdated = true)
 
         assertThat(repository.thumbnails).containsExactly("a" to false, "b" to true).inOrder()
     }
@@ -126,6 +126,18 @@ class RecentDocumentsUseCasesTest {
     fun `the identifier is the start of the SHA-256 digest`() {
         // SHA-256("abc") = ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
         assertThat(documentIdFor("abc")).isEqualTo("ba7816bf8f01cfea414140de5dae2223")
+    }
+
+    @Test
+    fun `a thumbnail is outdated when missing or drawn before the last opening`() {
+        val opened = Instant.parse("2026-11-09T20:41:00Z")
+        val drawn = entry(URI, lastPage = 0).copy(thumbnailPath = "/t/a.png", thumbnailDrawnAt = opened)
+
+        assertThat(drawn.isThumbnailOutdated).isFalse()
+        assertThat(drawn.copy(thumbnailDrawnAt = opened.plusSeconds(5)).isThumbnailOutdated).isFalse()
+        assertThat(drawn.copy(thumbnailDrawnAt = opened.minusSeconds(5)).isThumbnailOutdated).isTrue()
+        assertThat(drawn.copy(thumbnailDrawnAt = null).isThumbnailOutdated).isTrue()
+        assertThat(drawn.copy(thumbnailPath = null).isThumbnailOutdated).isTrue()
     }
 
     @Test
