@@ -114,6 +114,9 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Les tests unitaires ne remplissent plus le dossier temporaire du système : Robolectric y
+  laissait à chaque exécution son runtime natif (~200 Mo par JVM de test sous Windows). Le
+  `java.io.tmpdir` des tâches `Test` est désormais `<module>/build/tmp/robolectric`.
 - Les 3 tests de `DataStoreSettingsRepositoryTest` passent sous Windows : ils tournent sous
   Robolectric, car DataStore remplace son fichier avec `File.renameTo` (qui n'écrase pas sous
   Windows) quand `Build.VERSION.SDK_INT` vaut 0, comme sur une JVM nue.
