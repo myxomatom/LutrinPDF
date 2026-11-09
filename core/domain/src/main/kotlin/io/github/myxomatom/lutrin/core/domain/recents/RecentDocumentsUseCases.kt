@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.domain.recents
 
+import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
@@ -78,4 +79,46 @@ class GetStartPageUseCase @Inject constructor(private val repository: RecentDocu
         val page = requestedPage ?: repository.findByUri(uri)?.lastPage ?: 0
         return page.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
     }
+}
+
+/**
+ * Tells whether a document is in the recent list, so that the error screen (V8) offers to remove
+ * it (`SPEC.md` §6).
+ *
+ * @param repository where the recent documents are stored.
+ */
+class IsRecentDocumentUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
+    /**
+     * @param uri the document URI.
+     * @return whether the list has an entry for [uri].
+     */
+    suspend operator fun invoke(uri: String): Boolean = repository.findByUri(uri) != null
+}
+
+/**
+ * Removes a document from the recent list (F11, « Retirer des récents »): its entry, its saved
+ * page, its persisted read permission and its thumbnail. The file itself is never touched.
+ *
+ * @param repository where the recent documents are stored.
+ */
+class RemoveRecentDocumentUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
+    /**
+     * @param documentId the entry, as [documentIdFor] gives it.
+     * @param openedAt when given, the entry is removed only if it was not opened again since
+     *   this date (removal confirmed after an undo delay).
+     * @return whether an entry was removed.
+     */
+    suspend operator fun invoke(documentId: String, openedAt: Instant? = null): Boolean =
+        repository.remove(documentId, openedAt)
+}
+
+/**
+ * Empties the recent list (F11, « Vider les récents » in the settings): every entry is removed
+ * as [RemoveRecentDocumentUseCase] does.
+ *
+ * @param repository where the recent documents are stored.
+ */
+class ClearRecentDocumentsUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
+    /** @return the number of entries removed. */
+    suspend operator fun invoke(): Int = repository.clear()
 }

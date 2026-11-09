@@ -82,6 +82,18 @@ class RecentDocumentDaoTest {
 
         assertThat(dao.findBeyond(3).map { it.documentId }).containsExactly("d2", "d1").inOrder()
         assertThat(dao.findBeyond(5)).isEmpty()
+        // What clearing the list goes through: every entry, most recent first.
+        assertThat(dao.findBeyond(0).map { it.documentId }).containsExactly("d5", "d4", "d3", "d2", "d1").inOrder()
+    }
+
+    @Test
+    fun `deleting an unknown entry changes nothing`() = runTest {
+        val dao = dao()
+        dao.upsert(entity("a"))
+
+        dao.delete("unknown")
+
+        assertThat(dao.findBeyond(0).map { it.documentId }).containsExactly("a")
     }
 
     @Test

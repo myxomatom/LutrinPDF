@@ -34,6 +34,13 @@ class FakeRecentDocumentsRepository(
     /** Every call to [saveLastPage], in order, as `(uri, page)`. */
     val savedPages: MutableList<Pair<String, Int>> = CopyOnWriteArrayList()
 
+    /** Every call to [remove], in order, as `(documentId, openedAt)`. */
+    val removals: MutableList<Pair<String, Instant?>> = CopyOnWriteArrayList()
+
+    /** Number of calls to [clear]. */
+    var clearCount: Int = 0
+        private set
+
     /** What [updateThumbnail] answers. */
     var thumbnailResult: Boolean = true
 
@@ -84,5 +91,23 @@ class FakeRecentDocumentsRepository(
     override suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean {
         thumbnailRequests += ThumbnailRequest(documentId, onlyIfOutdated)
         return thumbnailResult
+    }
+
+    /**
+     * Records the call in [removals] and drops the entry, unless it was opened again since
+     * [openedAt]. Like the real repository, removing an unknown entry is a no-op.
+     */
+    override suspend fun remove(documentId: String, openedAt: Instant?): Boolean {
+        removals += documentId to openedAt
+        val before = state.value
+        state.value =
+            before.filterNot { it.documentId == documentId && (openedAt == null || it.lastOpenedAt == openedAt) }
+        return state.value.size != before.size
+    }
+
+    /** Counts the call in [clearCount] and empties the list. */
+    override suspend fun clear(): Int {
+        clearCount++
+        return state.value.size.also { state.value = emptyList() }
     }
 }

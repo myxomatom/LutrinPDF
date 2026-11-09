@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.data.recents
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
@@ -24,6 +26,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 
 @RunWith(AndroidJUnit4::class)
 class RoomRecentDocumentsRepositoryTest {
@@ -84,11 +87,11 @@ class RoomRecentDocumentsRepositoryTest {
         database?.close()
     }
 
-    private fun TestScope.repository(): RoomRecentDocumentsRepository {
+    private fun TestScope.repository(documentAccess: DocumentAccess = access): RoomRecentDocumentsRepository {
         val db = inMemoryDatabase().also { database = it }
         return RoomRecentDocumentsRepository(
             dao = db.recentDocumentDao(),
-            access = access,
+            access = documentAccess,
             thumbnails = ThumbnailStore(thumbnailDirectory),
             renderer = renderer,
             clock = clock,
@@ -347,6 +350,164 @@ class RoomRecentDocumentsRepositoryTest {
 
         assertThat(repository.updateThumbnail("unknown", onlyIfOutdated = false)).isFalse()
         assertThat(renderer.rendered).isEmpty()
+    }
+
+    @Test
+    fun `removing an entry releases its permission, deletes its thumbnail and forgets its page`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1, page = 4))
+        repository.recordOpening(opening(2))
+        repository.updateThumbnail(id, onlyIfOutdated = false)
+        val thumbnail = File(repository.findByUri(uri(1))?.thumbnailPath.orEmpty())
+
+        assertThat(repository.remove(id)).isTrue()
+
+        assertThat(repository.recentDocuments.first().map { it.uri }).containsExactly(uri(2))
+        assertThat(repository.findByUri(uri(1))).isNull()
+        assertThat(access.released).containsExactly(uri(1))
+        assertThat(thumbnail.exists()).isFalse()
+    }
+
+    @Test
+    fun `a removed document opened again starts without its old page`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1, page = 4))
+        repository.remove(documentIdFor(uri(1)))
+
+        val reopened = repository.recordOpening(opening(1))
+
+        assertThat(reopened?.lastPage).isEqualTo(0)
+        assertThat(reopened?.thumbnailPath).isNull()
+    }
+
+    @Test
+    fun `removing an entry whose thumbnail file is already gone succeeds`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1))
+        repository.updateThumbnail(id, onlyIfOutdated = false)
+        File(repository.findByUri(uri(1))?.thumbnailPath.orEmpty()).delete()
+
+        assertThat(repository.remove(id)).isTrue()
+        assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `removing an entry without thumbnail nor persisted permission succeeds`() = runTest {
+        val repository = repository()
+        access.persistable = false
+        repository.recordOpening(opening(1))
+
+        assertThat(repository.remove(documentIdFor(uri(1)))).isTrue()
+        assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `removing an unknown entry changes nothing`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+
+        assertThat(repository.remove("unknown")).isFalse()
+
+        assertThat(repository.recentDocuments.first()).hasSize(1)
+        assertThat(access.released).isEmpty()
+    }
+
+    @Test
+    fun `a removal asked before the document was opened again keeps it`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        val first = repository.recordOpening(opening(1))
+        clock.advance()
+        repository.recordOpening(opening(1, page = 2))
+
+        assertThat(repository.remove(id, first?.lastOpenedAt)).isFalse()
+        assertThat(repository.findByUri(uri(1))?.lastPage).isEqualTo(2)
+        assertThat(access.released).isEmpty()
+
+        assertThat(repository.remove(id, clock.now)).isTrue()
+        assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `saving the page of a removed document does not bring it back`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+        repository.remove(documentIdFor(uri(1)))
+
+        // The delayed save of a reader still open on the document.
+        repository.saveLastPage(uri(1), 5)
+
+        assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `a thumbnail drawn for a removed entry is not kept`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1))
+        repository.remove(id)
+
+        assertThat(repository.updateThumbnail(id, onlyIfOutdated = false)).isFalse()
+        assertThat(thumbnailDirectory.listFiles().orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `clearing removes every entry with its permission and thumbnail`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+        repository.recordOpening(opening(2))
+        repository.recordOpening(opening(3))
+        repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = false)
+        repository.updateThumbnail(documentIdFor(uri(3)), onlyIfOutdated = false)
+
+        assertThat(repository.clear()).isEqualTo(3)
+
+        assertThat(repository.recentDocuments.first()).isEmpty()
+        assertThat(access.released).containsExactly(uri(1), uri(2), uri(3))
+        assertThat(thumbnailDirectory.listFiles().orEmpty()).isEmpty()
+    }
+
+    @Test
+    fun `clearing an empty list does nothing`() = runTest {
+        val repository = repository()
+
+        assertThat(repository.clear()).isEqualTo(0)
+
+        assertThat(repository.recentDocuments.first()).isEmpty()
+        assertThat(access.released).isEmpty()
+    }
+
+    @Test
+    fun `removing gives the persisted permission back to the system`() = runTest {
+        val resolver = RuntimeEnvironment.getApplication().contentResolver
+        val repository = repository(ContentResolverDocumentAccess(resolver, StandardTestDispatcher(testScheduler)))
+        repository.recordOpening(opening(1))
+        assertThat(resolver.persistedUriPermissions.map { it.uri.toString() }).containsExactly(uri(1))
+
+        repository.remove(documentIdFor(uri(1)))
+
+        assertThat(resolver.persistedUriPermissions).isEmpty()
+    }
+
+    @Test
+    fun `removing a document whose permission was never persisted does not throw`() = runTest {
+        val refusing =
+            object : ContentResolver(RuntimeEnvironment.getApplication()) {
+                override fun takePersistableUriPermission(uri: Uri, modeFlags: Int): Unit =
+                    throw SecurityException("No persistable permission grants found")
+
+                override fun releasePersistableUriPermission(uri: Uri, modeFlags: Int): Unit =
+                    throw SecurityException("No permission grants found")
+            }
+        val repository = repository(ContentResolverDocumentAccess(refusing, StandardTestDispatcher(testScheduler)))
+        repository.recordOpening(opening(1))
+        repository.recordOpening(opening(2))
+
+        assertThat(repository.remove(documentIdFor(uri(1)))).isTrue()
+        assertThat(repository.clear()).isEqualTo(1)
+        assertThat(repository.recentDocuments.first()).isEmpty()
     }
 
     @Test

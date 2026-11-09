@@ -22,11 +22,13 @@ import kotlinx.coroutines.withContext
 
 /**
  * [RecentDocumentsRepository] stored in Room (ADR 0015). It keeps at most
- * [RecentDocument.MAX_COUNT] entries; an entry that leaves the list gives back its persisted
- * read permission and deletes its thumbnail.
+ * [RecentDocument.MAX_COUNT] entries; an entry that leaves the list, evicted beyond that number
+ * or removed by the user ([remove], [clear], ADR 0016), gives back its persisted read permission
+ * and deletes its thumbnail, always through the same path.
  *
  * A singleton: thumbnails are drawn one at a time, under a single lock, so that the reader and
- * the library never draw the same one twice at once.
+ * the library never draw the same one twice at once. Removals take the same lock, so that a
+ * thumbnail drawn while its entry is removed is never left behind.
  *
  * @param dao the `recent_documents` table.
  * @param access the provider's description of documents and the persisted permissions.
@@ -73,7 +75,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
             )
         try {
             dao.upsert(entry)
-            dao.findBeyond(RecentDocument.MAX_COUNT).forEach { remove(it) }
+            thumbnailLock.withLock { dao.findBeyond(RecentDocument.MAX_COUNT).forEach { release(it) } }
             entry.toDomain()
         } catch (expected: SQLiteException) {
             // Storage full or database unavailable: the document stays open, just not recorded.
@@ -86,6 +88,30 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
             dao.updateLastPage(uri, page)
         } catch (expected: SQLiteException) {
             // Same as recordOpening: losing a reading position must not close the document.
+        }
+    }
+
+    override suspend fun remove(documentId: String, openedAt: Instant?): Boolean = thumbnailLock.withLock {
+        withContext(ioDispatcher) {
+            try {
+                val entry = dao.findById(documentId)?.takeUnless { it.reopenedSince(openedAt) }
+                entry?.let { release(it) } != null
+            } catch (expected: SQLiteException) {
+                // Database unavailable: the entry stays, with its permission and thumbnail.
+                false
+            }
+        }
+    }
+
+    override suspend fun clear(): Int = thumbnailLock.withLock {
+        withContext(ioDispatcher) {
+            try {
+                // findBeyond(0): every entry, most recent first.
+                dao.findBeyond(0).onEach { release(it) }.size
+            } catch (expected: SQLiteException) {
+                // Same as remove: what could not be removed stays, with its permission.
+                0
+            }
         }
     }
 
@@ -112,7 +138,16 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         return recorded
     }
 
-    private suspend fun remove(entry: RecentDocumentEntity) {
+    /** Whether this entry was opened again after [openedAt]; never when [openedAt] is `null`. */
+    private fun RecentDocumentEntity.reopenedSince(openedAt: Instant?): Boolean =
+        openedAt != null && lastOpenedAt != openedAt.toEpochMilli()
+
+    /**
+     * Removes [entry] from the list, then gives back its permission and deletes its thumbnail:
+     * the only path out of the list (eviction, removal, clearing). The row goes first, so that a
+     * storage failure leaves the entry whole. Called under [thumbnailLock].
+     */
+    private suspend fun release(entry: RecentDocumentEntity) {
         dao.delete(entry.documentId)
         access.release(entry.uri)
         entry.thumbnailFile?.let(thumbnails::delete)
