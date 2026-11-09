@@ -116,7 +116,7 @@ private fun IncomingRequestEffect(
 
 /** Opens the document of another app as the only screen: back returns to that app. */
 private fun NavController.openIncomingDocument(request: IncomingDocumentResult.Accepted) {
-    navigateToReader(request.uri.toUri(), request.pageIndex ?: 0) {
+    navigateToReader(request.uri.toUri(), request.pageIndex) {
         popUpTo(graph.id) { inclusive = true }
     }
 }
