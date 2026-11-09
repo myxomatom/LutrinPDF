@@ -10,6 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Retirer un document des récents (F11, ADR 0016) : chaque ligne de la bibliothèque (E1) a un
+  menu « ⋮ » avec « Retirer des récents » ; la ligne disparaît aussitôt et un message propose
+  « Annuler » pendant 10 s ; le retrait n'a lieu qu'ensuite, et pas si le document a été rouvert
+  entre-temps. L'écran d'erreur (V8) propose aussi « Retirer des récents » quand le document qui
+  ne s'ouvre plus est dans la liste. Un retrait rend la permission persistante, supprime la
+  vignette et oublie la page enregistrée ; le fichier n'est jamais touché.
+- « Vider les récents » dans les paramètres (E3, section « Données et confidentialité »), avec
+  un dialogue de confirmation ; désactivé quand la liste est vide.
 - Documents récents (F11, ADR 0015) : la bibliothèque (E1) liste les 50 derniers documents
   ouverts, du plus récent au plus ancien, avec la vignette de la première page, le nom donné par
   le fournisseur, la page atteinte, la date de dernière ouverture et une barre de progression ;

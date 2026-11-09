@@ -144,10 +144,20 @@ flowchart LR
     repo -->|"PdfThumbnailRenderer"| engine["PdfEngine"]
     repo --> files["noBackupFilesDir/thumbnails/*.png"]
     e1 -->|"toucher : URI"| rvm
+    e1 -->|"⋮ Retirer (masquée, Annuler 10 s)"| lvm
+    lvm -->|"RemoveRecentDocumentUseCase (portée d'application)"| repo
+    rvm -->|"V8 : IsRecentDocument, RemoveRecentDocument"| repo
+    e3["SettingsViewModel (E3)"] -->|"ClearRecentDocumentsUseCase"| repo
 ```
 
 - Table `recent_documents` (schéma exporté dans `core/data/schemas/`), au plus 50 entrées ;
-  une entrée qui sort rend sa permission persistante et supprime sa vignette.
+  une entrée qui sort (éviction au-delà de 50, retrait, vidage : un seul chemin dans le dépôt)
+  rend sa permission persistante, supprime sa vignette et perd sa page (ADR 0016).
+- Retrait depuis la bibliothèque : la ligne est masquée aussitôt, le retrait effectif attend la
+  fin du message « Annuler » et s'exécute dans la portée d'application ; il est ignoré si le
+  document a été rouvert entre-temps. Depuis V8 et les paramètres, le retrait est immédiat
+  (après confirmation pour le vidage). Aucun module `feature:*` ne dépend d'un autre : tous
+  passent par les cas d'usage de `core:domain`.
 - Le lecteur part de la page demandée (extra `page`), sinon de la page enregistrée, ramenée
   au document ; il enregistre la page une seconde après le dernier changement et à sa
   fermeture (portée `@ApplicationScope`).

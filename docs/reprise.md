@@ -12,7 +12,7 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, branche `feat/recents`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil |
+| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, branche `feat/remove-recents`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil. Reste : dialogue de mot de passe (V4) et essais sur appareil |
 | M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -63,6 +63,18 @@ liste après fermeture de l'application (attendu : écran V8 « inaccessible »)
 supprimé depuis « Fichiers » ; la vignette qui apparaît au retour dans la bibliothèque ; la
 reprise après rotation et après la mort du processus ; grande police et thème sombre.
 
+Sur la branche `feat/remove-recents` (pas encore sur appareil) : **retirer un document des
+récents et vider la liste** (F11, ADR 0016). Menu « ⋮ » de chaque ligne avec « Retirer des
+récents » : la ligne disparaît, un message propose « Annuler » pendant 10 s, puis le retrait a
+lieu (permission rendue, vignette supprimée, page oubliée), sauf si le document a été rouvert
+entre-temps. L'écran V8 propose « Retirer des récents » pour un document de la liste qui ne
+s'ouvre plus ; les paramètres (E3) ont « Vider les récents » avec un dialogue de confirmation,
+désactivé quand la liste est vide. **À essayer sur appareil** : retirer puis « Annuler », retirer
+puis attendre, retirer puis tourner l'écran (le retrait est confirmé), le tout avec TalkBack ;
+« Vider les récents » puis vérifier que les permissions sont rendues
+(`adb shell dumpsys activity permissions` ou `contentResolver.persistedUriPermissions`) ;
+V8 « Retirer des récents » sur un fichier supprimé depuis « Fichiers ».
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
@@ -75,8 +87,10 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - ~~permissions persistantes, récents avec vignettes (Room), nom réel du document dans la
      liste, reprise de la dernière page~~ **Fait** (ADR 0015, branche `feat/recents`) ; le titre
      de la barre du lecteur reste le titre du PDF, sinon le dernier segment de l'URI ;
-   - « Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents » ;
+   - ~~« Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents »~~
+     **Fait** (ADR 0016, branche `feat/remove-recents`) ;
    - dialogue de mot de passe (V4) ;
+   - essais sur appareil de tout M3 (voir §1) ;
    - reportés par l'ADR 0015 : zoom et décalage de F12, empreinte des documents (point ouvert 16) ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
@@ -87,7 +101,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0015) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0016) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -105,6 +119,10 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     `PdfEngine` quand la bibliothèque les montre, page enregistrée après 1 s de calme et à la
     fermeture (`@ApplicationScope`), extra `page` absent = « pas de page » (amende l'ADR 0014) ;
     `LibraryViewModel` rattaché à `MainActivity` ;
+  - **ADR 0016** : retrait d'un récent depuis la bibliothèque masqué aussitôt, effectif à la fin
+    du message « Annuler » (portée d'application, ignoré si le document a été rouvert) ; V8
+    propose le retrait pour toute erreur d'un document de la liste ; « Vider les récents » dans
+    E3 avec confirmation ; toute sortie de la liste passe par un seul chemin du dépôt ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
@@ -195,6 +213,17 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
   - `ExtendedFloatingActionButton(text = …, icon = …)` : sous Robolectric, le libellé n'était
     pas fusionné dans le bouton (bouton sans nom) ; la bibliothèque utilise la variante à
     contenu.
+- **Tests du retrait des récents** (ADR 0016) :
+  - le message « Annuler » dure 10 s : `composeRule.mainClock.advanceTimeBy(11_000)` pour le
+    faire expirer ; le retrait part ensuite sur les vrais threads de la portée d'application et
+    de Room : attendre la liste avec `waitUntil` ;
+  - `IconButton` mesure 40 dp en Material 3 récent, sa cible tactile 48 dp : vérifier avec
+    `assertTouchWidthIsEqualTo(48.dp)`, pas `assertWidthIsAtLeast` ;
+  - menus et dialogues sont d'autres fenêtres : `LocalDensity` ne les grossit pas ; pour une
+    capture à 200 %, ajouter `@Config(fontScale = 2f)` (et `captureScreenRoboImage`) ;
+  - les chaînes françaises utilisent des espaces insécables autour des guillemets et avant
+    « ? » : écrire `\u00A0` dans les textes attendus des tests ;
+  - un nom de test entre accents graves ne doit pas contenir « : » (refusé par le compilateur).
 - **Disque système plein sous Windows** (constaté le 2026-11-09) : Robolectric écrit ses
   dossiers de données et sa bibliothèque native dans `%TEMP%` ; avec un disque C: plein, tous les
   tests Robolectric échouent (`Espace insuffisant sur le disque`, `Unable to load Robolectric
