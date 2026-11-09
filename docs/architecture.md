@@ -163,6 +163,35 @@ flowchart LR
   fermeture (portée `@ApplicationScope`).
 - Les vignettes sont dessinées quand la bibliothèque montre une ligne dont la vignette manque
   ou date d'avant la dernière ouverture, jamais pendant l'ouverture du lecteur.
+
+## Documents protégés (`feature:reader`, ADR 0017)
+
+```mermaid
+sequenceDiagram
+    participant D as PasswordDialog (V4)
+    participant VM as ReaderViewModel
+    participant E as PdfEngine
+    participant R as RecentDocumentsRepository
+    VM->>E: open(uri)
+    E-->>VM: PasswordRequired
+    VM-->>D: PasswordRequired(nom)
+    D->>VM: onPasswordSubmit(texte du champ)
+    VM->>E: open(uri, mot de passe)
+    E-->>VM: IncorrectPassword
+    VM-->>D: PasswordRequired(nom, isIncorrect)
+    D->>VM: onPasswordSubmit(texte du champ)
+    VM->>E: open(uri, mot de passe)
+    E-->>VM: document
+    VM->>R: recordOpening(isProtected = true)
+```
+
+- Le mot de passe n'existe que dans le champ du dialogue (`TextFieldState` non sauvegardable,
+  vidé à sa disparition) et, le temps de l'appel au moteur, dans la coroutine de l'essai : jamais
+  dans l'état, le `SavedStateHandle`, les arguments de navigation, Room, DataStore ni les
+  journaux.
+- Chaque essai suit le chemin d'ouverture normal (page de départ, récents, suivi de la page).
+- Une entrée protégée (`is_protected`, schéma Room 2) n'a jamais de vignette : le dépôt ne
+  demande pas au moteur de l'ouvrir.
 - `LibraryViewModel` est rattaché à `MainActivity` ; `LutrinApp` reçoit son état en
   `StateFlow` et reste testable sans Hilt.
 

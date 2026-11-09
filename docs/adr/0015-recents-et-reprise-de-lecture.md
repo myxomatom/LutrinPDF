@@ -70,6 +70,7 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
    | `last_page` | entier | page lue, à partir de 0 (F12) |
    | `thumbnail_file` | texte, nul possible | nom du fichier de la vignette |
    | `thumbnail_drawn_at` | entier (ms), nul possible | date du dessin de la vignette |
+   | `is_protected` | booléen, `0` par défaut | ajoutée en **version 2** par l'ADR 0017 : document ouvert avec un mot de passe |
 
    Le schéma est exporté dans `core/data/schemas/` et versionné ; toute nouvelle version vient
    avec sa migration et son test, jamais avec une migration destructive. Les requêtes tournent
@@ -132,13 +133,16 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
 10. **Ce qui est enregistré** : seule une ouverture réussie ajoute ou remonte le document en tête
     de liste ; un document endommagé, non PDF, protégé ou inaccessible n'y entre pas. Une base
     pleine (`SQLiteException`) ne ferme pas le document : il n'est simplement pas enregistré.
+    **Amendé par l'ADR 0017** : un document protégé **ouvert avec son mot de passe** entre dans la
+    liste, avec le drapeau `is_protected` (schéma version 2), sans vignette ; le mot de passe n'est
+    jamais enregistré et rouvrir le document depuis la liste le redemande.
 11. **`LibraryViewModel` est rattaché à `MainActivity`** (et non à la destination de la
     bibliothèque) : `LutrinApp` reçoit son état sous forme de `StateFlow`, collecté seulement
     dans la destination, et reste un composable testable sans Hilt.
 12. **Écarts avec la maquette E1** (complètent l'ADR 0009) :
     - pas de bouton « grille / liste » (miniatures, V10 en v1.x) ni « Outils » (M6) ;
     - pas de menu « ⋮ » par ligne : son action « Retirer des récents » arrive à l'étape suivante ;
-    - pas de pastille de cadenas (documents protégés, avec V4) ;
+    - pas de pastille de cadenas (documents protégés, avec V4) ; ajoutée par l'ADR 0017 ;
     - jamais « 4 pages · Hier » : seul un document ouvert avec succès entre dans la liste, la
       ligne dit donc toujours « Page x / n » ;
     - l'heure suit la langue (« 20:41 » en français, « 8:41 PM » en anglais), pas le réglage

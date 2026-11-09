@@ -10,6 +10,22 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Documents protégés par mot de passe (F10, ADR 0017) : un PDF chiffré (RC4, AES-128, AES-256)
+  ouvre le dialogue « Document protégé » (V4) au lieu de l'écran d'erreur : champ masqué avec un
+  bouton pour afficher le mot de passe, « Ouvrir » ou la touche du clavier, « Annuler » pour
+  revenir. Un mauvais mot de passe affiche « Mot de passe incorrect. Réessayez. », annoncé par
+  TalkBack, et garde le texte sélectionné ; les essais ne sont pas limités. Le mot de passe n'est
+  jamais enregistré ni journalisé, ni gardé après l'essai ; il faut le retaper après une rotation
+  pendant la saisie, à chaque réouverture et après l'arrêt de l'application. Le dialogue reste
+  hors du remplissage automatique des gestionnaires de mots de passe. Un PDF restreint par son
+  seul mot de passe propriétaire s'ouvre sans rien demander.
+- Un document ouvert avec son mot de passe entre dans les récents avec la pastille de cadenas de
+  la maquette E1, sans vignette, et reprend à sa page ; le rouvrir depuis la liste redemande le
+  mot de passe. Base Room en **version 2** (colonne `is_protected`, migration automatique sans
+  perte, testée).
+- Jeu de test : PDF chiffrés en RC4 128 bits et AES-128, et PDF avec mot de passe propriétaire
+  seul, générés par `generate_test_files.py encrypted_variants` ; tests : `room-testing`
+  (`MigrationTestHelper`).
 - Retirer un document des récents (F11, ADR 0016) : chaque ligne de la bibliothèque (E1) a un
   menu « ⋮ » avec « Retirer des récents » ; la ligne disparaît aussitôt et un message propose
   « Annuler » pendant 10 s ; le retrait n'a lieu qu'ensuite, et pas si le document a été rouvert
@@ -149,6 +165,8 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
+  passe (ADR 0017).
 - « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document
   s'ouvre à la page enregistrée, sinon à la première ; l'extra `page` reste prioritaire.
   L'argument de navigation `page` du lecteur vaut `NO_PAGE` (-1) par défaut.

@@ -12,7 +12,7 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, branche `feat/remove-recents`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil. Reste : dialogue de mot de passe (V4) et essais sur appareil |
+| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil. Reste : essais sur appareil, dont les tests instrumentés des PDF chiffrés |
 | M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -75,6 +75,23 @@ puis attendre, retirer puis tourner l'écran (le retrait est confirmé), le tout
 (`adb shell dumpsys activity permissions` ou `contentResolver.persistedUriPermissions`) ;
 V8 « Retirer des récents » sur un fichier supprimé depuis « Fichiers ».
 
+Sur la branche `feat/pdf-password` (pas encore sur appareil) : **documents protégés par mot de
+passe** (F10, V4, ADR 0017). Un PDF chiffré ouvre le dialogue « Document protégé » au-dessus du
+lecteur ; un mauvais mot de passe affiche une erreur annoncée et garde le texte sélectionné ;
+essais illimités. Le mot de passe n'est jamais gardé (ni état, ni `SavedStateHandle`, ni Room,
+ni journaux) ; le champ n'est pas sauvegardable, donc vide après une rotation. Un document
+ouvert avec son mot de passe entre dans les récents avec un cadenas, sans vignette (schéma Room
+**version 2**, colonne `is_protected`, migration automatique testée avec `MigrationTestHelper`).
+Trois PDF chiffrés de plus dans le jeu de test (RC4, AES-128, mot de passe propriétaire seul).
+**À essayer sur appareil** : ouvrir chacun des PDF chiffrés du jeu de test (mots de passe dans
+`core/testing/README.md`) par le sélecteur et par « Ouvrir avec » ; mauvais mot de passe avec
+TalkBack (annonce de l'erreur) ; clavier sans suggestions ; aucun gestionnaire de mots de passe
+(Google, Bitwarden…) ne propose d'enregistrer le mot de passe ; rotation pendant la saisie
+(champ vide attendu) ; `adb shell am kill` pendant la lecture d'un document protégé (le mot de
+passe est redemandé) ; mise à jour depuis une version avec des récents (migration 1 → 2) ;
+lancer `:core:pdf:connectedDebugAndroidTest` (nouveaux tests des PDF chiffrés, jamais
+exécutés).
+
 Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
 #10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
 par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
@@ -89,8 +106,9 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
      de la barre du lecteur reste le titre du PDF, sinon le dernier segment de l'URI ;
    - ~~« Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents »~~
      **Fait** (ADR 0016, branche `feat/remove-recents`) ;
-   - dialogue de mot de passe (V4) ;
-   - essais sur appareil de tout M3 (voir §1) ;
+   - ~~dialogue de mot de passe (V4)~~ **Fait** (ADR 0017, branche `feat/pdf-password`) ;
+   - essais sur appareil de tout M3 (voir §1), y compris les tests instrumentés de `core:pdf`
+     sur les PDF chiffrés ;
    - reportés par l'ADR 0015 : zoom et décalage de F12, empreinte des documents (point ouvert 16) ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
@@ -101,7 +119,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0016) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0017) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -123,6 +141,11 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     du message « Annuler » (portée d'application, ignoré si le document a été rouvert) ; V8
     propose le retrait pour toute erreur d'un document de la liste ; « Vider les récents » dans
     E3 avec confirmation ; toute sortie de la liste passe par un seul chemin du dépôt ;
+  - **ADR 0017** : mot de passe dans un dialogue (V4) au-dessus du lecteur, essais illimités,
+    mot de passe jamais gardé (champ non sauvegardable, aucune copie dans l'état ni le stockage ;
+    limite : `String` immuable imposée par MuPDF), dialogue hors de l'autofill ; un document
+    ouvert avec son mot de passe entre dans les récents avec un cadenas et sans vignette
+    (schéma Room 2, amende l'ADR 0015 §10) ;
   - **ADR 0011** : mode page par page (préférence globale, choisie dans V6), pas de changement
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
@@ -239,6 +262,19 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
   tests Robolectric échouent (`Espace insuffisant sur le disque`, `Unable to load Robolectric
   native runtime library`). Rediriger `TMP` et `TEMP` vers un autre disque avant Gradle, par
   exemple `export TMP='D:\Dev\LutrinPDF\build\test-tmp' TEMP="$TMP"`.
+- **Documents protégés** (ADR 0017) :
+  - `MigrationTestHelper` de Room 2.8 avec son constructeur par nom de base échoue sous Windows
+    (`This driver is configured to open a database named …` : `SupportSQLiteDriver` compare les
+    noms avec `/`) : utiliser le constructeur avec un fichier et `AndroidSQLiteDriver`
+    (`LutrinDatabaseMigrationTest`) ;
+  - les schémas Room sont des assets des tests Robolectric de `core:data`
+    (`sourceSets["test"].assets`) ;
+  - un champ `OutlinedSecureTextField` expose le texte en clair dans sa sémantique
+    `EditableText` : pour vérifier le masquage, lire le texte dessiné
+    (`SemanticsActions.GetTextLayoutResult`, `PasswordDialogTest`) ;
+  - ne jamais utiliser `rememberTextFieldState` pour un mot de passe : il est sauvegardable ;
+  - `FakePdfEngine(password = …)` simule un document chiffré ; il enregistre les mots de passe
+    reçus (`givenPasswords`) pour les tests seulement.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 

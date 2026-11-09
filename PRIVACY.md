@@ -12,7 +12,9 @@
   récents et leurs vignettes, dernière position de lecture, préférences, et (à partir de
   la v1.1) l'historique local des actions demandées par un assistant (sans contenu de
   document). Vous pouvez les effacer depuis les paramètres ou en désinstallant l'application.
-- Les mots de passe des PDF protégés ne sont jamais enregistrés.
+- Les mots de passe des PDF protégés ne sont jamais enregistrés ni proposés aux gestionnaires
+  de mots de passe ; un document protégé apparaît dans les récents (nom, page atteinte), sans
+  vignette de sa première page, et son mot de passe est redemandé à chaque ouverture.
 - L'application n'accède qu'aux fichiers que vous choisissez (sélecteur système,
   « Ouvrir avec », partage).
 - Les liens externes d'un document ne sont ouverts qu'après votre confirmation, par

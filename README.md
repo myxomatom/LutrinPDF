@@ -12,7 +12,8 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 > lire : défilement continu ou page par page, zoom, plein écran. La bibliothèque liste les
 > documents récents, avec leur vignette, et les rouvre à la page où la lecture s'est arrêtée ;
 > un document se retire de la liste (menu « ⋮ » ou écran d'erreur) et la liste se vide depuis
-> les paramètres. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
+> les paramètres. Un PDF protégé par mot de passe s'ouvre après saisie du mot de passe, qui
+> n'est jamais enregistré. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.
