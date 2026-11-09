@@ -8,13 +8,18 @@ rebuilt at any time:
     python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requirements.txt
     .venv/bin/python core/testing/scripts/generate_test_files.py
 
-Output is deterministic except for the encrypted PDF (AES uses a random initialisation vector).
+Output is deterministic except for the encrypted PDFs (random file identifier and AES initialisation
+vector): their content and passwords are stable, not their bytes.
 The files are described in core/testing/README.md; keep both in sync.
+
+Names of generators can be given to rebuild only some files, for example
+``generate_test_files.py encrypted_variants``, so that the other encrypted files keep their bytes.
 """
 
 from __future__ import annotations
 
 import io
+import sys
 from pathlib import Path
 
 import pymupdf
@@ -24,8 +29,11 @@ ROOT = Path(__file__).resolve().parents[1] / "src" / "main" / "assets"
 PDFS = ROOT / "pdfs"
 TOOLS = ROOT / "tools"
 
-# Known password of the encrypted fixture. Not a secret: it is documented in core/testing/README.md.
+# Known passwords of the encrypted fixtures. Not secrets: they are documented in core/testing/README.md.
 TEST_PASSWORD = "lutrin"
+RC4_PASSWORD = "lutrin-rc4"
+AES_128_PASSWORD = "lutrin-aes128"
+OWNER_ONLY_PASSWORD = "lutrin-owner"
 FIXED_DATE = "D:20260101000000Z"
 A4 = pymupdf.paper_rect("a4")
 LOREM = (
@@ -100,6 +108,28 @@ def encrypted() -> None:
         encryption=pymupdf.PDF_ENCRYPT_AES_256,
         user_pw=TEST_PASSWORD,
         owner_pw=TEST_PASSWORD + "-owner",
+    )
+
+
+def encrypted_variants() -> None:
+    """The other encryption methods of F10 (ADR 0017), and a document restricted by its owner only."""
+    for name, method, password in (
+        ("encrypted_rc4_128.pdf", pymupdf.PDF_ENCRYPT_RC4_128, RC4_PASSWORD),
+        ("encrypted_aes_128.pdf", pymupdf.PDF_ENCRYPT_AES_128, AES_128_PASSWORD),
+    ):
+        doc = pymupdf.open()
+        text_page(doc, "Document chiffré", f"Mot de passe : {password}. " + LOREM)
+        save(doc, name, encryption=method, user_pw=password, owner_pw=password + "-owner")
+    # An empty user password: readers open it without asking; only printing and copying are restricted.
+    doc = pymupdf.open()
+    text_page(doc, "Document restreint", "Protégé par son auteur, sans mot de passe d'ouverture. " + LOREM)
+    save(
+        doc,
+        "encrypted_owner_password_only.pdf",
+        encryption=pymupdf.PDF_ENCRYPT_AES_128,
+        user_pw="",
+        owner_pw=OWNER_ONLY_PASSWORD,
+        permissions=pymupdf.PDF_PERM_ACCESSIBILITY,
     )
 
 
@@ -233,13 +263,20 @@ def texts() -> None:
     )
 
 
-def main() -> None:
+GENERATORS = (simple, large, nested_outline, links, encrypted, encrypted_variants, form, scanned, mixed_sizes,
+              non_latin, corrupted, garbage, not_a_pdf, images, texts)
+
+
+def main(names: list[str]) -> None:
     PDFS.mkdir(parents=True, exist_ok=True)
     TOOLS.mkdir(parents=True, exist_ok=True)
-    for generate in (simple, large, nested_outline, links, encrypted, form, scanned, mixed_sizes, non_latin,
-                     corrupted, garbage, not_a_pdf, images, texts):
-        generate()
+    unknown = set(names) - {generate.__name__ for generate in GENERATORS}
+    if unknown:
+        raise SystemExit(f"Unknown generators: {', '.join(sorted(unknown))}")
+    for generate in GENERATORS:
+        if not names or generate.__name__ in names:
+            generate()
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

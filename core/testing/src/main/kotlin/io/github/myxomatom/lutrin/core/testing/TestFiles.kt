@@ -28,6 +28,24 @@ object TestFiles {
         /** Password of [ENCRYPTED]. Test data, not a secret. */
         const val ENCRYPTED_PASSWORD = "lutrin"
 
+        /** RC4 128-bit encrypted (PDF 1.4, revision 3); the user password is [ENCRYPTED_RC4_PASSWORD]. */
+        const val ENCRYPTED_RC4 = "pdfs/encrypted_rc4_128.pdf"
+
+        /** Password of [ENCRYPTED_RC4]. Test data, not a secret. */
+        const val ENCRYPTED_RC4_PASSWORD = "lutrin-rc4"
+
+        /** AES-128 encrypted (revision 4); the user password is [ENCRYPTED_AES_128_PASSWORD]. */
+        const val ENCRYPTED_AES_128 = "pdfs/encrypted_aes_128.pdf"
+
+        /** Password of [ENCRYPTED_AES_128]. Test data, not a secret. */
+        const val ENCRYPTED_AES_128_PASSWORD = "lutrin-aes128"
+
+        /**
+         * AES-128 encrypted with an empty user password and an owner password only: readers open
+         * it without asking (printing and copying are restricted).
+         */
+        const val OWNER_PASSWORD_ONLY = "pdfs/encrypted_owner_password_only.pdf"
+
         /** AcroForm with a text field, a checkbox and a combo box. */
         const val FORM = "pdfs/form_acroform.pdf"
 

@@ -20,7 +20,10 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | `large_600pages.pdf` | 600 pages de texte | Pas d'`OutOfMemoryError`, défilement fluide ; document des benchmarks de `:benchmark`, copié dans les builds de mesure de l'application (ADR 0012) |
 | `nested_outline.pdf` | 6 pages, table des matières à 3 niveaux (15 entrées) | Arborescence F06 |
 | `links_internal_external.pdf` | 4 pages ; page 1 : lien vers la page 3 et vers `https://example.org/` | F09 (confirmation avant le lien externe) |
-| `encrypted_password_lutrin.pdf` | AES-256, mot de passe utilisateur **`lutrin`** | F10 ; un autre mot de passe est refusé |
+| `encrypted_password_lutrin.pdf` | AES-256 (révision 6), mot de passe utilisateur **`lutrin`** | F10 ; un autre mot de passe est refusé |
+| `encrypted_rc4_128.pdf` | RC4 128 bits (révision 3), mot de passe utilisateur **`lutrin-rc4`** | F10 (ADR 0017) |
+| `encrypted_aes_128.pdf` | AES-128 (révision 4), mot de passe utilisateur **`lutrin-aes128`** | F10 (ADR 0017) |
+| `encrypted_owner_password_only.pdf` | AES-128, mot de passe utilisateur vide, mot de passe propriétaire `lutrin-owner` (impression et copie restreintes) | S'ouvre **sans** demander de mot de passe ; n'est pas « protégé » dans les récents (ADR 0017) |
 | `form_acroform.pdf` | Champ texte `nom`, case `accepte`, liste `pays` | Affichage ; F22 plus tard |
 | `scanned_images_only.pdf` | 2 pages d'images, sans couche texte | Rendu correct, recherche sans résultat |
 | `mixed_page_sizes.pdf` | A4, Lettre paysage, A5, carré, page tournée de 90° | Tailles et rotation respectées |
@@ -29,8 +32,12 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | `corrupted_garbage.pdf` | En-tête `%PDF` suivi de données aléatoires | « Impossible d'ouvrir ce document » (`SPEC.md` §6) |
 | `not_a_pdf.pdf` | Fichier texte renommé en `.pdf` | Message « type de fichier non PDF » |
 
-Le mot de passe `lutrin` n'est pas un secret : c'est une donnée de test documentée.
-Le PDF chiffré n'est pas reproductible à l'octet près (vecteur d'initialisation aléatoire).
+Les mots de passe `lutrin`, `lutrin-rc4`, `lutrin-aes128` et `lutrin-owner` (et les mots de
+passe propriétaires `<mot de passe>-owner`) ne sont pas des secrets : ce sont des données de test
+documentées. Les PDF chiffrés ne sont pas reproductibles à l'octet près (identifiant de fichier et
+vecteur d'initialisation aléatoires), mais leur contenu et leurs mots de passe le sont. Pour ne
+régénérer qu'une partie du jeu, passer le nom des fonctions du script, par exemple
+`generate_test_files.py encrypted_variants` (les trois derniers PDF chiffrés).
 
 ## Outils (`assets/tools/`, `SPEC.md` §2.3)
 
