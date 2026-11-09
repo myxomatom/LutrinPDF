@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -52,15 +55,12 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.myxomatom.lutrin.core.ui.R as CoreUiR
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinDimens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
-
-/** Size of a thumbnail (E1 mock-up: 44 × 58 px at 1×). */
-private val ThumbnailWidth = 44.dp
-private val ThumbnailHeight = 58.dp
 
 /** Paddings of a row of the mock-up; the « ⋮ » button brings its own 48 dp touch target. */
 private val RowVerticalPadding = 10.dp
@@ -78,19 +78,8 @@ private val ProgressTop = 4.dp
 /** Vertical padding of the « Récents » header. */
 private val HeaderVerticalPadding = 8.dp
 
-/** Corner radius of a thumbnail (E1 mock-up). */
-private val ThumbnailCorner = 4.dp
-private val ThumbnailBorder = 1.dp
-
 /** Space kept under the list so that the floating button never hides the last row. */
 private val ListBottomPadding = 96.dp
-
-/** Lines drawn in a thumbnail that is not available yet, as fractions of its width. */
-private val PlaceholderLines = listOf(0.6f, 1f, 1f, 0.8f, 1f, 0.5f)
-private val PlaceholderLineHeight = 3.dp
-private val PlaceholderPadding = 7.dp
-private val PlaceholderLineGap = 5.dp
-private val PlaceholderLineCorner = 2.dp
 
 /**
  * The recent documents, most recent first, under a « Récents · n documents » header.
@@ -238,59 +227,6 @@ private fun ReadingProgress(progress: Float) {
         gapSize = 0.dp,
         drawStopIndicator = {},
     )
-}
-
-@Composable
-private fun Thumbnail(
-    document: RecentDocumentItem,
-    loadThumbnail: suspend (String) -> ImageBitmap?,
-    onRefreshThumbnail: (String) -> Unit,
-) {
-    val path = document.thumbnailPath
-    val currentLoad by rememberUpdatedState(loadThumbnail)
-    val currentOnOutdated by rememberUpdatedState(onRefreshThumbnail)
-    val picture by produceState<ImageBitmap?>(null, path) { value = path?.let { currentLoad(it) } }
-    LaunchedEffect(document.documentId, document.thumbnailOutdated, document.openedOn) {
-        if (document.thumbnailOutdated) currentOnOutdated(document.documentId)
-    }
-    val shape = RoundedCornerShape(ThumbnailCorner)
-    val frame = Modifier
-        .size(ThumbnailWidth, ThumbnailHeight)
-        .clip(shape)
-        .background(MaterialTheme.colorScheme.surfaceContainerLowest)
-        .border(ThumbnailBorder, MaterialTheme.colorScheme.outlineVariant, shape)
-    val image = picture
-    if (image != null) {
-        Image(
-            bitmap = image,
-            contentDescription = stringResource(R.string.library_thumbnail, document.name),
-            contentScale = ContentScale.Fit,
-            modifier = frame,
-        )
-    } else {
-        ThumbnailPlaceholder(frame)
-    }
-}
-
-/** Lines in place of the first page while its picture is missing, like the mock-up. */
-@Composable
-private fun ThumbnailPlaceholder(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(PlaceholderPadding),
-        verticalArrangement = Arrangement.spacedBy(PlaceholderLineGap),
-    ) {
-        PlaceholderLines.forEachIndexed { index, fraction ->
-            val color =
-                if (index == 0) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.surfaceVariant
-            Box(
-                Modifier
-                    .fillMaxWidth(fraction)
-                    .height(PlaceholderLineHeight)
-                    .clip(RoundedCornerShape(PlaceholderLineCorner))
-                    .background(color),
-            )
-        }
-    }
 }
 
 /** « Aujourd'hui, 20:41 », « Hier », « 28 oct. » or « 28 oct. 2025 », in the app's language. */

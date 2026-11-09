@@ -156,6 +156,7 @@ class LibraryViewModel @Inject constructor(
         lastPage = lastPage,
         openedOn = openedOn(lastOpenedAt, clock),
         thumbnailPath = thumbnailPath,
+        isProtected = isProtected,
         thumbnailOutdated = isThumbnailOutdated,
     )
 }

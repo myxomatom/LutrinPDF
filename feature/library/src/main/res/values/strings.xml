@@ -27,4 +27,6 @@
     <!-- Message after a removal, with an undo action; %s is the document name. -->
     <string name="library_removed">“%s” removed from recents</string>
     <string name="library_undo">Undo</string>
+    <!-- Lock badge of a document opened with a password (E1, ADR 0017). -->
+    <string name="library_protected">Protected document</string>
 </resources>

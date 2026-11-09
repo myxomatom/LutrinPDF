@@ -25,4 +25,6 @@
     <string name="library_remove">Retirer des récents</string>
     <string name="library_removed">« %s » retiré des récents</string>
     <string name="library_undo">Annuler</string>
+    <!-- Pastille de cadenas d’un document ouvert avec un mot de passe (E1, ADR 0017). -->
+    <string name="library_protected">Document protégé</string>
 </resources>
