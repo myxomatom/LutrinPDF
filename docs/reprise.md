@@ -146,7 +146,17 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
     JDK 25 : son `jvmTarget` est désormais fixé à 17 dans `build-logic`. Mais detekt 1.23.8
     échoue ensuite sous JDK 25 avec `IllegalArgumentException: 25.0.3` (son compilateur Kotlin
     embarqué ne sait pas lire cette version) : exécuter Gradle avec un **JDK 21**. Sous JDK 17,
-    ce sont les tests Robolectric qui échouent (`Android SDK 36 requires Java 21`).
+    ce sont les tests Robolectric qui échouent (`Android SDK 36 requires Java 21`) ;
+  - **Robolectric remplissait `%TEMP%`** (constaté le 2026-11-09, jalon M3) : chaque JVM de
+    test extrait son runtime natif (`robolectric-nativeruntime*`, ~200 Mo) et ses fichiers de
+    bac à sable (`robolectric-*`) dans le dossier temporaire du système ; sous Windows la DLL
+    est encore verrouillée quand Robolectric tente de la supprimer, donc rien n'était effacé.
+    Deux `testDebugUnitTest` ont laissé ~1,4 Go et saturé `C:` (tests, Dokka et cache Gradle en
+    échec). Robolectric n'a pas de propriété dédiée (il appelle `Files.createTempDirectory`) :
+    `configureTestTempDir()` (`build-logic`, `TestTempDir.kt`) fixe `java.io.tmpdir` de chaque
+    tâche `Test` à `<module>/build/tmp/robolectric`, vidé au début de chaque exécution et
+    supprimé par `clean`. Les anciens dossiers `robolectric*` de `%TEMP%` peuvent être
+    supprimés à la main.
 - **Benchmarks sur Xiaomi / HyperOS** (constaté le 2026-11-08) :
   - activer dans les options pour les développeurs « Installer via USB » **et** « Débogage USB
     (paramètres de sécurité) », sinon `SecurityException ... INSTALL_GRANT_RUNTIME_PERMISSIONS`

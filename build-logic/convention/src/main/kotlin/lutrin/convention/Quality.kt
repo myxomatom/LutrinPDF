@@ -34,7 +34,8 @@ private val COVERAGE_EXCLUDED_CLASSES =
 
 /**
  * Applies the quality tools shared by every module: ktlint, detekt (with Compose rules),
- * Kover and Dokka (`AGENTS.md` §4–§6).
+ * Kover and Dokka (`AGENTS.md` §4–§6), and keeps the unit-test JVMs' temporary files in the
+ * build directory ([configureTestTempDir]).
  */
 internal fun Project.configureQuality() {
     configureStaticAnalysis()
@@ -44,6 +45,7 @@ internal fun Project.configureQuality() {
     }
     configureKover()
     configureDokka()
+    configureTestTempDir()
 }
 
 /**
