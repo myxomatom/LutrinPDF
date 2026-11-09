@@ -104,14 +104,12 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
     private suspend fun drawThumbnail(entry: RecentDocumentEntity): Boolean {
         val drawnAt = clock.millis()
         val name = thumbnails.newName(entry.documentId, drawnAt)
-        if (!renderer.render(entry.uri, thumbnails.file(name))) return false
-        if (dao.updateThumbnail(entry.documentId, name, drawnAt) == 0) {
-            // The entry left the list while its thumbnail was drawn.
-            thumbnails.delete(name)
-            return false
-        }
-        entry.thumbnailFile?.takeIf { it != name }?.let(thumbnails::delete)
-        return true
+        val rendered = renderer.render(entry.uri, thumbnails.file(name))
+        val recorded = rendered && dao.updateThumbnail(entry.documentId, name, drawnAt) != 0
+        // Not recorded although drawn: the entry left the list while its thumbnail was drawn.
+        if (rendered && !recorded) thumbnails.delete(name)
+        if (recorded) entry.thumbnailFile?.takeIf { it != name }?.let(thumbnails::delete)
+        return recorded
     }
 
     private suspend fun remove(entry: RecentDocumentEntity) {

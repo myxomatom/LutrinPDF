@@ -63,7 +63,7 @@ private val FabIconSpacing = 12.dp
  * @param onOpenDocument called with the URI of the recent document the user taps.
  * @param modifier modifier applied to the screen.
  * @param loadThumbnail reads a thumbnail file, off the main thread; `null` when it cannot.
- * @param onThumbnailOutdated called with the identifier of a row shown with a missing or
+ * @param onRefreshThumbnail called with the identifier of a row shown with a missing or
  *   outdated thumbnail.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +75,7 @@ fun LibraryScreen(
     onOpenDocument: (String) -> Unit,
     modifier: Modifier = Modifier,
     loadThumbnail: suspend (String) -> ImageBitmap? = { null },
-    onThumbnailOutdated: (String) -> Unit = {},
+    onRefreshThumbnail: (String) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -94,10 +94,13 @@ fun LibraryScreen(
         val content = Modifier.fillMaxSize().padding(innerPadding)
         when (state) {
             LibraryUiState.Loading -> LoadingContent(content)
+
             LibraryUiState.Empty -> EmptyContent(onOpenFile, content)
+
             LibraryUiState.Error -> ErrorContent(onOpenFile, content)
+
             is LibraryUiState.Content ->
-                RecentDocumentList(state.documents, onOpenDocument, loadThumbnail, onThumbnailOutdated, content)
+                RecentDocumentList(state.documents, onOpenDocument, loadThumbnail, onRefreshThumbnail, content)
         }
     }
 }
@@ -188,6 +191,9 @@ private fun OfflineNotice() {
     }
 }
 
+/** Time shown by the previews. */
+private val PreviewOpenedAt: LocalTime = LocalTime.of(20, 41)
+
 @Preview
 @Composable
 private fun LibraryScreenEmptyPreview() {
@@ -206,7 +212,7 @@ private fun LibraryScreenContentPreview() {
             name = "Contrat de location",
             pageCount = 8,
             lastPage = 2,
-            openedOn = OpenedOn.Today(LocalTime.of(20, 41)),
+            openedOn = OpenedOn.Today(PreviewOpenedAt),
             thumbnailPath = null,
         )
     LutrinTheme(dynamicColor = false) {

@@ -57,7 +57,7 @@ private const val PDF_MIME_TYPE = "application/pdf"
  * @param libraryState the recent documents, collected while the library is shown.
  * @param modifier modifier applied to the screen.
  * @param loadThumbnail reads the thumbnail file of a recent document.
- * @param onThumbnailOutdated called with a recent document shown with a missing or outdated
+ * @param onRefreshThumbnail called with a recent document shown with a missing or outdated
  *   thumbnail.
  * @param incomingRequest document request from another app not handled yet, or `null`.
  * @param onConsumeIncomingRequest called with [incomingRequest] once it is handled.
@@ -68,7 +68,7 @@ fun LutrinApp(
     libraryState: StateFlow<LibraryUiState>,
     modifier: Modifier = Modifier,
     loadThumbnail: suspend (String) -> ImageBitmap? = { null },
-    onThumbnailOutdated: (String) -> Unit = {},
+    onRefreshThumbnail: (String) -> Unit = {},
     incomingRequest: IncomingDocumentResult? = null,
     onConsumeIncomingRequest: (IncomingDocumentResult) -> Unit = {},
     onExit: () -> Unit = {},
@@ -89,7 +89,7 @@ fun LutrinApp(
                     onOpenSettings = navController::navigateToSettings,
                     onOpenDocument = { navController.navigateToReader(it.toUri()) },
                     loadThumbnail = loadThumbnail,
-                    onThumbnailOutdated = onThumbnailOutdated,
+                    onRefreshThumbnail = onRefreshThumbnail,
                 )
             }
             readerScreen(onBack = { navController.goBack(onExit) })

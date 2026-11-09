@@ -33,7 +33,12 @@ class LibraryScreenTest {
     private val openedDocuments = mutableListOf<String>()
     private val outdatedThumbnails = mutableListOf<String>()
 
-    private fun show(state: LibraryUiState = LibraryUiState.Empty, loadThumbnail: suspend (String) -> ImageBitmap? = { null }) {
+    private fun show(
+        state: LibraryUiState = LibraryUiState.Empty,
+        loadThumbnail: suspend (String) -> ImageBitmap? = {
+            null
+        },
+    ) {
         composeRule.setContent {
             LutrinTheme(dynamicColor = false) {
                 LibraryScreen(
@@ -42,7 +47,7 @@ class LibraryScreenTest {
                     onOpenSettings = { settingsClicks++ },
                     onOpenDocument = { openedDocuments += it },
                     loadThumbnail = loadThumbnail,
-                    onThumbnailOutdated = { outdatedThumbnails += it },
+                    onRefreshThumbnail = { outdatedThumbnails += it },
                 )
             }
         }

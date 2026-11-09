@@ -323,16 +323,17 @@ class ReaderViewModelTest {
     )
 
     @Test
-    fun `a successful opening is recorded with its start page, its thumbnail left to the library`() = runTest(dispatcher) {
-        openWithHistory(pageCount = 5, page = 2)
+    fun `a successful opening is recorded with its start page, its thumbnail left to the library`() =
+        runTest(dispatcher) {
+            openWithHistory(pageCount = 5, page = 2)
 
-        val entry = recents.recentDocuments.value.single()
-        assertThat(entry.uri).isEqualTo(uri)
-        assertThat(entry.pageCount).isEqualTo(5)
-        assertThat(entry.lastPage).isEqualTo(2)
-        assertThat(entry.displayName).isEqualTo("Contrat")
-        assertThat(recents.thumbnailRequests).isEmpty()
-    }
+            val entry = recents.recentDocuments.value.single()
+            assertThat(entry.uri).isEqualTo(uri)
+            assertThat(entry.pageCount).isEqualTo(5)
+            assertThat(entry.lastPage).isEqualTo(2)
+            assertThat(entry.displayName).isEqualTo("Contrat")
+            assertThat(recents.thumbnailRequests).isEmpty()
+        }
 
     @Test
     fun `a document without title is recorded under its file name`() = runTest(dispatcher) {

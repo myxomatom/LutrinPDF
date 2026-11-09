@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 LutrinApp(
                     libraryState = libraryViewModel.uiState,
                     loadThumbnail = libraryViewModel::loadThumbnail,
-                    onThumbnailOutdated = libraryViewModel::onThumbnailOutdated,
+                    onRefreshThumbnail = libraryViewModel::onThumbnailOutdated,
                     incomingRequest = incomingRequest,
                     onConsumeIncomingRequest = viewModel::onIncomingRequestHandled,
                     onExit = ::finish,

@@ -39,9 +39,27 @@ class LibraryScreenshotTest {
             item("1", "Contrat de location", lastPage = 2, pageCount = 8, OpenedOn.Today(LocalTime.of(20, 41))),
             item("2", "Facture octobre 2026", lastPage = 0, pageCount = 2, OpenedOn.Today(LocalTime.of(18, 5))),
             item("3", "Relevé de compte", lastPage = 3, pageCount = 4, OpenedOn.Yesterday, thumbnail = false),
-            item("4", "Manuel lave-linge", lastPage = 21, pageCount = 64, OpenedOn.ThisYear(LocalDate.of(2026, 10, 28))),
-            item("5", "Mémoire — chapitre 2", lastPage = 86, pageCount = 112, OpenedOn.ThisYear(LocalDate.of(2026, 10, 25))),
-            item("6", "Billet de train Lyon–Paris", lastPage = 0, pageCount = 1, OpenedOn.OtherYear(LocalDate.of(2025, 10, 19))),
+            item(
+                "4",
+                "Manuel lave-linge",
+                lastPage = 21,
+                pageCount = 64,
+                OpenedOn.ThisYear(LocalDate.of(2026, 10, 28)),
+            ),
+            item(
+                "5",
+                "Mémoire — chapitre 2",
+                lastPage = 86,
+                pageCount = 112,
+                OpenedOn.ThisYear(LocalDate.of(2026, 10, 25)),
+            ),
+            item(
+                "6",
+                "Billet de train Lyon–Paris",
+                lastPage = 0,
+                pageCount = 1,
+                OpenedOn.OtherYear(LocalDate.of(2025, 10, 19)),
+            ),
         )
 
     private fun item(
@@ -84,7 +102,12 @@ class LibraryScreenshotTest {
     private fun fakePage(): ImageBitmap {
         val bitmap = ImageBitmap(PAGE_WIDTH, PAGE_HEIGHT)
         val canvas = Canvas(bitmap)
-        canvas.drawRect(Rect(0f, 0f, PAGE_WIDTH.toFloat(), PAGE_HEIGHT.toFloat()), Paint().apply { color = Color.White })
+        canvas.drawRect(
+            Rect(0f, 0f, PAGE_WIDTH.toFloat(), PAGE_HEIGHT.toFloat()),
+            Paint().apply {
+                color = Color.White
+            },
+        )
         val ink = Paint().apply { color = Color(0xFF8A8E96) }
         canvas.drawRect(Rect(Offset(20f, 24f), Offset(110f, 34f)), ink)
         (0 until LINES).forEach { line ->

@@ -35,7 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -89,20 +89,20 @@ private val PlaceholderLineCorner = 2.dp
  * @param documents rows to show; never empty.
  * @param onOpen called with the URI of the tapped document.
  * @param loadThumbnail reads a thumbnail file.
- * @param onThumbnailOutdated called for a row shown with a missing or outdated thumbnail.
+ * @param onRefreshThumbnail called for a row shown with a missing or outdated thumbnail.
  */
 @Composable
 internal fun RecentDocumentList(
     documents: List<RecentDocumentItem>,
     onOpen: (String) -> Unit,
     loadThumbnail: suspend (String) -> ImageBitmap?,
-    onThumbnailOutdated: (String) -> Unit,
+    onRefreshThumbnail: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier, contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         item(key = HEADER_KEY) { RecentHeader(documents.size) }
         items(documents, key = { it.documentId }) { document ->
-            RecentDocumentRow(document, onOpen, loadThumbnail, onThumbnailOutdated)
+            RecentDocumentRow(document, onOpen, loadThumbnail, onRefreshThumbnail)
         }
     }
 }
@@ -112,7 +112,10 @@ private const val HEADER_KEY = "header"
 @Composable
 private fun RecentHeader(count: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = LutrinDimens.ScreenGutter, vertical = HeaderVerticalPadding),
+        modifier = Modifier.fillMaxWidth().padding(
+            horizontal = LutrinDimens.ScreenGutter,
+            vertical = HeaderVerticalPadding,
+        ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -135,7 +138,7 @@ private fun RecentDocumentRow(
     document: RecentDocumentItem,
     onOpen: (String) -> Unit,
     loadThumbnail: suspend (String) -> ImageBitmap?,
-    onThumbnailOutdated: (String) -> Unit,
+    onRefreshThumbnail: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -151,50 +154,60 @@ private fun RecentDocumentRow(
         horizontalArrangement = Arrangement.spacedBy(RowGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Thumbnail(document, loadThumbnail, onThumbnailOutdated)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(TextGap)) {
-            Text(
-                text = document.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = stringResource(
-                    R.string.library_recent_details,
-                    document.lastPage + 1,
-                    document.pageCount,
-                    openedOnText(document.openedOn),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            // The page is already said by the text above: the bar is decoration only.
-            LinearProgressIndicator(
-                progress = { document.progress },
-                modifier = Modifier
-                    .padding(top = ProgressTop)
-                    .width(ProgressWidth)
-                    .height(ProgressHeight)
-                    .clearAndSetSemantics {},
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeCap = StrokeCap.Butt,
-                gapSize = 0.dp,
-                drawStopIndicator = {},
-            )
-        }
+        Thumbnail(document, loadThumbnail, onRefreshThumbnail)
+        RecentDocumentTexts(document, Modifier.weight(1f))
     }
+}
+
+@Composable
+private fun RecentDocumentTexts(document: RecentDocumentItem, modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(TextGap)) {
+        Text(
+            text = document.name,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = stringResource(
+                R.string.library_recent_details,
+                document.lastPage + 1,
+                document.pageCount,
+                openedOnText(document.openedOn),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ReadingProgress(document.progress)
+    }
+}
+
+/** The page is already said by the text of the row: the bar is decoration only. */
+@Composable
+private fun ReadingProgress(progress: Float) {
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier
+            .padding(top = ProgressTop)
+            .width(ProgressWidth)
+            .height(ProgressHeight)
+            .clearAndSetSemantics {},
+        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        strokeCap = StrokeCap.Butt,
+        gapSize = 0.dp,
+        drawStopIndicator = {},
+    )
 }
 
 @Composable
 private fun Thumbnail(
     document: RecentDocumentItem,
     loadThumbnail: suspend (String) -> ImageBitmap?,
-    onThumbnailOutdated: (String) -> Unit,
+    onRefreshThumbnail: (String) -> Unit,
 ) {
     val path = document.thumbnailPath
     val currentLoad by rememberUpdatedState(loadThumbnail)
-    val currentOnOutdated by rememberUpdatedState(onThumbnailOutdated)
+    val currentOnOutdated by rememberUpdatedState(onRefreshThumbnail)
     val picture by produceState<ImageBitmap?>(null, path) { value = path?.let { currentLoad(it) } }
     LaunchedEffect(document.documentId, document.thumbnailOutdated, document.openedOn) {
         if (document.thumbnailOutdated) currentOnOutdated(document.documentId)
@@ -242,7 +255,7 @@ private fun ThumbnailPlaceholder(modifier: Modifier = Modifier) {
 /** « Aujourd'hui, 20:41 », « Hier », « 28 oct. » or « 28 oct. 2025 », in the app's language. */
 @Composable
 private fun openedOnText(openedOn: OpenedOn): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
     return when (openedOn) {
         is OpenedOn.Today -> {
             val time = remember(openedOn, locale) {
@@ -263,7 +276,6 @@ private fun openedOnText(openedOn: OpenedOn): String {
 private const val DAY_MONTH = "dMMM"
 private const val DAY_MONTH_YEAR = "dMMMy"
 
-private fun formatDate(date: LocalDate, locale: Locale, skeleton: String): String =
-    DateTimeFormatter
-        .ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale)
-        .format(date)
+private fun formatDate(date: LocalDate, locale: Locale, skeleton: String): String = DateTimeFormatter
+    .ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale)
+    .format(date)
