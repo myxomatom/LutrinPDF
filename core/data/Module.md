@@ -1,5 +1,5 @@
 # Module core:data
 
-Repository implementations: Room (recent documents, reading positions, bookmarks) and DataStore (preferences).
+Repository implementations: Room (recent documents and reading positions, with their thumbnails drawn through `PdfEngine`; bookmarks later) and DataStore (preferences).
 
-*Implémentations des repositories : Room (récents, positions de lecture, signets) et DataStore (préférences).*
+*Implémentations des repositories : Room (récents et positions de lecture, avec leurs vignettes dessinées par `PdfEngine` ; signets plus tard) et DataStore (préférences).*
