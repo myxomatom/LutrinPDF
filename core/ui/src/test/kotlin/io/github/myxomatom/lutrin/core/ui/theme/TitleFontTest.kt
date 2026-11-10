@@ -7,16 +7,17 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.ui.R
+import java.security.MessageDigest
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.security.MessageDigest
 
 /** The bundled title font is the file whose provenance is recorded in `docs/dependencies.md`. */
 @RunWith(AndroidJUnit4::class)
 class TitleFontTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
-    private fun fontBytes(): ByteArray = context.resources.openRawResource(R.font.fraunces_semibold).use { it.readBytes() }
+    private fun fontBytes(): ByteArray =
+        context.resources.openRawResource(R.font.fraunces_semibold).use { it.readBytes() }
 
     @Test
     fun `bundled font is the unmodified Fraunces 600 file from expo-google-fonts 0_4_1`() {

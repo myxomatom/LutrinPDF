@@ -9,10 +9,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /**
  * Keeps the theme and `docs/design/design-tokens.json` in sync: a value changed on one side and not
@@ -32,43 +32,42 @@ class DesignTokensTest {
         error("docs/design/design-tokens.json not found above ${File("").absolutePath}")
     }
 
-    private fun roles(scheme: ColorScheme): Map<String, Color> =
-        mapOf(
-            "primary" to scheme.primary,
-            "onPrimary" to scheme.onPrimary,
-            "primaryContainer" to scheme.primaryContainer,
-            "onPrimaryContainer" to scheme.onPrimaryContainer,
-            "inversePrimary" to scheme.inversePrimary,
-            "secondary" to scheme.secondary,
-            "onSecondary" to scheme.onSecondary,
-            "secondaryContainer" to scheme.secondaryContainer,
-            "onSecondaryContainer" to scheme.onSecondaryContainer,
-            "tertiary" to scheme.tertiary,
-            "onTertiary" to scheme.onTertiary,
-            "tertiaryContainer" to scheme.tertiaryContainer,
-            "onTertiaryContainer" to scheme.onTertiaryContainer,
-            "background" to scheme.background,
-            "onBackground" to scheme.onBackground,
-            "surface" to scheme.surface,
-            "onSurface" to scheme.onSurface,
-            "surfaceVariant" to scheme.surfaceVariant,
-            "onSurfaceVariant" to scheme.onSurfaceVariant,
-            "inverseSurface" to scheme.inverseSurface,
-            "inverseOnSurface" to scheme.inverseOnSurface,
-            "error" to scheme.error,
-            "onError" to scheme.onError,
-            "errorContainer" to scheme.errorContainer,
-            "onErrorContainer" to scheme.onErrorContainer,
-            "outline" to scheme.outline,
-            "outlineVariant" to scheme.outlineVariant,
-            "surfaceBright" to scheme.surfaceBright,
-            "surfaceDim" to scheme.surfaceDim,
-            "surfaceContainerLowest" to scheme.surfaceContainerLowest,
-            "surfaceContainerLow" to scheme.surfaceContainerLow,
-            "surfaceContainer" to scheme.surfaceContainer,
-            "surfaceContainerHigh" to scheme.surfaceContainerHigh,
-            "surfaceContainerHighest" to scheme.surfaceContainerHighest,
-        )
+    private fun roles(scheme: ColorScheme): Map<String, Color> = mapOf(
+        "primary" to scheme.primary,
+        "onPrimary" to scheme.onPrimary,
+        "primaryContainer" to scheme.primaryContainer,
+        "onPrimaryContainer" to scheme.onPrimaryContainer,
+        "inversePrimary" to scheme.inversePrimary,
+        "secondary" to scheme.secondary,
+        "onSecondary" to scheme.onSecondary,
+        "secondaryContainer" to scheme.secondaryContainer,
+        "onSecondaryContainer" to scheme.onSecondaryContainer,
+        "tertiary" to scheme.tertiary,
+        "onTertiary" to scheme.onTertiary,
+        "tertiaryContainer" to scheme.tertiaryContainer,
+        "onTertiaryContainer" to scheme.onTertiaryContainer,
+        "background" to scheme.background,
+        "onBackground" to scheme.onBackground,
+        "surface" to scheme.surface,
+        "onSurface" to scheme.onSurface,
+        "surfaceVariant" to scheme.surfaceVariant,
+        "onSurfaceVariant" to scheme.onSurfaceVariant,
+        "inverseSurface" to scheme.inverseSurface,
+        "inverseOnSurface" to scheme.inverseOnSurface,
+        "error" to scheme.error,
+        "onError" to scheme.onError,
+        "errorContainer" to scheme.errorContainer,
+        "onErrorContainer" to scheme.onErrorContainer,
+        "outline" to scheme.outline,
+        "outlineVariant" to scheme.outlineVariant,
+        "surfaceBright" to scheme.surfaceBright,
+        "surfaceDim" to scheme.surfaceDim,
+        "surfaceContainerLowest" to scheme.surfaceContainerLowest,
+        "surfaceContainerLow" to scheme.surfaceContainerLow,
+        "surfaceContainer" to scheme.surfaceContainer,
+        "surfaceContainerHigh" to scheme.surfaceContainerHigh,
+        "surfaceContainerHighest" to scheme.surfaceContainerHighest,
+    )
 
     private fun assertSchemeMatchesTokens(scheme: ColorScheme, section: String) {
         val tokenColors = tokens.getJSONObject("color").getJSONObject(section)
@@ -100,20 +99,19 @@ class DesignTokensTest {
         assertThat(LutrinDarkColorScheme.tertiaryContainer).isEqualTo(Color(0xFF5D4200))
     }
 
-    private fun styles(typography: Typography): Map<String, TextStyle> =
-        mapOf(
-            "displayLarge" to typography.displayLarge,
-            "headlineLarge" to typography.headlineLarge,
-            "headlineSmall" to typography.headlineSmall,
-            "titleLarge" to typography.titleLarge,
-            "titleLargeCompact" to typography.titleLargeCompact,
-            "titleMediumSerif" to typography.titleMediumSerif,
-            "titleMedium" to typography.titleMedium,
-            "bodyLarge" to typography.bodyLarge,
-            "bodyMedium" to typography.bodyMedium,
-            "bodySmall" to typography.bodySmall,
-            "labelLarge" to typography.labelLarge,
-        )
+    private fun styles(typography: Typography): Map<String, TextStyle> = mapOf(
+        "displayLarge" to typography.displayLarge,
+        "headlineLarge" to typography.headlineLarge,
+        "headlineSmall" to typography.headlineSmall,
+        "titleLarge" to typography.titleLarge,
+        "titleLargeCompact" to typography.titleLargeCompact,
+        "titleMediumSerif" to typography.titleMediumSerif,
+        "titleMedium" to typography.titleMedium,
+        "bodyLarge" to typography.bodyLarge,
+        "bodyMedium" to typography.bodyMedium,
+        "bodySmall" to typography.bodySmall,
+        "labelLarge" to typography.labelLarge,
+    )
 
     @Test
     fun `every typography token matches its text style`() {

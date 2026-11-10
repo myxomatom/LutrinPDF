@@ -40,16 +40,18 @@ private const val SERIF_SUBTITLE_LINE_HEIGHT_SP = 24
  * system font (Roboto on Pixel and AOSP). Styles absent from the tokens keep the Material 3
  * defaults. Which style to use where (ADR 0018):
  *
- * | Style | Size / line | Use |
- * |-------|-------------|-----|
- * | `displayLarge` | 56 / 64 sp | The big percentage of a running tool (E9). |
- * | `headlineLarge` | 32 / 40 sp | The application title on the library (E1), "PDF créé" (E9). |
- * | `headlineSmall` | 24 / 32 sp | Dialog titles (`AlertDialog` uses it by default), title of the tool screens (E9). |
- * | `titleLarge` | 22 / 28 sp | Top app bar and sheet titles (`TopAppBar` uses it by default), title of the resume card (E1). |
- * | [titleLargeCompact] | 20 / 26 sp | Title of the reader bar (E2), which shares its row with three actions. |
- * | [titleMediumSerif] | 18 / 24 sp | Small serif caption, e.g. the page number of the slider preview (E2). |
- * | `titleMedium` | 16 / 24 sp, 500 | List item and card titles, system font. |
- * | `bodyLarge`, `bodyMedium`, `bodySmall`, `labelLarge` | as before | Unchanged, system font. |
+ * - `displayLarge`, 56 / 64 sp: the big percentage of a running tool (E9).
+ * - `headlineLarge`, 32 / 40 sp: the application title on the library (E1), "PDF créé" (E9).
+ * - `headlineSmall`, 24 / 32 sp: dialog titles (`AlertDialog` uses it by default) and the title
+ *   of the tool screens (E9).
+ * - `titleLarge`, 22 / 28 sp: top app bar and sheet titles (`TopAppBar` uses it by default) and
+ *   the title of the resume card (E1).
+ * - [titleLargeCompact], 20 / 26 sp: the title of the reader bar (E2), which shares its row with
+ *   three actions.
+ * - [titleMediumSerif], 18 / 24 sp: a small serif caption, e.g. the page number of the slider
+ *   preview (E2).
+ * - `titleMedium`, 16 / 24 sp, 500: list item and card titles, on the system font.
+ * - `bodyLarge`, `bodyMedium`, `bodySmall`, `labelLarge`: unchanged, on the system font.
  */
 val LutrinTypography: Typography =
     baseline.copy(
