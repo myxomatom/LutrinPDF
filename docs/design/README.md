@@ -6,6 +6,12 @@ Format téléphone 390 × 844 dp, Material 3, thème clair (plus une vue en mode
 > **Statut : référence visuelle, pas spécification.** `SPEC.md` fait foi. En cas de
 > divergence entre une maquette et la spécification, la spécification l'emporte ;
 > tout écart volontaire est documenté dans un ADR.
+>
+> **Nouveau design (ADR 0018, 2026-11-10)** : pour **E1, E2 et E9**, la référence est
+> `proposals/` (`proposals/png/`, `proposals/screens/`) ; elle prime sur `screens/E1*`,
+> `E2*`, `E9*` et sur leurs captures de `png/`, conservées à titre d'historique. Les autres
+> écrans gardent les maquettes de `screens/`. Les jetons de `design-tokens.json` incluent
+> déjà le nouveau design (titres Fraunces, accent chaud, vignette 52 × 68 dp).
 
 ## Contenu
 
@@ -16,7 +22,8 @@ docs/design/
 ├── design-tokens.json   ← couleurs, typographie, formes, espacements
 ├── screens/*.html       ← une page HTML autonome par écran (hors ligne, sans script)
 ├── png/*.png            ← captures à 2× (780 × 1688 px), lisibles par l'agent
-└── assets/fonts/        ← Roboto + Roboto Mono (OFL 1.1), pour un rendu hors ligne
+├── assets/fonts/        ← Roboto + Roboto Mono (OFL 1.1), pour un rendu hors ligne
+└── proposals/           ← maquettes adoptées (ADR 0018) de E1, E2 et E9, avant / après (voir son README)
 ```
 
 ## Intégration dans le dépôt
@@ -35,6 +42,9 @@ docs/design/
 - **Couleurs dynamiques** : la palette de `design-tokens.json` est le schéma de repli
   (Android < 12 ou couleurs dynamiques désactivées). Sur Android 12+, Material You
   remplace les teintes ; les rôles (`primary`, `surfaceContainer`…) restent les mêmes.
+  L'accent chaud (`tertiary*`) n'existe donc que dans le schéma de repli (ADR 0018).
+- **Titres** : Fraunces 600, embarquée dans `core:ui` ; utiliser les styles de
+  `MaterialTheme.typography` (voir la KDoc de `LutrinTypography`), jamais une taille en dur.
 - **Textes** : les libellés des maquettes sont la base des `strings.xml` FR. Les
   contenus de documents (noms de fichiers, dates, tailles) sont des exemples.
 - **Rendu des pages PDF** : les rectangles gris représentent le rendu du moteur
@@ -48,10 +58,10 @@ docs/design/
 
 | ID | Fichier | Version | Jalon | Couvre | À noter |
 |----|---------|---------|-------|--------|---------|
-| E1 | `E1-Bibliotheque` | MVP | M3 | F01, F11, F12 | Barre de progression de lecture par document ; badge cadenas = PDF chiffré |
-| E1 | `E1-Bibliotheque-Vide` | MVP | M3 | V8 (vide) | Mention hors ligne en pied |
-| E2 | `E2-Lecteur` | MVP | M2 | F02–F05 | Curseur de pages + bulle de défilement rapide ; lien interne souligné (F09) |
-| E2 | `E2-Lecteur-Nuit` | MVP | M2 / M5 | F13, F14 | Plein écran + rendu inversé ; indicateur « Page 3 / 8 » discret |
+| E1 | `E1-Bibliotheque` | MVP | M3 | F01, F11, F12 | **Référence : `proposals/screens/E1-Bibliotheque`** (carte de reprise, vignette 52 × 68 dp) ; badge cadenas = PDF chiffré |
+| E1 | `E1-Bibliotheque-Vide` | MVP | M3 | V8 (vide) | Mention hors ligne en pied ; titres et bouton selon l'ADR 0018 |
+| E2 | `E2-Lecteur` | MVP | M2 | F02–F05 | **Référence : `proposals/screens/E2-Lecteur`** et `E2-Lecteur-Curseur` (barre flottante, curseur fin, aperçu optionnel, plus de bulle) ; lien interne souligné (F09) |
+| E2 | `E2-Lecteur-Nuit` | MVP | M2 / M5 | F13, F14 | Plein écran + rendu inversé ; indicateur « Page 3 / 8 » discret ; barre et titres selon l'ADR 0018 |
 | E3 | `E3-Parametres` | MVP | M5 | F13, F17, F19 | Thème et rendu en boutons segmentés |
 | E4 | `E4-APropos` | MVP | M5 | §7 | Licence et dépôt à confirmer (ADR 0001) |
 | V1 | `V1-Recherche` | MVP | M4 | F07 | Résultat courant contrasté, compteur, filtres accents / casse |
@@ -66,8 +76,8 @@ docs/design/
 | E6 | `E6-Fusion` | v1.1 | M6 | T01 | Glisser-déposer (élément soulevé), plages par fichier, nom sans collision |
 | E7 | `E7-Extraction` | v1.1 | M6 | T02 | Sélection en grille + saisie de plage synchronisées |
 | E8 | `E8-Conversion` | v1.1 | M6 | T03–T05 | Onglets Images / Texte / HTML ; options de page |
-| E9 | `E9-Progression` | v1.1 | M6 | T06 | Annulation + notification (WorkManager) |
-| E9 | `E9-Resultat` | v1.1 | M6 | T06 | Ouvrir / Partager ; ajouté aux récents |
+| E9 | `E9-Progression` | v1.1 | M6 | T06 | **Référence : `proposals/screens/E9-Progression`** ; annulation + notification (WorkManager) |
+| E9 | `E9-Resultat` | v1.1 | M6 | T06 | **Référence : `proposals/screens/E9-Resultat`** ; ouvrir / partager ; ajouté aux récents |
 | E10 | `E10-Assistants` | v1.1 | M7 | §2.4 | Lecture du contenu **désactivée par défaut** + avertissement ; historique sans contenu |
 | V9 | `V9-Signets` | v1.x | M8 | F20 | |
 | V10 | `V10-Miniatures` | v1.x | M8 | F24 | Réutilisée par E7 (voir points ouverts) |
@@ -76,7 +86,7 @@ docs/design/
 
 - **Miniature de page** (E1, E7, E9, V10) : page blanche à bordure `outlineVariant`,
   état sélectionné / courant = bordure 3 dp `primary`.
-- **Ligne de document** (E1, E9) : miniature 44 × 58 dp, titre, métadonnées, progression.
+- **Ligne de document** (E1, E9) : miniature 52 × 68 dp (ADR 0018), titre, métadonnées, progression.
 - **Interrupteur avec libellé et description** (E3, V6, E10).
 - **Groupe segmenté** (E3, V6, E8).
 - **Dialogue standard** (V3, V4, V7) et **feuille modale** (V5, V6, V9).

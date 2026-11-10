@@ -10,6 +10,54 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Transition vignette → lecteur** (ADR 0018 §7, ADR 0019) : en touchant la carte « Reprendre
+  la lecture » ou une ligne des récents, la vignette du document s'agrandit jusqu'à la page du
+  lecteur, en se redressant pour la carte ; une page blanche tient sa place tant que le document
+  s'ouvre, puis s'efface sur le document, le dialogue de mot de passe ou l'écran d'erreur. Au
+  retour (bouton, flèche ou geste de retour, qui pilote l'animation sous Android 14 et plus), la
+  page se replie vers la vignette si elle est visible, sinon simple fondu. Un document protégé,
+  une page zoomée, le sélecteur de fichier, « Ouvrir avec » et le partage gardent un simple
+  fondu ; avec « Supprimer les animations », l'écran change aussitôt. Les écrans passent de
+  l'un à l'autre par un fondu de 300 ms (700 ms avant). Le manifeste active le retour
+  prédictif pour Android 13 à 15.
+- Lecteur (E2) au nouveau design (ADR 0018) : la barre du bas devient une **barre flottante** en
+  pilule, au-dessus du document qui défile dessous jusqu'en bas de l'écran, à l'écart de la barre
+  de navigation, de la zone des gestes et de l'encoche ; la dernière page peut toujours défiler
+  au-dessus d'elle (et tient au-dessus d'elle en page par page). **Curseur fin** : piste de 4 dp,
+  pouce rond, sans point d'arrêt, cible tactile de 48 dp ; TalkBack lit « Aller à la page » et
+  « Page 3 sur 8 ». Titre de la barre du haut en Fraunces 20 sp. Elle disparaît en plein écran
+  comme avant ; un document d'une page garde la barre, sans curseur.
+- **Aperçu de la page pendant le glissement du curseur** (ADR 0018), activé par défaut : le
+  document reste où il est, atténué, une carte au-dessus du pouce montre la page visée (rendue
+  par le moteur, page blanche le temps du rendu) et « Page 6 », l'indicateur passe à « 6 / 8 » en
+  couleur primaire ; le document y va au relâchement. Un appui sur la piste, le clavier (non essayé sur appareil) et
+  TalkBack vont directement à la page ; un geste annulé reste sur la page de départ. Fonctionne
+  en défilement continu comme en page par page. Interrupteur « Aperçu de la page » dans la
+  feuille « Affichage » (section « Défilement »), enregistré avec DataStore ; désactivé, le
+  document suit le curseur comme avant.
+- Bibliothèque (E1) au nouveau design (ADR 0018) : titre « Lutrin » en grand (Fraunces, 32 sp) ;
+  carte **« Reprendre la lecture »** pour le dernier document ouvert, avec sa première page en
+  grand, légèrement inclinée, son titre, « Page 3 sur 8 · aujourd'hui, 20:41 », une barre de
+  progression et « Continuer » ; toute la carte ouvre le document (une seule cible pour
+  TalkBack, décrite « Reprendre la lecture : …, page 3 sur 8 »), et son bouton « ⋮ » propose
+  « Retirer des récents » comme les lignes (le document suivant prend alors la carte, « Annuler »
+  le remet). Sous la carte, « Récents » et « N autres documents » (absent s'il n'y a qu'un
+  document), vignettes de 52 × 68 dp et titres en `titleMedium`. La barre de progression ne
+  s'affiche plus que pour une lecture en cours : un document d'une page ou lu jusqu'au bout
+  montre « 4 pages · hier » ou « 1 page · 19 oct. ». Bouton « Ouvrir un fichier » en couleur
+  primaire. Les pages restent blanches en thème sombre. En grande police, le texte de la carte
+  passe sous la page.
+- Nouveau design visuel, fondations (ADR 0018) : les titres (barres, feuilles, dialogues, grands
+  titres) passent en **Fraunces 600**, police embarquée dans `core:ui` (TTF statique de 71 Kio,
+  latin et latin étendu, SIL OFL 1.1, aucun téléchargement) ; les textes courants restent sur la
+  police du système. Nouveaux styles `headlineLarge` (32 sp), `displayLarge` (56 sp) et deux
+  variantes `titleLargeCompact` (20 sp) et `titleMediumSerif` (18 sp) de `Typography`. Le schéma
+  de repli (clair et sombre) a un **accent chaud** ambre pour les rôles `tertiary*` à la place du
+  violet ; avec les couleurs dynamiques (activées par défaut), l'accent vient du fond d'écran
+  comme avant. Les jetons de `docs/design/design-tokens.json` suivent (vignette de liste
+  52 × 68 dp) et un test les compare au thème. Les maquettes de `docs/design/proposals/` sont la
+  référence de E1, E2 et E9. Les captures d'écran de référence sont
+  régénérées.
 - Documents protégés par mot de passe (F10, ADR 0017) : un PDF chiffré (RC4, AES-128, AES-256)
   ouvre le dialogue « Document protégé » (V4) au lieu de l'écran d'erreur : champ masqué avec un
   bouton pour afficher le mot de passe, « Ouvrir » ou la touche du clavier, « Annuler » pour
@@ -165,6 +213,8 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
+  désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
 - L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
   passe (ADR 0017).
 - « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document

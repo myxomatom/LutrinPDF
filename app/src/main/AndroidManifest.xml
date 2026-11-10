@@ -2,14 +2,20 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- No <uses-permission> on purpose: no network, no broad storage access (SPEC.md §1).
      ./gradlew check fails if any dependency adds one (verifyReleasePermissions). -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Backups are disabled: recent documents, reading positions and settings stay on this
-         device and never reach a cloud backup (SPEC.md §3, Vie privée; ADR 0004). -->
+         device and never reach a cloud backup (SPEC.md §3, Vie privée; ADR 0004).
+         Predictive back is turned on for Android 13 to 15 (Android 16 and later turn it on for
+         apps targeting them): the back gesture then drives the transition from the reader to
+         the library, page shrinking into its thumbnail (ADR 0019). -->
     <application
         android:name=".LutrinApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="33"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

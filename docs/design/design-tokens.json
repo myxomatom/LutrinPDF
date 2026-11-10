@@ -25,10 +25,10 @@
       "scrim": "rgba(0,0,0,0.32)",
       "secondary": "#535F70",
       "onSecondary": "#FFFFFF",
-      "tertiary": "#6B5778",
+      "tertiary": "#7C5800",
       "onTertiary": "#FFFFFF",
-      "tertiaryContainer": "#F3DAFF",
-      "onTertiaryContainer": "#523F5F",
+      "tertiaryContainer": "#FFDEA6",
+      "onTertiaryContainer": "#271900",
       "onError": "#FFFFFF",
       "background": "#F8F9FF",
       "onBackground": "#191C20",
@@ -37,10 +37,10 @@
       "surfaceBright": "#F8F9FF",
       "surfaceContainerLowest": "#FFFFFF",
       "surfaceContainerHighest": "#E1E2E8",
-      "$note": "Valeurs des maquettes ; les rôles absents des maquettes sont complétés depuis le schéma généré à partir de la même graine (#2A5B8C)."
+      "$note": "Valeurs des maquettes ; les rôles absents des maquettes sont complétés depuis le schéma généré à partir de la même graine (#2A5B8C). Exception, ADR 0018 : les rôles tertiary* sont l'accent chaud (ambre) de `docs/design/proposals/proposal.css`, qui remplace le violet généré."
     },
     "dark": {
-      "$note": "Schéma M3 complet généré (Material Color Utilities 0.3.0, SchemeTonalSpot, contraste standard) à partir de la graine #2A5B8C ; remplace l'esquisse initiale. Les couleurs de la page en mode nuit restent dans « reader ».",
+      "$note": "Schéma M3 complet généré (Material Color Utilities 0.3.0, SchemeTonalSpot, contraste standard) à partir de la graine #2A5B8C ; remplace l'esquisse initiale. Exception, ADR 0018 : les rôles tertiary* sont l'accent chaud (ambre) de `docs/design/proposals/proposal.css`, choisi à la main, pas généré par la graine ; ils correspondent aux tons 80 / 20 / 30 / 90 d'une palette de teinte ≈ 82° et de chroma ≈ 48 (écart d'au plus 2 par canal, vérifié avec materialyoucolor). Les couleurs de la page en mode nuit restent dans « reader ».",
       "primary": "#A1CAFD",
       "onPrimary": "#003259",
       "primaryContainer": "#1A4975",
@@ -49,10 +49,10 @@
       "onSecondary": "#253140",
       "secondaryContainer": "#3B4858",
       "onSecondaryContainer": "#D7E3F8",
-      "tertiary": "#D7BEE4",
-      "onTertiary": "#3B2948",
-      "tertiaryContainer": "#523F5F",
-      "onTertiaryContainer": "#F3DAFF",
+      "tertiary": "#F5BF48",
+      "onTertiary": "#412D00",
+      "tertiaryContainer": "#5D4200",
+      "onTertiaryContainer": "#FFDEA6",
       "error": "#FFB4AB",
       "onError": "#690005",
       "errorContainer": "#93000A",
@@ -91,18 +91,50 @@
     }
   },
   "typography": {
-    "fontFamily": "Roboto (police système Android) ; Roboto Mono pour les noms de fonctions",
-    "titleLarge": {
-      "size": 22,
-      "lineHeight": 28,
-      "weight": 400,
-      "usage": "Titres de barre et de feuille"
+    "fontFamily": "Police système Android (Roboto sur Pixel) pour les corps de texte et les libellés ; Roboto Mono pour les noms de fonctions",
+    "titleFontFamily": "Fraunces 600 (SemiBold), TTF statique embarquée dans core:ui, SIL OFL 1.1 (ADR 0018). Les styles marqués family = Fraunces l'utilisent ; seul le poids 600 existe.",
+    "$note": "Les titres passent en Fraunces 600 (ADR 0018). Tailles reprises de docs/design/proposals/screens : titre de l'application 32 sp, « PDF créé » 32 sp, titre de la carte de reprise 22 sp, titre de barre du lecteur 20 sp, grand pourcentage 56 sp, titre de dialogue et de l'écran d'outil 24 sp, légende de l'aperçu 18 sp. Les deux dernières variantes (titleLargeCompact, titleMediumSerif) sont des extensions de Typography dans Type.kt, pas des styles Material 3.",
+    "displayLarge": {
+      "size": 56,
+      "lineHeight": 64,
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Grand pourcentage d'une opération en cours (E9)"
+    },
+    "headlineLarge": {
+      "size": 32,
+      "lineHeight": 40,
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Titre de l'application (E1), « PDF créé » (E9)"
     },
     "headlineSmall": {
       "size": 24,
       "lineHeight": 32,
-      "weight": 400,
-      "usage": "Titres de dialogue"
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Titres de dialogue et d'écran d'outil (E9)"
+    },
+    "titleLarge": {
+      "size": 22,
+      "lineHeight": 28,
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Titres de barre et de feuille, titre de la carte de reprise (E1)"
+    },
+    "titleLargeCompact": {
+      "size": 20,
+      "lineHeight": 26,
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Titre de la barre du lecteur (E2)"
+    },
+    "titleMediumSerif": {
+      "size": 18,
+      "lineHeight": 24,
+      "weight": 600,
+      "family": "Fraunces",
+      "usage": "Légende en serif, par exemple « Page 6 » sous l'aperçu du curseur (E2)"
     },
     "titleMedium": {
       "size": 16,
@@ -160,8 +192,9 @@
     "topAppBarHeight": 64,
     "buttonHeight": 48,
     "listThumbnail": {
-      "width": 44,
-      "height": 58
+      "width": 52,
+      "height": 68,
+      "$note": "ADR 0018 : 52 × 68 dp (avant 44 × 58 dp)."
     }
   },
   "elevation": {

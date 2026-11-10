@@ -34,3 +34,12 @@ style:
     excludes: ['**/test/**', '**/androidTest/**']
   UnusedPrivateMember:
     ignoreAnnotated: ['Preview']
+
+Compose:
+  CompositionLocalAllowlist:
+    # The scopes of the thumbnail → reader shared element transition (ADR 0019): set by the app
+    # around its navigation, read by the library and the reader, which never depend on each
+    # other. Internal to core:ui; screens reach them through rememberDocumentTransition only.
+    allowedCompositionLocals:
+      - LocalDocumentTransitionHost
+      - LocalDestinationVisibilityScope

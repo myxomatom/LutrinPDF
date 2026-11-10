@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Propositions avant / après</title>
+<style>
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Fraunces;font-weight:600;src:url(fonts/fraunces-latin-600-normal.woff2) format("woff2")}
+body{margin:0;background:#F2F3F8;color:#191C20;font-family:Roboto,system-ui,sans-serif}
+main{max-width:1500px;margin:0 auto;padding:32px 16px 64px}
+h1{font-family:Fraunces,Georgia,serif;font-size:36px;font-weight:600;margin:0 0 4px}
+p{margin:0 0 8px;color:#43474E;line-height:1.5}
+section{padding:24px;margin-top:24px;background:#F8F9FC;border-radius:28px}
+h2{font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600;margin:0 0 16px}
+.pair{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+figure{margin:0;display:flex;flex-direction:column;gap:8px;width:260px}
+figure img{width:100%;height:auto;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.14);background:#fff}
+figcaption{font-size:14px;font-weight:500}
+.tag{display:inline-block;padding:2px 10px;border-radius:8px;font-size:12px;font-weight:500;margin-right:6px}
+.before{background:#E1E2E8;color:#43474E}.after{background:#FFDEA6;color:#271900}
+ul{margin:0;padding-left:20px;color:#43474E;line-height:1.5;flex:1;min-width:240px;font-size:14px}
+a{color:#2A5B8C}
+</style></head><body><main>
+<h1>Propositions avant / après</h1>
+<p>Pistes de design pour E1, E2 et E9. <strong>Propositions non adoptées</strong> : les maquettes de référence restent celles de <a href="../index.html">docs/design</a>. Voir <a href="README.md">README.md</a>.</p>
+
+<section id="e1"><h2>E1 · Bibliothèque</h2><div class="pair">
+<figure><img src="../png/E1-Bibliotheque.png" alt="E1 actuelle"><figcaption><span class="tag before">Avant</span>Liste uniforme</figcaption></figure>
+<figure><a href="screens/E1-Bibliotheque.html"><img src="png/E1-Bibliotheque.png" alt="E1 proposée"></a><figcaption><span class="tag after">Après</span>Carte de reprise</figcaption></figure>
+<ul><li>Carte « Reprendre la lecture » pour le dernier document, avec grande vignette.</li><li>Titres en serif (Fraunces).</li><li>Vignettes réelles plus grandes (52 × 68 dp).</li><li>Barre de progression seulement pour une lecture en cours.</li><li>Bouton « Ouvrir un fichier » en couleur primaire.</li></ul>
+</div></section>
+
+<section id="e2"><h2>E2 · Lecteur</h2><div class="pair">
+<figure><img src="../png/E2-Lecteur.png" alt="E2 actuelle"><figcaption><span class="tag before">Avant</span>Barre pleine largeur</figcaption></figure>
+<figure><a href="screens/E2-Lecteur.html"><img src="png/E2-Lecteur.png" alt="E2 proposée"></a><figcaption><span class="tag after">Après</span>Barre flottante</figcaption></figure>
+<figure><a href="screens/E2-Lecteur-Curseur.html"><img src="png/E2-Lecteur-Curseur.png" alt="E2 proposée, curseur en cours de glissement"></a><figcaption><span class="tag after">Après</span>Aperçu pendant le glissement</figcaption></figure>
+<ul><li>Le document défile sous une barre flottante en pilule.</li><li>Curseur fin à pouce rond, au lieu du curseur épais par défaut de Material 3.</li><li>Pendant le glissement : aperçu de la page visée, numéro et titre de section.</li><li>La bulle de défilement rapide disparaît (l'aperçu la remplace).</li></ul>
+</div></section>
+
+<section id="e9a"><h2>E9 · Opération en cours</h2><div class="pair">
+<figure><img src="../png/E9-Progression.png" alt="E9 progression actuelle"><figcaption><span class="tag before">Avant</span>Icône et barre</figcaption></figure>
+<figure><a href="screens/E9-Progression.html"><img src="png/E9-Progression.png" alt="E9 progression proposée"></a><figcaption><span class="tag after">Après</span>Feuilles qui se rassemblent</figcaption></figure>
+<ul><li>Les feuilles sources glissent sous la feuille centrale au fil de la progression.</li><li>Pourcentage en grand, barre plus épaisse.</li><li>Mêmes textes, même bouton « Annuler », même rappel de notification.</li></ul>
+</div></section>
+
+<section id="e9b"><h2>E9 · Résultat</h2><div class="pair">
+<figure><img src="../png/E9-Resultat.png" alt="E9 résultat actuel"><figcaption><span class="tag before">Avant</span>Coche générique</figcaption></figure>
+<figure><a href="screens/E9-Resultat.html"><img src="png/E9-Resultat.png" alt="E9 résultat proposé"></a><figcaption><span class="tag after">Après</span>Le PDF créé en vedette</figcaption></figure>
+<ul><li>Première page du PDF créé en grand, posée sur les feuilles fusionnées.</li><li>Accent chaud (rôle <code>tertiary</code>) pour la pastille et « Ajouté aux récents ».</li><li>« Ouvrir » plus haut (56 dp) : c'est l'action attendue.</li></ul>
+</div></section>
+<section id="sombre"><h2>Thème sombre</h2><div class="pair">
+<figure><a href="screens/E1-Bibliotheque-Sombre.html"><img src="png/E1-Bibliotheque-Sombre.png" alt="E1 proposée, thème sombre"></a><figcaption>E1 · Bibliothèque</figcaption></figure>
+<figure><a href="screens/E2-Lecteur-Sombre.html"><img src="png/E2-Lecteur-Sombre.png" alt="E2 proposée, thème sombre"></a><figcaption>E2 · Lecteur</figcaption></figure>
+<figure><a href="screens/E2-Lecteur-Curseur-Sombre.html"><img src="png/E2-Lecteur-Curseur-Sombre.png" alt="E2 proposée, aperçu, thème sombre"></a><figcaption>E2 · Aperçu au glissement</figcaption></figure>
+<figure><a href="screens/E9-Progression-Sombre.html"><img src="png/E9-Progression-Sombre.png" alt="E9 progression proposée, thème sombre"></a><figcaption>E9 · Opération en cours</figcaption></figure>
+<figure><a href="screens/E9-Resultat-Sombre.html"><img src="png/E9-Resultat-Sombre.png" alt="E9 résultat proposé, thème sombre"></a><figcaption>E9 · Résultat</figcaption></figure>
+<ul><li>Schéma sombre de <code>design-tokens.json</code>, accent chaud éclairci.</li><li>Les pages et les vignettes restent blanches : le thème de l'application ne change pas le rendu du document (réglage « Couleurs du document »).</li></ul>
+</div></section>
+</main></body></html>

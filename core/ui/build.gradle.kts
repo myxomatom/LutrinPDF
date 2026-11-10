@@ -16,6 +16,9 @@ roborazzi {
 
 dependencies {
     api(libs.androidx.compose.ui)
+    // Shared element transition between a thumbnail and the reader (ADR 0019); already a
+    // transitive dependency of Material 3, declared because core:ui exposes its scopes.
+    api(libs.androidx.compose.animation)
     api(libs.androidx.compose.material3)
 
     testImplementation(libs.junit)

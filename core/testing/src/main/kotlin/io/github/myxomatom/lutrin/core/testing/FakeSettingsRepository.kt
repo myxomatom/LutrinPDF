@@ -27,4 +27,9 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
     override suspend fun setScrollMode(mode: ScrollMode) {
         state.value = state.value.copy(scrollMode = mode)
     }
+
+    /** Changes the page preview setting in memory; [settings] emits the new value at once. */
+    override suspend fun setPagePreview(enabled: Boolean) {
+        state.value = state.value.copy(pagePreview = enabled)
+    }
 }

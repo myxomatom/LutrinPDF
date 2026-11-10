@@ -25,6 +25,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionLayout
 import io.github.myxomatom.lutrin.feature.reader.navigateToReader
 import io.github.myxomatom.lutrin.feature.reader.readerScreen
 import java.io.File
@@ -104,27 +105,31 @@ private const val START_ROUTE = "start"
 
 /**
  * Navigation graph of the benchmark entry point: the reader of the public `feature:reader`
- * API, opened at once on [document]. Leaving the reader closes the activity.
+ * API, opened at once on [document]. Leaving the reader closes the activity. Laid out in the
+ * same `DocumentTransitionLayout` as the app's navigation (ADR 0019), without linked document,
+ * so that the measures include its cost.
  */
 @Composable
 private fun BenchmarkReader(document: Uri, onExit: () -> Unit) {
     val navController = rememberNavController()
     val exit by rememberUpdatedState(onExit)
     var opened by rememberSaveable { mutableStateOf(false) }
-    NavHost(navController, startDestination = START_ROUTE) {
-        composable(START_ROUTE) {
-            LaunchedEffect(Unit) {
-                // Back from the reader returns here: close instead of opening the document again.
-                if (opened) {
-                    exit()
-                } else {
-                    opened = true
-                    // Always the first page: resuming the page saved by the previous iteration
-                    // would make every measurement start elsewhere (ADR 0015).
-                    navController.navigateToReader(document, page = 0)
+    DocumentTransitionLayout(linkedDocumentId = null) {
+        NavHost(navController, startDestination = START_ROUTE) {
+            composable(START_ROUTE) {
+                LaunchedEffect(Unit) {
+                    // Back from the reader returns here: close instead of opening the document again.
+                    if (opened) {
+                        exit()
+                    } else {
+                        opened = true
+                        // Always the first page: resuming the page saved by the previous iteration
+                        // would make every measurement start elsewhere (ADR 0015).
+                        navController.navigateToReader(document, page = 0)
+                    }
                 }
             }
+            readerScreen(onBack = onExit)
         }
-        readerScreen(onBack = onExit)
     }
 }

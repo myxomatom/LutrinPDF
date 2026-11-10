@@ -11,14 +11,33 @@
     <string name="library_error_title">Recent documents unavailable</string>
     <string name="library_error_message">The list of recent documents could not be read. You can still open a file.</string>
     <string name="library_recents">Recent</string>
-    <plurals name="library_document_count">
-        <item quantity="one">%d document</item>
-        <item quantity="other">%d documents</item>
+    <!-- Number of recent documents listed under the resume card. -->
+    <plurals name="library_other_documents">
+        <item quantity="one">%d other document</item>
+        <item quantity="other">%d other documents</item>
     </plurals>
-    <!-- Page reached, page count, date of the last opening. -->
-    <string name="library_recent_details">Page %1$d / %2$d · %3$s</string>
-    <string name="library_opened_today">Today, %s</string>
-    <string name="library_opened_yesterday">Yesterday</string>
+    <!-- Reading in progress: page reached, page count, date of the last opening. -->
+    <string name="library_reading_position">Page %1$d of %2$d · %3$s</string>
+    <!-- No reading in progress (single page, or read to the end): page count, date of the last opening. -->
+    <plurals name="library_page_count">
+        <item quantity="one">%1$d page · %2$s</item>
+        <item quantity="other">%1$d pages · %2$s</item>
+    </plurals>
+    <string name="library_opened_today">today, %s</string>
+    <string name="library_opened_yesterday">yesterday</string>
+    <!-- Overline of the card of the most recent document (shown in capitals). -->
+    <string name="library_resume">Resume reading</string>
+    <!-- Looks like the button of the resume card; the whole card is the target. -->
+    <string name="library_continue">Continue</string>
+    <!-- Screen reader description of the resume card: document name, page reached, page count. -->
+    <string name="library_resume_position">Resume reading %1$s, page %2$d of %3$d</string>
+    <!-- Screen reader description of the resume card without reading in progress: name, page count. -->
+    <plurals name="library_resume_pages">
+        <item quantity="one">Resume reading %1$s, %2$d page</item>
+        <item quantity="other">Resume reading %1$s, %2$d pages</item>
+    </plurals>
+    <!-- Description of the resume card of a protected document; %s is one of the descriptions above. -->
+    <string name="library_resume_protected">%s, protected document</string>
     <string name="library_thumbnail">First page of %s</string>
     <string name="library_open_document">Open</string>
     <!-- Description of the « ⋮ » button of a recent row; %s is the document name. -->

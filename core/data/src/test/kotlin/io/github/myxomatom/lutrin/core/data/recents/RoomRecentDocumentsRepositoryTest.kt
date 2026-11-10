@@ -383,6 +383,44 @@ class RoomRecentDocumentsRepositoryTest {
     }
 
     @Test
+    fun `new thumbnails are named in the current format`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+
+        repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = false)
+
+        val name = File(repository.findByUri(uri(1))?.thumbnailPath.orEmpty()).name
+        assertThat(name).isEqualTo("${documentIdFor(uri(1))}-${clock.now.toEpochMilli()}.v2.png")
+        assertThat(ThumbnailStore(thumbnailDirectory).isCurrent(name)).isTrue()
+    }
+
+    @Test
+    fun `a thumbnail of the previous format is outdated, drawn again and deleted`() = runTest {
+        val repository = repository()
+        val id = documentIdFor(uri(1))
+        repository.recordOpening(opening(1))
+        clock.advance()
+        // A picture drawn by a previous version, after the opening, named without format.
+        val old = File(thumbnailDirectory, "$id-${clock.now.toEpochMilli()}.png")
+        thumbnailDirectory.mkdirs()
+        old.writeBytes(byteArrayOf(1))
+        database?.recentDocumentDao()?.updateThumbnail(id, old.name, clock.now.toEpochMilli())
+
+        val listed = repository.findByUri(uri(1))
+        assertThat(listed?.thumbnailPath).isEqualTo(old.absolutePath)
+        assertThat(listed?.isThumbnailOutdated).isTrue()
+
+        clock.advance()
+        assertThat(repository.updateThumbnail(id, onlyIfOutdated = true)).isTrue()
+
+        val redrawn = repository.findByUri(uri(1))
+        assertThat(renderer.rendered).containsExactly(uri(1))
+        assertThat(redrawn?.isThumbnailOutdated).isFalse()
+        assertThat(redrawn?.thumbnailPath).isNotEqualTo(old.absolutePath)
+        assertThat(old.exists()).isFalse()
+    }
+
+    @Test
     fun `a missing thumbnail file is drawn again`() = runTest {
         val repository = repository()
         val id = documentIdFor(uri(1))

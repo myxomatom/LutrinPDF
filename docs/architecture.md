@@ -22,7 +22,7 @@
 | `:core:data` | Repositories, Room (récents, positions, signets), DataStore (préférences) |
 | `:core:pdf` | `PdfEngine` / `PdfWriter` et leur implémentation MuPDF |
 | `:third-party:mupdf` | MuPDF compilé depuis son sous-module (Java + JNI, NDK) ; seul `core:pdf` en dépend (ADR 0007) |
-| `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés |
+| `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés, portées de la transition vignette → lecteur (ADR 0019) |
 | `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) |
 | `:feature:library` | Bibliothèque / récents (E1) |
 | `:feature:reader` | Lecteur, recherche, table des matières, dialogues (E2, V1–V8) |
@@ -96,18 +96,50 @@ flowchart LR
   mêmes gestes (`ReaderGestures.kt`) et le même `PdfPage` que le mode continu. Le zoom 1 y
   vaut « page entière » (`PagedGeometry.kt`).
 - `PageNavigator` donne la page courante et le saut de page au curseur, à l'indicateur et au
-  ViewModel, quel que soit le mode. Le mode vient des paramètres :
+  ViewModel, quel que soit le mode. Le mode vient des paramètres.
+- Barre flottante (ADR 0018) : `ReaderDocumentArea` pose `FloatingPageBar` au-dessus des pages,
+  qui défilent dessous jusqu'en bas de l'écran ; `floatingPageBarClearance()` donne aux deux vues
+  l'espace de fin (marges système du bas, barre, marges). `PageScrubber` décide de ce que fait le
+  curseur : avec l'aperçu (`AppSettings.pagePreview`, activé par défaut), le glissement ne fait
+  que viser une page, montrée par `PagePreviewCard` (rendue par `PageRenderer.renderPreview`, dans
+  un cache à part de 8 Mo) et le document y va au relâchement ; sans l'aperçu, le document suit
+  le curseur.
 
 ```mermaid
 flowchart LR
-    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange"| rvm["ReaderViewModel"]
-    rvm -->|"SetScrollModeUseCase"| repo["SettingsRepository (DataStore)"]
-    repo -->|"Flow&lt;AppSettings&gt;.scrollMode"| rvm
+    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange, onPagePreviewChange"| rvm["ReaderViewModel"]
+    rvm -->|"SetScrollModeUseCase, SetPagePreviewUseCase"| repo["SettingsRepository (DataStore)"]
+    repo -->|"Flow&lt;AppSettings&gt;"| rvm
     screen["ReaderScreen"] -->|"onPageChange"| rvm
-    rvm -->|"Ready(scrollMode, currentPage)"| screen
+    rvm -->|"Ready(scrollMode, pagePreview, currentPage)"| screen
     screen -->|"CONTINUOUS"| list["PdfPagesView (LazyColumn)"]
     screen -->|"PAGED"| pager["PdfPagerView (HorizontalPager)"]
 ```
+
+## Transition vignette → lecteur (`core:ui`, `app`, ADR 0019)
+
+```mermaid
+flowchart TD
+    app["LutrinApp : document touché (rememberSaveable)<br/>+ animations actives"] -->|"document lié"| layout["DocumentTransitionLayout<br/>(SharedTransitionLayout)"]
+    layout --> nav["NavHost (fondu 300 ms)"]
+    nav --> lib["bibliothèque : DocumentTransitionDestination"]
+    nav --> rd["readerScreen : DocumentTransitionDestination"]
+    lib -->|"rememberDocumentTransition(documentId)"| thumb["vignette de la carte / d'une ligne"]
+    rd -->|"rememberDocumentTransition(ReaderViewModel.documentId)"| open["page d'ouverture (aller)"]
+    rd -->|"puis"| page["page affichée, zoom ≤ 1 (retour)"]
+    thumb <-.->|"DocumentPageKey(documentId), sharedBounds"| open
+    thumb <-.-> page
+```
+
+- `app` choisit le seul document lié : celui que l'utilisateur vient de toucher dans la
+  bibliothèque, tant que les animations du système sont actives. Le sélecteur de fichier et les
+  demandes des autres applications le remettent à `null`.
+- Les deux features ne se connaissent pas : elles lisent les portées par
+  `rememberDocumentTransition`, qui rend `null` hors de l'application (aperçus, tests,
+  `BenchmarkReaderActivity`) ; les écrans fonctionnent alors sans transition.
+- Le lecteur pose une page d'ouverture dès la première image, cible de la vignette pendant que
+  le document s'ouvre (`OpeningPagePhase` : partagée, en attente, partie) ; ensuite, c'est la
+  page affichée qui porte l'élément partagé, pour le retour (geste prédictif compris).
 
 ## Paramètres (`feature:settings`, `core:data`)
 
@@ -125,9 +157,9 @@ flowchart LR
   sur le dispatcher d'I/O injecté).
 - `MainActivity` observe les paramètres : le thème change dès que l'interrupteur bouge, sans
   redémarrer (ADR 0010).
-- Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) est stocké de la même
-  façon ; le lecteur le lit et l'écrit par ses propres cas d'usage, sans dépendre de
-  `feature:settings`.
+- Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) et l'aperçu du curseur
+  (`AppSettings.pagePreview`, ADR 0018) sont stockés de la même façon ; le lecteur les lit et
+  les écrit par ses propres cas d'usage, sans dépendre de `feature:settings`.
 
 ## Récents et reprise de lecture (`feature:library`, `feature:reader`, `core:data`)
 
@@ -162,7 +194,12 @@ flowchart LR
   au document ; il enregistre la page une seconde après le dernier changement et à sa
   fermeture (portée `@ApplicationScope`).
 - Les vignettes sont dessinées quand la bibliothèque montre une ligne dont la vignette manque
-  ou date d'avant la dernière ouverture, jamais pendant l'ouverture du lecteur.
+  ou date d'avant la dernière ouverture (ou d'un ancien format), jamais pendant l'ouverture du
+  lecteur. Un seul fichier de 416 × 552 px au plus sert la carte « Reprendre la lecture » et
+  les lignes, qui le décodent sous-échantillonné (`ThumbnailLoader`, ADR 0018).
+- La bibliothèque montre le document le plus récent dans la carte « Reprendre la lecture » et
+  les autres dessous (`LibraryUiState.Content(resume, others)`) ; la barre de progression
+  n'apparaît que pour une lecture en cours (`RecentDocument.isReadingInProgress`).
 
 ## Documents protégés (`feature:reader`, ADR 0017)
 

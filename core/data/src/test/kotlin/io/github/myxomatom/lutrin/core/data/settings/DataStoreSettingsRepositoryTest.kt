@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.core.data.settings
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -46,6 +47,7 @@ class DataStoreSettingsRepositoryTest {
         assertThat(settings).isEqualTo(AppSettings())
         assertThat(settings.dynamicColor).isTrue()
         assertThat(settings.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+        assertThat(settings.pagePreview).isTrue()
     }
 
     @Test
@@ -137,5 +139,51 @@ class DataStoreSettingsRepositoryTest {
         assertThat(ScrollMode.PAGED.storedValue).isEqualTo("paged")
         assertThat(ScrollMode.entries.map { scrollModeOf(it.storedValue) }).isEqualTo(ScrollMode.entries)
         assertThat(scrollModeOf(null)).isEqualTo(ScrollMode.CONTINUOUS)
+    }
+
+    @Test
+    fun `stores the page preview choice and emits every change`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.settings.test {
+            assertThat(awaitItem().pagePreview).isTrue()
+            repository.setPagePreview(false)
+            assertThat(awaitItem()).isEqualTo(AppSettings(pagePreview = false))
+            repository.setPagePreview(true)
+            assertThat(awaitItem().pagePreview).isTrue()
+        }
+    }
+
+    @Test
+    fun `changing the page preview keeps the other settings`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.setScrollMode(ScrollMode.PAGED)
+        repository.setDynamicColor(false)
+        repository.setPagePreview(false)
+
+        val expected = AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED, pagePreview = false)
+        assertThat(repository.settings.first()).isEqualTo(expected)
+    }
+
+    @Test
+    fun `keeps the page preview choice in the file`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "preview.preferences_pb")
+        val firstScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        DataStoreSettingsRepository(PreferenceDataStoreFactory.create(scope = firstScope, produceFile = { file }))
+            .setPagePreview(false)
+        firstScope.cancel()
+
+        assertThat(repository(file).settings.first().pagePreview).isFalse()
+    }
+
+    @Test
+    fun `the page preview is stored under a stable key`() = runTest(UnconfinedTestDispatcher()) {
+        // Written on the users' devices: renaming the key would turn the preview back on for everyone.
+        val file = File(folder.root, "key.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit { it[booleanPreferencesKey("page_preview")] = false }
+
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first().pagePreview).isFalse()
     }
 }

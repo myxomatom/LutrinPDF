@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,9 @@ private val PAGE_MARGIN = 16.dp
  * @param onZoomChange called with the new, clamped zoom.
  * @param onTap called on a single tap, to show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
+ * @param bottomClearance height of the floating bar laid over the bottom of the pages (ADR 0018):
+ *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
+ * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  */
 @Composable
 internal fun PdfPagerView(
@@ -71,6 +75,8 @@ internal fun PdfPagerView(
     contentDescription: String,
     modifier: Modifier = Modifier,
     nightMode: Boolean = false,
+    bottomClearance: Dp = 0.dp,
+    sharedPage: SharedPage? = null,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -91,6 +97,8 @@ internal fun PdfPagerView(
                 onTap = onTap,
                 pagerMoving = pagerState.isScrollInProgress,
                 nightMode = nightMode,
+                bottomClearance = bottomClearance,
+                sharedPage = sharedPage,
             )
         }
     }
@@ -123,6 +131,8 @@ private fun ZoomablePage(
     onTap: () -> Unit,
     pagerMoving: Boolean,
     nightMode: Boolean,
+    bottomClearance: Dp,
+    sharedPage: SharedPage?,
 ) {
     val horizontal = rememberScrollState()
     val vertical = rememberScrollState()
@@ -140,7 +150,7 @@ private fun ZoomablePage(
                 .verticalScroll(vertical, enabled = zoom > 1f)
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
         ) {
-            ZoomedArea(viewportSize, page, zoom) { fitWidth ->
+            ZoomedArea(viewportSize, page, zoom, bottomClearance) { fitWidth ->
                 PdfPage(
                     pageIndex = pageIndex,
                     page = page,
@@ -151,6 +161,7 @@ private fun ZoomablePage(
                     settled = pinch == null && !pagerMoving && !horizontal.isScrollInProgress &&
                         !vertical.isScrollInProgress,
                     nightMode = nightMode,
+                    pageModifier = Modifier.sharedPage(sharedPage, pageIndex),
                 )
             }
         }
@@ -179,26 +190,30 @@ private fun Modifier.zoomGestures(
 )
 
 /**
- * The page area at [zoom]: the viewport scaled by the zoom ([zoomedExtent]), the page centred
- * in it. [content] draws the page and receives its width at zoom 1, fitting it in the viewport.
+ * The page area at [zoom]: the viewport above the [bottomClearance] scaled by the zoom
+ * ([zoomedExtent]), the page centred in it, followed by the clearance itself, which does not
+ * scale. [content] draws the page and receives its width at zoom 1, fitting it above the
+ * clearance. At zoom 1 the whole area is the viewport: nothing scrolls.
  */
 @Composable
 private fun ZoomedArea(
     viewportSize: IntSize,
     page: PageSize,
     zoom: Float,
+    bottomClearance: Dp,
     content: @Composable (fitWidth: Int) -> Unit,
 ) {
     val density = LocalDensity.current
     val margin = with(density) { PAGE_MARGIN.roundToPx() }
-    Box(
-        Modifier.size(
-            with(density) { zoomedExtent(viewportSize.width, zoom).toDp() },
-            with(density) { zoomedExtent(viewportSize.height, zoom).toDp() },
-        ),
-        contentAlignment = Alignment.Center,
-    ) {
-        content(fitPageWidth(page, viewportSize.width, viewportSize.height, margin))
+    // Never the whole viewport: a window too low for the bar still shows some of the page.
+    val clearance = minOf(with(density) { bottomClearance.roundToPx() }, viewportSize.height / 2).coerceAtLeast(0)
+    val pageAreaHeight = viewportSize.height - clearance
+    val width = with(density) { zoomedExtent(viewportSize.width, zoom).toDp() }
+    val height = with(density) { zoomedExtent(pageAreaHeight, zoom).toDp() }
+    Box(Modifier.size(width, height + with(density) { clearance.toDp() }), contentAlignment = Alignment.TopCenter) {
+        Box(Modifier.size(width, height), contentAlignment = Alignment.Center) {
+            content(fitPageWidth(page, viewportSize.width, pageAreaHeight, margin))
+        }
     }
 }
 

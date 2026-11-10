@@ -42,6 +42,8 @@ sealed interface ReaderUiState {
      * @property pageSizes size of every page, in points; never empty.
      * @property renderer draws the pages into bitmaps.
      * @property scrollMode continuous scroll or page by page (F03), from the settings.
+     * @property pagePreview whether dragging the page slider previews the page aimed at and
+     *   moves the document on release only (F05, ADR 0018), from the settings.
      * @property currentPage zero-based page last reported by the screen; where the reader
      *   starts again when the scroll mode changes.
      */
@@ -51,6 +53,7 @@ sealed interface ReaderUiState {
         val renderer: PageRenderer,
         val scrollMode: ScrollMode = AppSettings.DEFAULT_SCROLL_MODE,
         val currentPage: Int = 0,
+        val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
     ) : ReaderUiState
 }
 

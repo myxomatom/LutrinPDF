@@ -21,7 +21,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app`, `core:data`, `feature:reader` | Extensions Kotlin d'Android |
 | AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
-| Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
+| Jetpack Compose (BOM) : UI, Material 3, Animation | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1). `animation` (éléments partagés de la transition vignette → lecteur, ADR 0019) était déjà tirée par Material 3 ; `core:ui` la déclare parce qu'il expose ses portées |
 | Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
 | AndroidX DataStore Preferences | 1.2.1 | Apache-2.0 | `core:data` | Préférences enregistrées sur l'appareil (`SPEC.md` §5, ADR 0010) |
 | AndroidX Room (`room-runtime`) | 2.8.5 | Apache-2.0 | `core:data` | Base locale des récents et des positions de lecture (`SPEC.md` §4.1, §5, ADR 0015). Tire AndroidX SQLite 2.6.2 (`sqlite`, `sqlite-framework`, SQLite du système, pas de SQLite embarqué), `room-common`, AndroidX Collection et Annotation, tous Apache-2.0 ; aucune permission. Licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
@@ -31,6 +31,18 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte) |
 | AndroidX ProfileInstaller | 1.4.1 | Apache-2.0 | `app` | Installe le Baseline Profile sur les appareils sans Google Play (F-Droid, installation directe) ; aucune permission demandée (ADR 0012) |
 | AndroidX Activity Compose (`ReportDrawnWhen`) | 1.13.0 | Apache-2.0 | `feature:reader` | Signale la fin de l'ouverture d'un document (premières pages rendues), mesurée par `:benchmark` (ADR 0012) |
+
+### Police embarquée (ressource, pas une dépendance Maven)
+
+| Police | Version | Licence (SPDX) | Module | Poids | Justification |
+|--------|---------|----------------|--------|-------|---------------|
+| Fraunces SemiBold (600), `core/ui/src/main/res/font/fraunces_semibold.ttf` | 1.000 (`Version 1.000;[b76b70a41]`), fichier du paquet npm `@expo-google-fonts/fraunces` 0.4.1 (`600SemiBold/Fraunces_600SemiBold.ttf`), sha-256 `9f03c0fe70d1670d22f392a138ac02eceedc5eee5f1cd8d7486ba2aed843b8aa` | OFL-1.1 (« Copyright 2020 The Fraunces Project Authors », github.com/undercasetype/Fraunces) ; texte dans `LICENSES/OFL-1.1-Fraunces.txt` | `core:ui` | 72 504 octets (70,8 Kio) | Police des titres du nouveau design (ADR 0018). TTF statique, non modifié (le test `TitleFontTest` en vérifie la somme de contrôle), 683 glyphes : latin de base, Latin-1 et latin étendu, donc le français et l'anglais ; ne couvre pas U+202F, U+2009 ni `→`, qui retombent sur la police du système. Embarquée : l'application n'a aucun accès réseau. La licence OFL autorise l'embarquement et la redistribution avec le logiciel sous une autre licence, à condition de garder la mention de copyright et le texte de la licence (présents dans `LICENSES/` et dans les métadonnées de la police) et de ne pas vendre la police seule |
+
+La somme de contrôle de l'archive npm (`npm view @expo-google-fonts/fraunces@0.4.1 dist.integrity`) est
+`sha512-gYc9P92ObyWvz1rWPOeWSvVKyBFIuA8hgOdhvo4DSiPBaWLbFA6v8uLIEIBwW+0oWTlXbBzjeBReHQI2H7UNjQ==`.
+Le paquet npm est sous « MIT AND OFL-1.1 » : MIT pour les scripts d'Expo (non copiés ici), OFL-1.1 pour la
+police. Licensee ne voit pas cette police (ce n'est pas un artefact Maven) : elle est vérifiée ici, comme
+les bibliothèques compilées avec MuPDF.
 
 Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 `./gradlew :app:licenseeAndroidRelease` dans `app/build/reports/licensee/`.
@@ -104,6 +116,7 @@ La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.1
 | Ressource | Licence | Emplacement |
 |-----------|---------|-------------|
 | Roboto, Roboto Mono | OFL-1.1 | `docs/design/assets/fonts/` |
+| Fraunces 500 et 600, sous-ensemble latin en WOFF2 (`@fontsource/fraunces` 5.3.0, pour les maquettes seulement ; l'application embarque le TTF ci-dessus) | OFL-1.1 | `docs/design/proposals/fonts/` |
 
 ## Prévues
 

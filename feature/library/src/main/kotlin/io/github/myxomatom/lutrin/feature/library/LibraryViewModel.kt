@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.feature.library
 
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,7 +30,8 @@ import kotlinx.coroutines.launch
 private const val STOP_TIMEOUT_MS = 5_000L
 
 /**
- * State holder of the library screen (E1): the recent documents (F11), and their thumbnails,
+ * State holder of the library screen (E1): the recent documents (F11), the most recent one in
+ * the resume card and the others in the list (ADR 0018), and their thumbnails,
  * drawn when the screen shows a row whose thumbnail is missing or older than its last opening
  * (ADR 0015): never while the reader opens the document.
  *
@@ -129,12 +131,13 @@ class LibraryViewModel @Inject constructor(
     }
 
     /**
-     * Reads a thumbnail file.
+     * Reads a thumbnail file, subsampled for the size it is shown at ([ThumbnailLoader]).
      *
      * @param path absolute path of the file.
+     * @param size size of the frame the picture is fitted in, in pixels.
      * @return the picture, or `null` when the file cannot be read.
      */
-    suspend fun loadThumbnail(path: String): ImageBitmap? = thumbnailLoader.load(path)
+    suspend fun loadThumbnail(path: String, size: IntSize): ImageBitmap? = thumbnailLoader.load(path, size)
 
     override fun onCleared() {
         // The activity is going away for good: a removal not undone by now is confirmed.
@@ -145,7 +148,9 @@ class LibraryViewModel @Inject constructor(
         documents = list.associateBy { it.documentId }
         list.forEach { openings[it.documentId] = it.lastOpenedAt }
         val shown = list.filterNot { PendingRemoval(it.documentId, it.displayName, it.lastOpenedAt) in removed }
-        return if (shown.isEmpty()) LibraryUiState.Empty else LibraryUiState.Content(shown.map { it.toItem() })
+        // The most recent document shown goes to the resume card: removing it brings up the next one.
+        val resume = shown.firstOrNull() ?: return LibraryUiState.Empty
+        return LibraryUiState.Content(resume = resume.toItem(), others = shown.drop(1).map { it.toItem() })
     }
 
     private fun RecentDocument.toItem() = RecentDocumentItem(
@@ -158,6 +163,7 @@ class LibraryViewModel @Inject constructor(
         thumbnailPath = thumbnailPath,
         isProtected = isProtected,
         thumbnailOutdated = isThumbnailOutdated,
+        isReadingInProgress = isReadingInProgress,
     )
 }
 

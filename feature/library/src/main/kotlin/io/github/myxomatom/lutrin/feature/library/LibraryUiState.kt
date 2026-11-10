@@ -17,15 +17,21 @@ sealed interface LibraryUiState {
     data object Error : LibraryUiState
 
     /**
-     * The recent documents (F11), most recently opened first.
+     * The recent documents (F11), split as the library shows them (ADR 0018).
      *
-     * @property documents never empty.
+     * @property resume the most recently opened document, shown in the « Reprendre la lecture »
+     *   card, whatever it is: protected, of a single page or read to the end.
+     * @property others the other recent documents, most recently opened first, listed under
+     *   « Récents · n autres documents »; empty when there is only one recent document, and the
+     *   section is then not shown.
      */
-    data class Content(val documents: List<RecentDocumentItem>) : LibraryUiState
+    data class Content(val resume: RecentDocumentItem, val others: List<RecentDocumentItem> = emptyList()) :
+        LibraryUiState
 }
 
 /**
- * One row of the recent list (E1 mock-up: thumbnail, name, page, date, progress).
+ * A recent document as the library shows it, in the resume card or in a row (E1 mock-up:
+ * thumbnail, name, page or number of pages, date, progress).
  *
  * @property documentId identifier of the entry.
  * @property uri the document, opened again when the row is tapped.
@@ -38,6 +44,9 @@ sealed interface LibraryUiState {
  *   never a picture of the first page (E1 mock-up, ADR 0017).
  * @property thumbnailOutdated whether the picture is missing or older than the last opening, and
  *   has to be drawn (again); never for a protected document.
+ * @property isReadingInProgress whether the user stopped before the last page of a document of
+ *   several pages (`RecentDocument.isReadingInProgress`): the library then writes the page
+ *   reached and shows a progress bar; otherwise it writes the number of pages, without bar.
  */
 data class RecentDocumentItem(
     val documentId: String,
@@ -49,12 +58,20 @@ data class RecentDocumentItem(
     val thumbnailPath: String?,
     val isProtected: Boolean = false,
     val thumbnailOutdated: Boolean = thumbnailPath == null && !isProtected,
+    val isReadingInProgress: Boolean = false,
 ) {
-    /** Reading progress, from 1 / [pageCount] on the first page to 1 on the last. */
+    /** Reading progress, from 1 / [pageCount] on the first page to 1 on the last; shown in progress only. */
     val progress: Float get() = (lastPage + 1).toFloat() / pageCount.coerceAtLeast(1)
+
+    /**
+     * The document whose thumbnail grows into the reader's page when it is opened (ADR 0019), or
+     * `null` for a protected document: it has no picture to grow, and the reader asks for its
+     * password first; it only fades.
+     */
+    val transitionDocumentId: String? get() = documentId.takeUnless { isProtected }
 }
 
-/** When a document was last opened, as the library writes it (« Aujourd'hui, 20:41 », « Hier », « 28 oct. »). */
+/** When a document was last opened, as the library writes it (« aujourd'hui, 20:41 », « hier », « 28 oct. »). */
 sealed interface OpenedOn {
     /**
      * Earlier today.
