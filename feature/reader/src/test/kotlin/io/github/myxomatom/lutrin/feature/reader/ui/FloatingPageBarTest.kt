@@ -78,7 +78,6 @@ class FloatingPageBarTest {
                         state = state.copy(currentPage = it)
                     },
                     onScrollModeChange = { state = state.copy(scrollMode = it) },
-                    onPagePreviewChange = { state = state.copy(pagePreview = it) },
                 )
             }
         }

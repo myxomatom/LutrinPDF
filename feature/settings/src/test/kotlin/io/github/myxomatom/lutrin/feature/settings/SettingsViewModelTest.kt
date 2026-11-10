@@ -11,6 +11,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
 import java.io.IOException
@@ -47,6 +48,7 @@ class SettingsViewModelTest {
     ) = SettingsViewModel(
         ObserveSettingsUseCase(repository),
         SetDynamicColorUseCase(repository),
+        SetPagePreviewUseCase(repository),
         ObserveRecentDocumentsUseCase(recents),
         ClearRecentDocumentsUseCase(recents),
         applicationScope,
@@ -79,6 +81,38 @@ class SettingsViewModelTest {
             assertThat(awaitItem().dynamicColor).isFalse()
         }
         assertThat(repository.settings.value.dynamicColor).isFalse()
+    }
+
+    @Test
+    fun `the page preview of the reader is on by default`() = runTest {
+        viewModel(FakeSettingsRepository()).uiState.test {
+            assertThat(awaitItem().pagePreview).isTrue()
+        }
+    }
+
+    @Test
+    fun `shows the stored page preview choice`() = runTest {
+        viewModel(FakeSettingsRepository(AppSettings(pagePreview = false))).uiState.test {
+            assertThat(awaitItem().pagePreview).isFalse()
+        }
+    }
+
+    @Test
+    fun `turning the page preview off and back on stores the choice`() = runTest {
+        val repository = FakeSettingsRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            assertThat(awaitItem().pagePreview).isTrue()
+            viewModel.onPagePreviewChange(false)
+            assertThat(awaitItem().pagePreview).isFalse()
+            assertThat(repository.settings.value.pagePreview).isFalse()
+
+            viewModel.onPagePreviewChange(true)
+            assertThat(awaitItem().pagePreview).isTrue()
+        }
+        assertThat(repository.settings.value.pagePreview).isTrue()
+        assertThat(repository.settings.value.dynamicColor).isTrue()
     }
 
     @Test

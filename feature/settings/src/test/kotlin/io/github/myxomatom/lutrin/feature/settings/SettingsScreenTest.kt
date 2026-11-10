@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.settings
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +33,7 @@ class SettingsScreenTest {
     val composeRule = createComposeRule()
 
     private val changes = mutableListOf<Boolean>()
+    private val previewChanges = mutableListOf<Boolean>()
     private var backClicks = 0
     private var clearRequests = 0
 
@@ -39,6 +46,7 @@ class SettingsScreenTest {
                     onDynamicColorChange = { changes += it },
                     onBack = { backClicks++ },
                     onClearRecents = { clearRequests++ },
+                    onPagePreviewChange = { previewChanges += it },
                 )
             }
         }
@@ -86,6 +94,49 @@ class SettingsScreenTest {
         show(SettingsUiState(loading = true))
 
         composeRule.onNodeWithText("Dynamic colours").assertDoesNotExist()
+        composeRule.onNodeWithText("Page preview").assertDoesNotExist()
+    }
+
+    @Test
+    fun `offers the page preview of the reader in the reading section, on by default`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNodeWithText("Reading").assertIsDisplayed()
+        val summary =
+            "Shows the page while you drag the slider of the reader; the document moves there when you let go."
+        composeRule.onNodeWithText(summary).assertIsDisplayed()
+        composeRule
+            .onNode(isToggleable() and hasText("Page preview"))
+            .assertIsOn()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+    }
+
+    @Test
+    fun `tapping the row turns the page preview off, without touching the colours`() {
+        show(SettingsUiState(loading = false, pagePreview = true))
+
+        composeRule.onNode(isToggleable() and hasText("Page preview")).performClick()
+
+        assertThat(previewChanges).containsExactly(false)
+        assertThat(changes).isEmpty()
+    }
+
+    @Test
+    fun `tapping the row turns the page preview back on`() {
+        show(SettingsUiState(loading = false, pagePreview = false))
+
+        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsOff().performClick()
+
+        assertThat(previewChanges).containsExactly(true)
+    }
+
+    @Test
+    fun `the page preview stays available before Android 12`() {
+        show(SettingsUiState(loading = false), supported = false)
+
+        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsEnabled().performClick()
+
+        assertThat(previewChanges).containsExactly(false)
     }
 
     @Test
@@ -104,6 +155,12 @@ class SettingsScreenTest {
 
         composeRule.onNodeWithText("Paramètres").assertIsDisplayed()
         composeRule.onNodeWithText("Couleurs dynamiques").assertIsDisplayed()
+        composeRule.onNodeWithText("Lecture").assertIsDisplayed()
+        composeRule.onNodeWithText("Aperçu de la page").assertIsDisplayed()
+        val summary =
+            "Montre la page pendant que vous faites glisser le curseur du lecteur\u00A0; " +
+                "le document s’y rend quand vous relâchez."
+        composeRule.onNodeWithText(summary).assertIsDisplayed()
     }
 
     @Test

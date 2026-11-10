@@ -86,10 +86,12 @@ Option **A**, décisions du mainteneur du 2026-11-10 :
    qu'au relâchement et un aperçu (vignette de la page visée, « Page N », titre de section si le
    PDF a une table des matières) s'affiche au-dessus de la barre ; désactivée, comportement
    actuel (le document suit le curseur en continu, pas d'aperçu). **Valeur par défaut :
-   activée.** Le réglage se place dans la feuille « Affichage » du lecteur (V6), section
-   « Défilement », et s'enregistre avec DataStore comme les autres réglages d'affichage
+   activée.** Le réglage s'enregistre avec DataStore comme les autres réglages d'affichage
    (ADR 0011). Libellé et description à fixer par l'implémentation (FR et EN, à relire par le
-   mainteneur) ; la maquette de V6 d'origine reste la référence de la feuille.
+   mainteneur). **Amendé le 2026-11-10 après essai sur appareil** : le réglage quitte la feuille
+   « Affichage » du lecteur (V6) pour l'écran Paramètres (E3), section « Lecture », à côté des
+   couleurs dynamiques, à la demande du mainteneur ; la feuille V6 ne garde que le mode de
+   défilement. La section « Lecture » est celle de la maquette E3 d'origine.
 7. **Transition animée vignette → lecteur** : la vignette de la carte de reprise (et des lignes
    de la liste) est l'élément partagé d'une transition vers le lecteur (`SharedTransitionLayout`
    de Compose, aucune dépendance nouvelle). Elle fait partie du design adopté ; une autre étape
@@ -168,11 +170,12 @@ directement à la page visée au relâchement.
     maquette) ; l'icône des paramètres reste l'engrenage de Material.
 - **Choix de l'étape E2 (2026-11-10)** :
   - **réglage** : `AppSettings.pagePreview` (DataStore, clé `page_preview`, activé par défaut),
-    interrupteur de la feuille « Affichage », section « Défilement », sous le choix du mode :
-    « Aperçu de la page » / « Montre la page pendant que vous faites glisser le curseur ; le
-    document s'y rend quand vous relâchez. » (EN : « Page preview » / « Shows the page while you
-    drag the slider; the document moves there when you let go. »), libellés à relire par le
-    mainteneur ; toute la ligne bascule l'interrupteur ;
+    interrupteur de l'écran Paramètres, section « Lecture » (d'abord placé dans la feuille
+    « Affichage », déplacé le 2026-11-10, voir §6) : « Aperçu de la page » / « Montre la page
+    pendant que vous faites glisser le curseur du lecteur ; le document s'y rend quand vous
+    relâchez. » (EN : « Page preview » / « Shows the page while you drag the slider of the
+    reader; the document moves there when you let go. ») ; toute la ligne bascule
+    l'interrupteur ;
   - **aperçu activé** (`PageScrubber`) : pendant le glissement, le document reste où il est,
     atténué par un voile du fond du lecteur à 45 % (la maquette l'affiche à 55 % d'opacité ; un
     voile évite une couche hors écran sur la liste), l'indicateur passe à la page visée en

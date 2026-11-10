@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -50,7 +51,8 @@ class SettingsScreenshotTest {
     @OptIn(ExperimentalRoborazziApi::class)
     private fun captureClear(name: String, label: String, darkTheme: Boolean = false) {
         show(recentCount = RECENT_COUNT, darkTheme = darkTheme)
-        composeRule.onNodeWithText(label).performClick()
+        // In large fonts the row is below the fold: scroll to it, as a user would.
+        composeRule.onNodeWithText(label).performScrollTo().performClick()
         composeRule.waitForIdle()
         captureScreenRoboImage("src/test/screenshots/$name.png")
     }

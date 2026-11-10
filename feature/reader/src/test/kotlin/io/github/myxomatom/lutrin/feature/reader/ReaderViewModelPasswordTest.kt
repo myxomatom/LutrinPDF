@@ -15,7 +15,6 @@ import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCas
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
-import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FAKE_NOW
@@ -66,7 +65,6 @@ class ReaderViewModelPasswordTest {
         dispatcher,
         ObserveSettingsUseCase(FakeSettingsRepository()),
         SetScrollModeUseCase(FakeSettingsRepository()),
-        SetPagePreviewUseCase(FakeSettingsRepository()),
         ReadingHistory(
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),

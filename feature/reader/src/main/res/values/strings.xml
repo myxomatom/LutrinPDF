@@ -17,9 +17,6 @@
     <string name="reader_options_scrolling">Scrolling</string>
     <string name="reader_scroll_continuous">Continuous</string>
     <string name="reader_scroll_paged">Page by page</string>
-    <!-- Option of the display sheet (V6): preview while dragging the page slider (ADR 0018). -->
-    <string name="reader_page_preview">Page preview</string>
-    <string name="reader_page_preview_summary">Shows the page while you drag the slider; the document moves there when you let go.</string>
     <string name="reader_fullscreen_page">Page %1$d / %2$d</string>
     <string name="reader_remove_from_recents">Remove from recents</string>
     <string name="reader_error_title">This document cannot be opened</string>

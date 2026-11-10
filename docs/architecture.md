@@ -107,8 +107,8 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange, onPagePreviewChange"| rvm["ReaderViewModel"]
-    rvm -->|"SetScrollModeUseCase, SetPagePreviewUseCase"| repo["SettingsRepository (DataStore)"]
+    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange"| rvm["ReaderViewModel"]
+    rvm -->|"SetScrollModeUseCase"| repo["SettingsRepository (DataStore)"]
     repo -->|"Flow&lt;AppSettings&gt;"| rvm
     screen["ReaderScreen"] -->|"onPageChange"| rvm
     rvm -->|"Ready(scrollMode, pagePreview, currentPage)"| screen
@@ -145,8 +145,8 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    e3["SettingsScreen (E3)"] -->|"onDynamicColorChange"| vm["SettingsViewModel"]
-    vm -->|"SetDynamicColorUseCase"| repo["SettingsRepository"]
+    e3["SettingsScreen (E3)"] -->|"onDynamicColorChange, onPagePreviewChange"| vm["SettingsViewModel"]
+    vm -->|"SetDynamicColorUseCase, SetPagePreviewUseCase"| repo["SettingsRepository"]
     repo --> ds["DataStore Preferences (fichiers privés)"]
     repo -->|"Flow&lt;AppSettings&gt;"| act["MainActivity → LutrinTheme(dynamicColor)"]
     repo -->|"Flow&lt;AppSettings&gt;"| vm
@@ -158,8 +158,10 @@ flowchart LR
 - `MainActivity` observe les paramètres : le thème change dès que l'interrupteur bouge, sans
   redémarrer (ADR 0010).
 - Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) et l'aperçu du curseur
-  (`AppSettings.pagePreview`, ADR 0018) sont stockés de la même façon ; le lecteur les lit et
-  les écrit par ses propres cas d'usage, sans dépendre de `feature:settings`.
+  (`AppSettings.pagePreview`, ADR 0018) sont stockés de la même façon. Le lecteur lit les deux
+  et écrit le mode (feuille « Affichage ») par ses propres cas d'usage, sans dépendre de
+  `feature:settings` ; l'aperçu se règle dans les Paramètres (section « Lecture »), et un
+  lecteur ouvert suit le changement.
 
 ## Récents et reprise de lecture (`feature:library`, `feature:reader`, `core:data`)
 
