@@ -10,6 +10,18 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Nouveau design visuel, fondations (ADR 0018) : les titres (barres, feuilles, dialogues, grands
+  titres) passent en **Fraunces 600**, police embarquée dans `core:ui` (TTF statique de 71 Kio,
+  latin et latin étendu, SIL OFL 1.1, aucun téléchargement) ; les textes courants restent sur la
+  police du système. Nouveaux styles `headlineLarge` (32 sp), `displayLarge` (56 sp) et deux
+  variantes `titleLargeCompact` (20 sp) et `titleMediumSerif` (18 sp) de `Typography`. Le schéma
+  de repli (clair et sombre) a un **accent chaud** ambre pour les rôles `tertiary*` à la place du
+  violet ; avec les couleurs dynamiques (activées par défaut), l'accent vient du fond d'écran
+  comme avant. Les jetons de `docs/design/design-tokens.json` suivent (vignette de liste
+  52 × 68 dp) et un test les compare au thème. Les maquettes de `docs/design/proposals/` sont la
+  référence de E1, E2 et E9 ; l'aperçu de page pendant le glissement du curseur sera une option
+  activée par défaut dans la feuille « Affichage ». Les captures d'écran de référence sont
+  régénérées.
 - Documents protégés par mot de passe (F10, ADR 0017) : un PDF chiffré (RC4, AES-128, AES-256)
   ouvre le dialogue « Document protégé » (V4) au lieu de l'écran d'erreur : champ masqué avec un
   bouton pour afficher le mot de passe, « Ouvrir » ou la touche du clavier, « Annuler » pour

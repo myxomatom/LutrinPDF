@@ -10,7 +10,9 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Light colour scheme of Lutrin, used when dynamic colours (Material You) are unavailable
- * (Android < 12) or disabled.
+ * (Android < 12) or disabled. The `tertiary*` roles are the warm amber accent of the visual
+ * design (ADR 0018): the "Added to recents" pill, the sparkles of the result screen. With dynamic
+ * colours on, they come from the wallpaper like every other role.
  */
 val LutrinLightColorScheme: ColorScheme =
     lightColorScheme(
@@ -23,10 +25,10 @@ val LutrinLightColorScheme: ColorScheme =
         onSecondary = Color(0xFFFFFFFF),
         secondaryContainer = Color(0xFFD7E3F7),
         onSecondaryContainer = Color(0xFF101C2B),
-        tertiary = Color(0xFF6B5778),
+        tertiary = Color(0xFF7C5800),
         onTertiary = Color(0xFFFFFFFF),
-        tertiaryContainer = Color(0xFFF3DAFF),
-        onTertiaryContainer = Color(0xFF523F5F),
+        tertiaryContainer = Color(0xFFFFDEA6),
+        onTertiaryContainer = Color(0xFF271900),
         background = Color(0xFFF8F9FF),
         onBackground = Color(0xFF191C20),
         surface = Color(0xFFF8F9FC),
@@ -52,7 +54,8 @@ val LutrinLightColorScheme: ColorScheme =
 
 /**
  * Dark colour scheme of Lutrin, used when dynamic colours are unavailable or disabled.
- * Generated from the same seed as the light scheme (see design-tokens.json).
+ * Generated from the same seed as the light scheme (see design-tokens.json), except the amber
+ * `tertiary*` roles, which are chosen by hand (ADR 0018).
  */
 val LutrinDarkColorScheme: ColorScheme =
     darkColorScheme(
@@ -65,10 +68,10 @@ val LutrinDarkColorScheme: ColorScheme =
         onSecondary = Color(0xFF253140),
         secondaryContainer = Color(0xFF3B4858),
         onSecondaryContainer = Color(0xFFD7E3F8),
-        tertiary = Color(0xFFD7BEE4),
-        onTertiary = Color(0xFF3B2948),
-        tertiaryContainer = Color(0xFF523F5F),
-        onTertiaryContainer = Color(0xFFF3DAFF),
+        tertiary = Color(0xFFF5BF48),
+        onTertiary = Color(0xFF412D00),
+        tertiaryContainer = Color(0xFF5D4200),
+        onTertiaryContainer = Color(0xFFFFDEA6),
         background = Color(0xFF111418),
         onBackground = Color(0xFFE1E2E8),
         surface = Color(0xFF111418),
