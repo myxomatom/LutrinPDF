@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
@@ -20,6 +21,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FAKE_NOW
+import io.github.myxomatom.lutrin.core.testing.FakeDocumentNameResolver
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
@@ -70,6 +72,7 @@ class ReaderViewModelTest {
             SaveLastPageUseCase(recents),
             IsRecentDocumentUseCase(recents),
             RemoveRecentDocumentUseCase(recents),
+            GetDocumentNameUseCase(recents, FakeDocumentNameResolver()),
             // A child of the test, so that advanceUntilIdle runs the write done on closing.
             this,
         ),
@@ -134,8 +137,6 @@ class ReaderViewModelTest {
     fun `maps every engine error to a reader error`() = runTest(dispatcher) {
         val cases =
             mapOf(
-                PdfError.PasswordRequired() to ReaderError.PASSWORD_REQUIRED,
-                PdfError.IncorrectPassword() to ReaderError.PASSWORD_REQUIRED,
                 PdfError.UnsupportedFormat() to ReaderError.UNSUPPORTED_FORMAT,
                 PdfError.NotAccessible() to ReaderError.NOT_ACCESSIBLE,
                 PdfError.Unreadable() to ReaderError.UNREADABLE,

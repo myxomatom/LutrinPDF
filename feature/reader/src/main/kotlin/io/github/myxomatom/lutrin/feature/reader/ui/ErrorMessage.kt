@@ -87,7 +87,6 @@ internal fun ErrorMessage(
 private val ReaderError.message: Int
     get() =
         when (this) {
-            ReaderError.PASSWORD_REQUIRED -> R.string.reader_error_password
             ReaderError.UNREADABLE -> R.string.reader_error_unreadable
             ReaderError.UNSUPPORTED_FORMAT -> R.string.reader_error_unsupported
             ReaderError.NOT_ACCESSIBLE -> R.string.reader_error_not_accessible

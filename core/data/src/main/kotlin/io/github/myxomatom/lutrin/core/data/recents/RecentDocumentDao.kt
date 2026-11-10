@@ -49,13 +49,14 @@ internal interface RecentDocumentDao {
     suspend fun updateLastPage(uri: String, page: Int): Int
 
     /**
-     * Changes the thumbnail file of an entry and the date it was drawn.
+     * Changes the thumbnail file of an entry and the date it was drawn. A protected entry never
+     * gets one (ADR 0017), even if it became protected while its thumbnail was drawn.
      *
-     * @return the number of entries changed, 0 when the entry is gone.
+     * @return the number of entries changed, 0 when the entry is gone or protected.
      */
     @Query(
         "UPDATE recent_documents SET thumbnail_file = :thumbnailFile, thumbnail_drawn_at = :drawnAt " +
-            "WHERE document_id = :documentId",
+            "WHERE document_id = :documentId AND is_protected = 0",
     )
     suspend fun updateThumbnail(documentId: String, thumbnailFile: String?, drawnAt: Long?): Int
 }

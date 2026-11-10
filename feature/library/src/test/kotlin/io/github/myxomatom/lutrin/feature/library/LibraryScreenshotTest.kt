@@ -30,8 +30,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Screenshot references of the library with recent documents (E1): light, dark, large font and
- * French. Rows with a thumbnail and rows still waiting for theirs (placeholder); the row menu
- * open, and the message offering to undo a removal (ADR 0016).
+ * French. Rows with a thumbnail, and a protected row with its lock and no thumbnail (ADR 0017),
+ * like the mock-up; the row menu open, and the message offering to undo a removal (ADR 0016).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -44,7 +44,7 @@ class LibraryScreenshotTest {
         listOf(
             item("1", "Contrat de location", lastPage = 2, pageCount = 8, OpenedOn.Today(LocalTime.of(20, 41))),
             item("2", "Facture octobre 2026", lastPage = 0, pageCount = 2, OpenedOn.Today(LocalTime.of(18, 5))),
-            item("3", "Relevé de compte", lastPage = 3, pageCount = 4, OpenedOn.Yesterday, thumbnail = false),
+            item("3", "Relevé de compte", lastPage = 3, pageCount = 4, OpenedOn.Yesterday, protected = true),
             item(
                 "4",
                 "Manuel lave-linge",
@@ -74,7 +74,7 @@ class LibraryScreenshotTest {
         lastPage: Int,
         pageCount: Int,
         openedOn: OpenedOn,
-        thumbnail: Boolean = true,
+        protected: Boolean = false,
     ) = RecentDocumentItem(
         documentId = id,
         uri = "content://com.example.files/document/$id",
@@ -82,7 +82,9 @@ class LibraryScreenshotTest {
         pageCount = pageCount,
         lastPage = lastPage,
         openedOn = openedOn,
-        thumbnailPath = if (thumbnail) "/thumbnails/$id.png" else null,
+        // A protected document never has a thumbnail (ADR 0017).
+        thumbnailPath = if (protected) null else "/thumbnails/$id.png",
+        isProtected = protected,
     )
 
     private fun show(

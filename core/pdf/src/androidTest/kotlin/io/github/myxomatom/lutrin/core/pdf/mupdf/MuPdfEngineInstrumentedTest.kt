@@ -88,6 +88,58 @@ class MuPdfEngineInstrumentedTest {
         }
     }
 
+    /** Encrypted test documents → their user password (F10, ADR 0017). */
+    private val userPasswords =
+        mapOf(
+            TestFiles.Pdf.ENCRYPTED_RC4 to TestFiles.Pdf.ENCRYPTED_RC4_PASSWORD,
+            TestFiles.Pdf.ENCRYPTED_AES_128 to TestFiles.Pdf.ENCRYPTED_AES_128_PASSWORD,
+            TestFiles.Pdf.ENCRYPTED to TestFiles.Pdf.ENCRYPTED_PASSWORD,
+        )
+
+    @Test
+    fun asksForThePasswordOfEveryEncryptionMethod() = runTest {
+        userPasswords.keys.forEach { path ->
+            val uri = Uri.fromFile(copyAsset(path))
+
+            assertThat(
+                engine.open(DocumentSource.FromUri(uri)).exceptionOrNull(),
+            ).isInstanceOf(PdfError.PasswordRequired::class.java)
+        }
+    }
+
+    @Test
+    fun refusesAWrongPasswordForEveryEncryptionMethod() = runTest {
+        userPasswords.forEach { (path, password) ->
+            val uri = Uri.fromFile(copyAsset(path))
+
+            assertThat(
+                engine.open(DocumentSource.FromUri(uri), password.uppercase()).exceptionOrNull(),
+            ).isInstanceOf(PdfError.IncorrectPassword::class.java)
+        }
+    }
+
+    @Test
+    fun opensEveryEncryptionMethodWithItsPassword() = runTest {
+        userPasswords.forEach { (path, password) ->
+            val uri = Uri.fromFile(copyAsset(path))
+
+            engine.open(DocumentSource.FromUri(uri), password).getOrThrow().use { document ->
+                assertThat(document.metadata.isEncrypted).isTrue()
+                assertThat(document.textAt(0, PdfRect(0f, 0f, 595f, 842f))).contains(password)
+            }
+        }
+    }
+
+    @Test
+    fun opensADocumentRestrictedByItsOwnerOnlyWithoutAPassword() = runTest {
+        val uri = Uri.fromFile(copyAsset(TestFiles.Pdf.OWNER_PASSWORD_ONLY))
+
+        engine.open(DocumentSource.FromUri(uri)).getOrThrow().use { document ->
+            assertThat(document.metadata.isEncrypted).isTrue()
+            assertThat(document.pageCount).isEqualTo(1)
+        }
+    }
+
     @Test
     fun reportsAMissingUriAsNotAccessible() = runTest {
         val uri = Uri.fromFile(File(targetContext.cacheDir, "absent.pdf"))

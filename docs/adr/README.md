@@ -22,6 +22,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0014](0014-ouvrir-avec-et-partage-entrant.md) | « Ouvrir avec » et partage entrant : routage des intents, mode de lancement, validation des URI | Accepté |
 | [0015](0015-recents-et-reprise-de-lecture.md) | Récents (Room), `documentId`, permissions persistées, vignettes, reprise de la dernière page | Accepté |
 | [0016](0016-retirer-et-vider-les-recents.md) | Retirer un document des récents (menu de ligne avec annulation, V8) et vider les récents (E3) | Accepté |
+| [0017](0017-mot-de-passe-des-documents-proteges.md) | Mot de passe des documents protégés (V4) : dialogue, mot de passe jamais gardé, récents protégés (schéma 2) | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

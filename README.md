@@ -7,12 +7,13 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M3 (fichiers et récents), en cours.** On peut ouvrir un PDF depuis la
+> 🚧 **Statut : jalon M3 (fichiers et récents) terminé, M4 (navigation et texte) à venir.** On peut ouvrir un PDF depuis la
 > bibliothèque, ou depuis une autre application avec « Ouvrir avec » ou « Partager », et le
 > lire : défilement continu ou page par page, zoom, plein écran. La bibliothèque liste les
 > documents récents, avec leur vignette, et les rouvre à la page où la lecture s'est arrêtée ;
 > un document se retire de la liste (menu « ⋮ » ou écran d'erreur) et la liste se vide depuis
-> les paramètres. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
+> les paramètres. Un PDF protégé par mot de passe s'ouvre après saisie du mot de passe, qui
+> n'est jamais enregistré. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.

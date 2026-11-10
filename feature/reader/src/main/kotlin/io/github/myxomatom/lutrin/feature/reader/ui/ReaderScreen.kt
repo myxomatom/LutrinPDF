@@ -61,11 +61,13 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
             viewModel.onRemoveFromRecents()
             onBack()
         },
+        onPasswordSubmit = viewModel::onPasswordSubmit,
     )
 }
 
 /**
- * Reader screen (E2): loading, error (V8) or the document with its controls.
+ * Reader screen (E2): loading, error (V8), password of an encrypted document (V4) or the document
+ * with its controls.
  *
  * @param state what to show.
  * @param onBack leaves the reader.
@@ -74,6 +76,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param onScrollModeChange called with the scroll mode chosen in the options (V6).
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
+ * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
+ *   calls [onBack].
  */
 @Composable
 fun ReaderScreen(
@@ -83,10 +87,12 @@ fun ReaderScreen(
     onPageChange: (Int) -> Unit = {},
     onScrollModeChange: (ScrollMode) -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
+    onPasswordSubmit: (CharSequence) -> Unit = {},
 ) {
     when (state) {
         ReaderUiState.Loading -> LoadingContent(modifier)
         is ReaderUiState.Error -> ReaderErrorContent(state, onBack, onRemoveFromRecents, modifier)
+        is ReaderUiState.PasswordRequired -> ReaderPasswordContent(state, onBack, onPasswordSubmit, modifier)
         is ReaderUiState.Ready -> ReaderContent(state, onBack, onPageChange, onScrollModeChange, modifier)
     }
 }
@@ -196,7 +202,7 @@ private fun DocumentPages(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReaderTopBar(title: String, onBack: () -> Unit, onMoreOptions: (() -> Unit)? = null) {
+internal fun ReaderTopBar(title: String, onBack: () -> Unit, onMoreOptions: (() -> Unit)? = null) {
     TopAppBar(
         title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {

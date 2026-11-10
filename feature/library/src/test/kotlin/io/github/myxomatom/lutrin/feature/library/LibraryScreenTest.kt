@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.assertTouchWidthIsEqualTo
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -229,6 +230,42 @@ class LibraryScreenTest {
 
         assertThat(requested).containsExactly(contract.thumbnailPath)
         assertThat(outdatedThumbnails).containsExactly(contract.documentId)
+    }
+
+    @Test
+    fun `a protected document shows a lock and never asks for its thumbnail`() {
+        // Even marked outdated, as by a stale state: the lock wins.
+        val statement = invoice.copy(documentId = "statement", name = "Relevé de compte", isProtected = true)
+
+        show(LibraryUiState.Content(listOf(statement)))
+        composeRule.waitForIdle()
+
+        assertThat(outdatedThumbnails).isEmpty()
+        composeRule.onNodeWithContentDescription("Protected document", useUnmergedTree = true).assertExists()
+        composeRule.onNodeWithContentDescription("First page of Relevé de compte", useUnmergedTree = true)
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun `the lock is read with the row`() {
+        show(LibraryUiState.Content(listOf(contract.copy(isProtected = true, thumbnailPath = null))))
+
+        composeRule.onNode(hasClickAction() and hasContentDescription("Protected document")).assertExists()
+    }
+
+    @Test
+    fun `a document without lock has none`() {
+        show(LibraryUiState.Content(listOf(contract)))
+
+        composeRule.onNodeWithContentDescription("Protected document", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the lock is described in French`() {
+        show(LibraryUiState.Content(listOf(contract.copy(isProtected = true, thumbnailPath = null))))
+
+        composeRule.onNodeWithContentDescription("Document protégé", useUnmergedTree = true).assertExists()
     }
 
     @Test

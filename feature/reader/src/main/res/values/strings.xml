@@ -19,5 +19,14 @@
     <string name="reader_error_unreadable">The file may be damaged or incomplete.</string>
     <string name="reader_error_unsupported">This file is not a PDF.</string>
     <string name="reader_error_not_accessible">The file was moved or deleted, or access to it was revoked.</string>
-    <string name="reader_error_password">This document is protected by a password. Opening protected documents is coming soon.</string>
+    <!-- Password dialog (V4, F10); %s is the document name. -->
+    <string name="reader_password_title">Protected document</string>
+    <string name="reader_password_message">“%s” is encrypted. Enter its password to open it.</string>
+    <string name="reader_password_label">Password</string>
+    <string name="reader_password_incorrect">Incorrect password. Try again.</string>
+    <string name="reader_password_not_stored">The password is never saved.</string>
+    <string name="reader_password_show">Show password</string>
+    <string name="reader_password_hide">Hide password</string>
+    <string name="reader_password_open">Open</string>
+    <string name="reader_password_cancel">Cancel</string>
 </resources>

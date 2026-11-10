@@ -34,8 +34,10 @@ sealed interface LibraryUiState {
  * @property lastPage zero-based page where the user stopped reading.
  * @property openedOn when the document was last opened, relative to today.
  * @property thumbnailPath picture of the first page, or `null` while it is missing.
+ * @property isProtected whether the document needs a password (F10): the row shows a lock and
+ *   never a picture of the first page (E1 mock-up, ADR 0017).
  * @property thumbnailOutdated whether the picture is missing or older than the last opening, and
- *   has to be drawn (again).
+ *   has to be drawn (again); never for a protected document.
  */
 data class RecentDocumentItem(
     val documentId: String,
@@ -45,7 +47,8 @@ data class RecentDocumentItem(
     val lastPage: Int,
     val openedOn: OpenedOn,
     val thumbnailPath: String?,
-    val thumbnailOutdated: Boolean = thumbnailPath == null,
+    val isProtected: Boolean = false,
+    val thumbnailOutdated: Boolean = thumbnailPath == null && !isProtected,
 ) {
     /** Reading progress, from 1 / [pageCount] on the first page to 1 on the last. */
     val progress: Float get() = (lastPage + 1).toFloat() / pageCount.coerceAtLeast(1)

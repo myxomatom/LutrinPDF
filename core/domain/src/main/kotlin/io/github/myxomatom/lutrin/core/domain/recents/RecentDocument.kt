@@ -18,6 +18,9 @@ import java.time.Instant
  * @property thumbnailPath absolute path of the picture of the first page, or `null` when it was
  *   not drawn yet or its file is gone.
  * @property thumbnailDrawnAt when that picture was drawn, or `null` when there is none.
+ * @property isProtected whether the document asked for a password when it was last opened (F10,
+ *   ADR 0017). Such a document never gets a thumbnail: it cannot be opened without its password,
+ *   which is never stored, and a picture of its first page would show what the password protects.
  */
 data class RecentDocument(
     val documentId: String,
@@ -29,13 +32,15 @@ data class RecentDocument(
     val lastPage: Int,
     val thumbnailPath: String?,
     val thumbnailDrawnAt: Instant? = null,
+    val isProtected: Boolean = false,
 ) {
     /**
      * Whether the thumbnail has to be drawn (again): it is missing, or older than the last
-     * opening, after which the file may have changed (ADR 0015).
+     * opening, after which the file may have changed (ADR 0015). Never for a protected document
+     * ([isProtected]), which is never drawn (ADR 0017).
      */
     val isThumbnailOutdated: Boolean
-        get() = thumbnailPath == null || thumbnailDrawnAt?.isBefore(lastOpenedAt) != false
+        get() = !isProtected && (thumbnailPath == null || thumbnailDrawnAt?.isBefore(lastOpenedAt) != false)
 
     /** Limits of the recent list. */
     companion object {
@@ -56,5 +61,14 @@ data class RecentDocument(
  * @property page zero-based page the reader starts on.
  * @property fallbackName name to show when the provider gives no file name (document title or
  *   last segment of the URI).
+ * @property isProtected whether the document could only be opened with a user password (F10,
+ *   ADR 0017); a document restricted by its owner only, which opens without one, is not. The
+ *   password itself is never part of an opening.
  */
-data class DocumentOpening(val uri: String, val pageCount: Int, val page: Int, val fallbackName: String)
+data class DocumentOpening(
+    val uri: String,
+    val pageCount: Int,
+    val page: Int,
+    val fallbackName: String,
+    val isProtected: Boolean = false,
+)

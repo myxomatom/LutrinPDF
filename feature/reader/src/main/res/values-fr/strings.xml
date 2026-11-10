@@ -19,5 +19,14 @@
     <string name="reader_error_unreadable">Le fichier est peut-être endommagé ou incomplet.</string>
     <string name="reader_error_unsupported">Ce fichier n’est pas un PDF.</string>
     <string name="reader_error_not_accessible">Le fichier a été déplacé ou supprimé, ou l’accès à ce fichier a été retiré.</string>
-    <string name="reader_error_password">Ce document est protégé par un mot de passe. L’ouverture des documents protégés arrive bientôt.</string>
+    <!-- Dialogue de mot de passe (V4, F10) ; %s est le nom du document. -->
+    <string name="reader_password_title">Document protégé</string>
+    <string name="reader_password_message">« %s » est chiffré. Saisissez son mot de passe pour l’ouvrir.</string>
+    <string name="reader_password_label">Mot de passe</string>
+    <string name="reader_password_incorrect">Mot de passe incorrect. Réessayez.</string>
+    <string name="reader_password_not_stored">Le mot de passe n’est jamais enregistré.</string>
+    <string name="reader_password_show">Afficher le mot de passe</string>
+    <string name="reader_password_hide">Masquer le mot de passe</string>
+    <string name="reader_password_open">Ouvrir</string>
+    <string name="reader_password_cancel">Annuler</string>
 </resources>

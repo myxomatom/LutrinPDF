@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 
 /**
  * Row of the `recent_documents` table: one recent document (F11) and its reading position (F12),
- * schema version 1 (ADR 0015).
+ * schema version 2 (ADR 0015, 0017).
  *
  * @property documentId identifier derived from [uri] (`documentIdFor`), primary key.
  * @property uri the `content://` URI the document was opened from; unique.
@@ -21,6 +21,9 @@ import androidx.room.PrimaryKey
  *   none was drawn yet.
  * @property thumbnailDrawnAt when the thumbnail was drawn, in milliseconds since the epoch, or
  *   `null`; a thumbnail older than [lastOpenedAt] is drawn again.
+ * @property isProtected whether the document needed a user password at its last opening (F10,
+ *   ADR 0017): it never gets a thumbnail. Added by schema version 2; `false` for the entries of
+ *   version 1, which could not hold a protected document.
  */
 @Entity(
     tableName = "recent_documents",
@@ -46,4 +49,6 @@ internal data class RecentDocumentEntity(
     val thumbnailFile: String?,
     @ColumnInfo(name = "thumbnail_drawn_at")
     val thumbnailDrawnAt: Long?,
+    @ColumnInfo(name = "is_protected", defaultValue = "0")
+    val isProtected: Boolean = false,
 )

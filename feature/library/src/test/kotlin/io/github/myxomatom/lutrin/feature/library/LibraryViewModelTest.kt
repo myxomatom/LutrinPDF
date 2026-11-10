@@ -171,6 +171,19 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `a protected document is shown with its lock and needs no thumbnail`() = runTest(dispatcher) {
+        val protected = document(1).copy(isProtected = true)
+
+        viewModel(FakeRecentDocumentsRepository(listOf(protected))).uiState.test {
+            skipItems(1)
+            val item = (awaitItem() as LibraryUiState.Content).documents.single()
+            assertThat(item.isProtected).isTrue()
+            assertThat(item.thumbnailOutdated).isFalse()
+            assertThat(item.thumbnailPath).isNull()
+        }
+    }
+
+    @Test
     fun `a thumbnail file that cannot be read gives no picture`() = runTest(dispatcher) {
         val viewModel = viewModel(FakeRecentDocumentsRepository())
 

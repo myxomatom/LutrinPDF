@@ -16,19 +16,20 @@
 | M0 Fondations | ✅ Terminé | Vérification de reproductibilité F-Droid, reportée (point ouvert 13) ; module `:benchmark` livré en M2 |
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
 | M2 Lecteur de base | ✅ Terminé (mesuré le 2026-11-08 sur un Xiaomi 23013PC75G, Android 15 / HyperOS, build `benchmarkRelease`) | Défilement continu (PDF de 600 pages) : `frameDurationCpuMs` P50 2,9 / P90 4,0 / P99 8,7 ms, objectif P90 < 16 ms atteint ; page par page : P90 6,6 ms ; ouverture à froid du gros PDF : `timeToFullDisplayMs` médiane 1050 ms ; aucun plantage. Baseline Profile committé ; gain au démarrage à froid d'environ 2,5 % (357,8 contre 367,1 ms), voir ADR 0012 |
-| M3 Fichiers et récents | 🟡 En cours | F01 « Ouvrir avec » et partage entrant faits (ADR 0014) ; permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page faits (ADR 0015), testés sous Robolectric. « Retirer des récents » (menu de ligne avec annulation, V8) et « Vider les récents » (E3) faits (ADR 0016). Reste : dialogue de mot de passe (V4), essais sur appareil ; copie dans `cacheDir` des URI non seekables (point ouvert 11) ; zoom et décalage de F12 et empreinte des documents (point ouvert 16) reportés |
+| M3 Fichiers et récents | ✅ Terminé (validé le 2026-11-10 sur un Xiaomi 23013PC75G, Android 15 / HyperOS) | Tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts sur l'appareil ; essais manuels du mainteneur réussis, dont un vrai PDF chiffré. F01 « Ouvrir avec » et partage entrant faits (ADR 0014) ; permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page faits (ADR 0015), testés sous Robolectric. « Retirer des récents » (menu de ligne avec annulation, V8) et « Vider les récents » (E3) faits (ADR 0016). Dialogue de mot de passe (V4) fait, documents protégés dans les récents avec cadenas (schéma Room 2, ADR 0017). Non essayée sur appareil : la migration Room 1→2 d'une base existante. Reportés : copie dans `cacheDir` des URI non seekables (point ouvert 11) ; zoom et décalage de F12 et empreinte des documents (point ouvert 16) reportés |
 | M4 à M8 | ⏳ À faire | — |
 
 ### Vues
 
 | Vue | État | Remarques |
 |-----|------|-----------|
-| E1 Bibliothèque | 🟡 Partielle | Liste des récents de la maquette (vignette, nom, page, date, progression ; ADR 0015), état vide, chargement et erreur, « Ouvrir un fichier » (sélecteur système, bouton flottant au-dessus de la liste), accès aux paramètres, message quand un document reçu d'une autre application est refusé (ADR 0014), menu « ⋮ » avec « Retirer des récents » et « Annuler » (ADR 0016) ; grille (V10) en v1.x, outils en M6 |
+| E1 Bibliothèque | 🟡 Partielle | Liste des récents de la maquette (vignette, nom, page, date, progression ; ADR 0015), état vide, chargement et erreur, « Ouvrir un fichier » (sélecteur système, bouton flottant au-dessus de la liste), accès aux paramètres, message quand un document reçu d'une autre application est refusé (ADR 0014), menu « ⋮ » avec « Retirer des récents » et « Annuler » (ADR 0016), pastille de cadenas des documents protégés (ADR 0017) ; grille (V10) en v1.x, outils en M6 |
 | E2 Lecteur | 🟡 Partielle | Défilement continu ou page par page, zoom 25–800 % net, plein écran, curseur et indicateur de page, « Plus d'options » ; recherche, table des matières en M4 |
 | V6 Options d'affichage | 🟡 Partielle | Section « Défilement » seulement (ADR 0011) ; ajustement, couleurs, plein écran, orientation en M5 |
-| V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible, protégé ; « Retirer des récents » pour un document de la liste (ADR 0016) ; saisie du mot de passe avec V4 |
+| V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible ; « Retirer des récents » pour un document de la liste (ADR 0016) ; un document protégé ouvre V4 (ADR 0017) |
+| V4 Mot de passe | ✅ Faite | Dialogue au-dessus du lecteur, champ masqué avec œil, erreur annoncée, essais illimités, mot de passe jamais gardé (ADR 0017) ; essais sur appareil à faire |
 | E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; « Données et confidentialité » : « Vider les récents » avec confirmation (ADR 0016) ; thème, rendu, lecture en M5 |
-| Autres (E4–E10, V1–V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| Autres (E4–E10, V1–V3, V5, V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette

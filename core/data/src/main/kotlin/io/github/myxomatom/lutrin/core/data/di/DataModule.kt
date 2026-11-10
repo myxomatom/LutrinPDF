@@ -15,6 +15,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.myxomatom.lutrin.core.data.db.LutrinDatabase
+import io.github.myxomatom.lutrin.core.data.document.ContentResolverDocumentNameResolver
 import io.github.myxomatom.lutrin.core.data.document.ContentResolverDocumentTypeResolver
 import io.github.myxomatom.lutrin.core.data.recents.ContentResolverDocumentAccess
 import io.github.myxomatom.lutrin.core.data.recents.DocumentAccess
@@ -25,6 +26,7 @@ import io.github.myxomatom.lutrin.core.data.recents.ThumbnailRenderer
 import io.github.myxomatom.lutrin.core.data.recents.ThumbnailStore
 import io.github.myxomatom.lutrin.core.data.settings.DataStoreSettingsRepository
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
+import io.github.myxomatom.lutrin.core.domain.document.DocumentNameResolver
 import io.github.myxomatom.lutrin.core.domain.document.DocumentTypeResolver
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
@@ -46,6 +48,10 @@ internal abstract class DataModule {
     /** MIME types of incoming documents, asked to their providers (ADR 0014). */
     @Binds
     abstract fun bindDocumentTypeResolver(resolver: ContentResolverDocumentTypeResolver): DocumentTypeResolver
+
+    /** Names of documents, asked to their providers (password dialog, ADR 0017). */
+    @Binds
+    abstract fun bindDocumentNameResolver(resolver: ContentResolverDocumentNameResolver): DocumentNameResolver
 
     /** Recent documents and reading positions, stored with Room (ADR 0015). */
     @Binds

@@ -99,8 +99,74 @@ class RoomRecentDocumentsRepositoryTest {
         )
     }
 
-    private fun opening(id: Int, page: Int = 0, pageCount: Int = 8) =
-        DocumentOpening(uri(id), pageCount = pageCount, page = page, fallbackName = "document$id.pdf")
+    private fun opening(id: Int, page: Int = 0, pageCount: Int = 8, isProtected: Boolean = false) =
+        DocumentOpening(uri(id), pageCount, page, fallbackName = "document$id.pdf", isProtected = isProtected)
+
+    @Test
+    fun `records a protected document without thumbnail`() = runTest {
+        val repository = repository()
+
+        val recorded = repository.recordOpening(opening(1, page = 2, isProtected = true))
+
+        assertThat(recorded?.isProtected).isTrue()
+        assertThat(recorded?.isThumbnailOutdated).isFalse()
+        assertThat(repository.findByUri(uri(1))?.isProtected).isTrue()
+        assertThat(repository.findByUri(uri(1))?.lastPage).isEqualTo(2)
+        assertThat(access.kept).containsExactly(uri(1))
+    }
+
+    @Test
+    fun `never opens a protected document to draw its thumbnail`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1, isProtected = true))
+
+        val outdatedOnly = repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = true)
+        val forced = repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = false)
+
+        assertThat(outdatedOnly).isFalse()
+        assertThat(forced).isFalse()
+        assertThat(renderer.rendered).isEmpty()
+        assertThat(repository.findByUri(uri(1))?.thumbnailPath).isNull()
+    }
+
+    @Test
+    fun `a document that becomes protected loses its thumbnail`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+        repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = false)
+        val picture = File(repository.findByUri(uri(1))?.thumbnailPath.orEmpty())
+        clock.advance()
+
+        repository.recordOpening(opening(1, isProtected = true))
+
+        assertThat(picture.exists()).isFalse()
+        assertThat(repository.findByUri(uri(1))?.thumbnailPath).isNull()
+        assertThat(repository.findByUri(uri(1))?.thumbnailDrawnAt).isNull()
+    }
+
+    @Test
+    fun `a document opened later without password gets its thumbnail again`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1, isProtected = true))
+        clock.advance()
+
+        repository.recordOpening(opening(1))
+
+        assertThat(repository.findByUri(uri(1))?.isThumbnailOutdated).isTrue()
+        assertThat(repository.updateThumbnail(documentIdFor(uri(1)), onlyIfOutdated = true)).isTrue()
+        assertThat(renderer.rendered).containsExactly(uri(1))
+    }
+
+    @Test
+    fun `removing a protected document releases its permission`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1, isProtected = true))
+
+        assertThat(repository.remove(documentIdFor(uri(1)))).isTrue()
+
+        assertThat(access.released).containsExactly(uri(1))
+        assertThat(repository.findByUri(uri(1))).isNull()
+    }
 
     @Test
     fun `starts with an empty list`() = runTest {

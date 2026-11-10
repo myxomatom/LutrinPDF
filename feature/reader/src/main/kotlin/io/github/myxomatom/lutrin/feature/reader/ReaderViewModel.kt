@@ -36,6 +36,14 @@ import kotlinx.coroutines.launch
  * list can be removed from it from the error screen (V8, [onRemoveFromRecents]). Also follows the
  * scroll mode setting (F03) and remembers the current page, so that switching mode keeps it.
  *
+ * An encrypted document asks for its password ([ReaderUiState.PasswordRequired], V4, F10); each
+ * password tried ([onPasswordSubmit]) goes through the same opening as any document, so that a
+ * protected document starts at its saved page and enters the recent list, flagged as protected
+ * (ADR 0017). The password is never kept (`AGENTS.md` §1.8, §9): not in the state, not in a
+ * property, not in [SavedStateHandle] nor in the navigation arguments; it lives only while the
+ * engine checks it. After a rotation the question is asked again with an empty field; after the
+ * death of the process the document is opened again from its URI and asks again.
+ *
  * @param observeSettings reads the scroll mode, shared by every document (ADR 0011).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param history the recent list and the reading position of this document.
@@ -87,6 +95,25 @@ constructor(
     }
 
     /**
+     * Tries [password] on the encrypted document. Ignored unless the password is asked
+     * ([ReaderUiState.PasswordRequired]), while a previous one is being checked, or when it is
+     * empty. A wrong password asks again ([ReaderUiState.PasswordRequired.isIncorrect]); there is
+     * no limit on the number of attempts (ADR 0017).
+     *
+     * The password is turned into the engine's `String` only for the call, and no reference to
+     * it is kept once the engine has answered.
+     *
+     * @param password what the user typed; read once, never stored.
+     */
+    fun onPasswordSubmit(password: CharSequence) {
+        val asked = documentState.value as? ReaderUiState.PasswordRequired ?: return
+        if (asked.isChecking || password.isEmpty()) return
+        documentState.value = asked.copy(isChecking = true)
+        val attempt = password.toString()
+        viewModelScope.launch { open(attempt) }
+    }
+
+    /**
      * Removes the document that could not be opened from the recent list (V8, ADR 0016). The
      * removal completes even if the reader closes right after. Ignored unless the error screen
      * offers it.
@@ -98,27 +125,43 @@ constructor(
         documentState.value = error.copy(inRecents = false)
     }
 
-    private suspend fun open() {
+    /**
+     * Opens the document, with the user password of an encrypted one. A document opened with a
+     * password is recorded as protected; one restricted by its owner only opens without any.
+     */
+    private suspend fun open(password: String? = null) {
         engine
-            .open(DocumentSource.FromUri(uri.toUri()))
-            .onSuccess { opened ->
-                document = opened
-                val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
-                val title = opened.metadata.title ?: displayName(uri)
-                // Before the Ready state: the screen starts on the page of its first Ready state.
-                currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
-                documentState.value =
-                    ReaderUiState.Ready(
-                        title = title,
-                        pageSizes = sizes,
-                        renderer = PageRenderer(opened, sizes, renderDispatcher),
-                    )
-                val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title)
-                viewModelScope.launch { history.follow(opening, currentPage) }
-            }.onFailure { error ->
-                documentState.value = ReaderUiState.Error(error.toReaderError(), inRecents = history.isRecent(uri))
-            }
+            .open(DocumentSource.FromUri(uri.toUri()), password)
+            .onSuccess { opened -> show(opened, isProtected = password != null) }
+            .onFailure { error -> documentState.value = failureState(error) }
     }
+
+    private suspend fun show(opened: PdfDocument, isProtected: Boolean) {
+        document = opened
+        val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
+        val title = opened.metadata.title ?: displayName(uri)
+        // Before the Ready state: the screen starts on the page of its first Ready state.
+        currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
+        documentState.value =
+            ReaderUiState.Ready(
+                title = title,
+                pageSizes = sizes,
+                renderer = PageRenderer(opened, sizes, renderDispatcher),
+            )
+        val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title, isProtected)
+        viewModelScope.launch { history.follow(opening, currentPage) }
+    }
+
+    private suspend fun failureState(error: Throwable): ReaderUiState = when (error) {
+        is PdfError.PasswordRequired -> ReaderUiState.PasswordRequired(documentName())
+        is PdfError.IncorrectPassword -> ReaderUiState.PasswordRequired(documentName(), isIncorrect = true)
+        else -> ReaderUiState.Error(error.toReaderError(), inRecents = history.isRecent(uri))
+    }
+
+    /** Name of the document in the password dialog; looked up once, then kept for the next attempts. */
+    private suspend fun documentName(): String = (documentState.value as? ReaderUiState.PasswordRequired)?.documentName
+        ?: history.documentName(uri)
+        ?: displayName(uri).removeSuffix(PDF_EXTENSION)
 
     override fun onCleared() {
         // The debounced save is cancelled with the ViewModel: the page shown last is written now.
@@ -134,9 +177,14 @@ constructor(
  */
 internal fun displayName(uri: String): String = Uri.decode(uri.substringAfterLast('/').substringAfterLast("%2F"))
 
-/** Maps an engine failure to what the screen explains. */
+/** Extension removed from a name taken from the URI, as the library does (ADR 0015). */
+private const val PDF_EXTENSION = ".pdf"
+
+/**
+ * Maps an engine failure to what the error screen explains. The password errors never reach it:
+ * the reader asks for the password instead ([ReaderUiState.PasswordRequired]).
+ */
 internal fun Throwable.toReaderError(): ReaderError = when (this) {
-    is PdfError.PasswordRequired, is PdfError.IncorrectPassword -> ReaderError.PASSWORD_REQUIRED
     is PdfError.UnsupportedFormat -> ReaderError.UNSUPPORTED_FORMAT
     is PdfError.NotAccessible -> ReaderError.NOT_ACCESSIBLE
     else -> ReaderError.UNREADABLE
