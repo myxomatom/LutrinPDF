@@ -116,6 +116,12 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
 
+**Propositions de design (2026-11-10, non adoptées)** : `docs/design/proposals/` contient des
+maquettes avant / après pour E1, E2 et E9 (carte « Reprendre la lecture », barre flottante et
+curseur fin dans le lecteur, écran de résultat). À trancher par le mainteneur ; toute adoption
+passe par un ADR. Le curseur par défaut de Material 3, jugé trop lourd dans l'application
+compilée, peut être allégé sans attendre le reste (`PageBar` dans `ReaderScreen.kt`).
+
 ## 3. Décisions à connaître
 
 - Toutes les décisions sont dans `docs/adr/` (0001 à 0017) et dans les points tranchés de

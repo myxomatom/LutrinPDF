@@ -1,0 +1,49 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Styles communs aux maquettes de proposition (docs/design/proposals). Hors ligne, sans script. */
+@font-face{font-family:Roboto;font-weight:400;src:url(../assets/fonts/roboto-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:500;src:url(../assets/fonts/roboto-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Roboto;font-weight:700;src:url(../assets/fonts/roboto-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Fraunces;font-weight:500;src:url(fonts/fraunces-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Fraunces;font-weight:600;src:url(fonts/fraunces-latin-600-normal.woff2) format("woff2")}
+
+html{background:#DADCE0}
+body{margin:0;display:flex;justify-content:center;padding:40px 0}
+button{font-family:inherit;cursor:pointer}
+h1,h2,p{margin:0}
+
+.phone{width:390px;height:844px;box-sizing:border-box;background:#F8F9FC;color:#191C20;
+  font-family:Roboto,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;
+  position:relative;border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.serif{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-0.2px}
+.muted{color:#43474E}
+
+/* Icônes et boutons icône (cible 48 dp) */
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#43474E;padding:0;flex:none}
+
+/* Vignette de page : représente le rendu réel de la première page par PdfEngine */
+.pg{background:#FFFFFF;border:1px solid #C3C6CF;border-radius:4px;box-sizing:border-box;position:relative;flex:none;overflow:hidden}
+.pg .l{height:3px;background:#D9DCE2;border-radius:2px;margin-bottom:5px}
+.pg .l.h{background:#8A8E96}
+.pg.sm{width:52px;height:68px;padding:9px 7px}
+.lock{position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;border-radius:12px;background:#D3E4FF;color:#001C38;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #F8F9FC}
+.lock .i{width:14px;height:14px}
+
+/* Ligne de document */
+.row{display:flex;align-items:center;gap:16px;padding:8px 4px 8px 16px}
+.row .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.row .t{font-size:16px;line-height:22px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m{font-size:14px;line-height:20px;color:#43474E}
+.bar{height:4px;border-radius:2px;background:#E1E2E8;width:120px;overflow:hidden;margin-top:2px}
+.bar>div{height:100%;background:#2A5B8C;border-radius:2px}
+
+/* Page du lecteur (rendu du moteur) */
+.sheet{background:#FFFFFF;width:342px;height:484px;box-sizing:border-box;padding:40px 34px;box-shadow:0 1px 3px rgba(0,0,0,0.18);flex:none}
+.ln{height:6px;background:#D9DCE2;border-radius:3px;margin-bottom:9px}
+
+/* Boutons */
+.btn{height:48px;border:0;border-radius:24px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 24px}
+.btn.primary{background:#2A5B8C;color:#FFFFFF}
+.btn.tonal{background:#D7E3F7;color:#101C2B}
+.btn.text{background:transparent;color:#2A5B8C}
+.btn.outlined{background:transparent;color:#2A5B8C;border:1px solid #73777F}

@@ -16,7 +16,8 @@ docs/design/
 ├── design-tokens.json   ← couleurs, typographie, formes, espacements
 ├── screens/*.html       ← une page HTML autonome par écran (hors ligne, sans script)
 ├── png/*.png            ← captures à 2× (780 × 1688 px), lisibles par l'agent
-└── assets/fonts/        ← Roboto + Roboto Mono (OFL 1.1), pour un rendu hors ligne
+├── assets/fonts/        ← Roboto + Roboto Mono (OFL 1.1), pour un rendu hors ligne
+└── proposals/           ← propositions avant / après, **non adoptées** (voir son README)
 ```
 
 ## Intégration dans le dépôt
