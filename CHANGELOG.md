@@ -10,6 +10,18 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Bibliothèque (E1) au nouveau design (ADR 0018) : titre « Lutrin » en grand (Fraunces, 32 sp) ;
+  carte **« Reprendre la lecture »** pour le dernier document ouvert, avec sa première page en
+  grand, légèrement inclinée, son titre, « Page 3 sur 8 · aujourd'hui, 20:41 », une barre de
+  progression et « Continuer » ; toute la carte ouvre le document (une seule cible pour
+  TalkBack, décrite « Reprendre la lecture : …, page 3 sur 8 »), et son bouton « ⋮ » propose
+  « Retirer des récents » comme les lignes (le document suivant prend alors la carte, « Annuler »
+  le remet). Sous la carte, « Récents » et « N autres documents » (absent s'il n'y a qu'un
+  document), vignettes de 52 × 68 dp et titres en `titleMedium`. La barre de progression ne
+  s'affiche plus que pour une lecture en cours : un document d'une page ou lu jusqu'au bout
+  montre « 4 pages · hier » ou « 1 page · 19 oct. ». Bouton « Ouvrir un fichier » en couleur
+  primaire. Les pages restent blanches en thème sombre. En grande police, le texte de la carte
+  passe sous la page.
 - Nouveau design visuel, fondations (ADR 0018) : les titres (barres, feuilles, dialogues, grands
   titres) passent en **Fraunces 600**, police embarquée dans `core:ui` (TTF statique de 71 Kio,
   latin et latin étendu, SIL OFL 1.1, aucun téléchargement) ; les textes courants restent sur la

@@ -162,7 +162,12 @@ flowchart LR
   au document ; il enregistre la page une seconde après le dernier changement et à sa
   fermeture (portée `@ApplicationScope`).
 - Les vignettes sont dessinées quand la bibliothèque montre une ligne dont la vignette manque
-  ou date d'avant la dernière ouverture, jamais pendant l'ouverture du lecteur.
+  ou date d'avant la dernière ouverture (ou d'un ancien format), jamais pendant l'ouverture du
+  lecteur. Un seul fichier de 416 × 552 px au plus sert la carte « Reprendre la lecture » et
+  les lignes, qui le décodent sous-échantillonné (`ThumbnailLoader`, ADR 0018).
+- La bibliothèque montre le document le plus récent dans la carte « Reprendre la lecture » et
+  les autres dessous (`LibraryUiState.Content(resume, others)`) ; la barre de progression
+  n'apparaît que pour une lecture en cours (`RecentDocument.isReadingInProgress`).
 
 ## Documents protégés (`feature:reader`, ADR 0017)
 

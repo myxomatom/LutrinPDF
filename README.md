@@ -9,8 +9,9 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 
 > 🚧 **Statut : jalon M3 (fichiers et récents) terminé, M4 (navigation et texte) à venir.** On peut ouvrir un PDF depuis la
 > bibliothèque, ou depuis une autre application avec « Ouvrir avec » ou « Partager », et le
-> lire : défilement continu ou page par page, zoom, plein écran. La bibliothèque liste les
-> documents récents, avec leur vignette, et les rouvre à la page où la lecture s'est arrêtée ;
+> lire : défilement continu ou page par page, zoom, plein écran. La bibliothèque propose de
+> reprendre le dernier document lu (carte « Reprendre la lecture ») et liste les autres
+> documents récents, avec leur vignette ; elle les rouvre à la page où la lecture s'est arrêtée ;
 > un document se retire de la liste (menu « ⋮ » ou écran d'erreur) et la liste se vide depuis
 > les paramètres. Un PDF protégé par mot de passe s'ouvre après saisie du mot de passe, qui
 > n'est jamais enregistré. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.

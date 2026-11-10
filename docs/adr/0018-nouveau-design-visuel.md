@@ -128,9 +128,41 @@ que le défilement continu (page atteinte au relâchement), à confirmer par l'i
   toutes les captures d'écran de référence changent (police) ; la police ne couvre pas tous les
   scripts (un titre non latin, par exemple un nom de document chinois, retombe sur la police
   du système) ; `AlertDialog` et `TopAppBar` prennent automatiquement les titres en serif.
-- **Point de vigilance** : les vignettes des récents sont dessinées à 44 × 58 dp
-  (`PdfThumbnailRenderer`) ; la vignette de la carte de reprise et celles de 52 × 68 dp
-  demandent une résolution supérieure (étape E1). Le contraste des paires ambre a été mesuré
+- **Vignettes (étape E1, 2026-11-10)** : `PdfThumbnailRenderer` dessine désormais la première
+  page dans 416 × 552 px (la vignette de 104 × 138 dp de la carte en xxxhdpi, × 4) au lieu de
+  176 × 232 px : **un seul fichier par document**, que les lignes (52 × 68 dp) décodent
+  sous-échantillonné (`inSampleSize`, jamais plus petit que l'affichage). Coût mesuré sur des
+  pages de texte : 60 à 90 Ko de PNG par vignette (contre 9 à 20 Ko), soit 4,5 Mo au plus pour
+  50 récents ; en mémoire, environ 0,9 Mo pour la carte et 0,23 Mo par ligne visible en
+  xxxhdpi. Les fichiers portent leur format (`<id>-<date>.v2.png`) : une vignette de l'ancien
+  format (sans `.v2`) compte comme périmée, la bibliothèque la redessine en la montrant (l'ancienne
+  image reste affichée le temps du dessin) et l'ancien fichier est supprimé. Pas de migration
+  Room. Ceci **amende l'ADR 0015 §7**.
+- **Choix de l'étape E1 (2026-11-10)** :
+  - la carte présente toujours le **document le plus récent**, même protégé (page blanche à
+    lignes et cadenas, jamais de vignette), d'une seule page ou lu jusqu'au bout ; retirer ce
+    document fait monter le suivant dans la carte (« Annuler » le remet, ADR 0016) ;
+  - **« Lecture en cours »** = arrêté avant la dernière page d'un document de plusieurs pages
+    (`RecentDocument.isReadingInProgress`) : « Page 3 sur 8 » et barre ; sinon « 4 pages · hier »
+    ou « 1 page · 19 oct. », sans barre. La page 1 d'un document de plusieurs pages est une
+    lecture en cours (« Page 1 sur 2 » de la maquette). Le cas « jamais ouvert » de la maquette
+    n'existe pas encore : seule une ouverture réussie entre dans la liste (ADR 0015 §10) ; il
+    apparaîtra avec les documents créés par les outils (« Ajouté aux récents », E9, M6) ;
+  - **options du document de la carte** : un bouton « ⋮ » (cible de 48 dp, « Plus d'actions
+    pour … ») à droite de « Continuer », avec le même menu que les lignes. Il est visible et
+    atteignable par TalkBack comme un élément distinct, contrairement à un appui long ;
+  - **cible unique** : toute la carte ouvre le document ; « Continuer » n'est qu'un dessin de
+    bouton. Sa description (« Reprendre la lecture : Contrat de location, page 3 sur 8 », puis
+    « document protégé » s'il y a lieu) est ce que dit TalkBack ; les textes restent fusionnés
+    dans la carte pour le contrôle vocal ;
+  - titre sur deux lignes au plus, coupé par « … » ; **grande police** (échelle ≥ 1,5) : seuls
+    le surtitre et le titre restent à côté de la page, le reste passe dessous sur toute la
+    largeur ; les pages (vignettes, page d'attente) restent blanches dans le thème sombre.
+  - **Écarts restants avec la maquette E1** : pas d'icônes « grille » ni « outils » (fonctions
+    à venir) ; la carte mesure 10 dp de plus (la ligne de « Continuer » a la hauteur du bouton
+    « ⋮ », 48 dp) ; le bouton flottant garde la marge de 16 dp de Material 3 (24 dp sur la
+    maquette) ; l'icône des paramètres reste l'engrenage de Material.
+- **Contraste** : le contraste des paires ambre a été mesuré
   (blanc sur `#7C5800` : 6,5 ; `#271900` sur `#FFDEA6` : 13,3 ; `#412D00` sur `#F5BF48` : 7,8 ;
   `#FFDEA6` sur `#5D4200` : 7,2), tous au-dessus de 4,5 (WCAG AA).
 - **Suite** : E1, E2 (avec le réglage de l'aperçu dans V6 et son test) et la transition

@@ -116,6 +116,9 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
    (le fichier a pu changer), une à la fois (verrou du dépôt), une seule demande par ouverture ;
    l'ancienne image reste affichée jusqu'au nouveau dessin. Le moteur est injecté
    paresseusement : la bibliothèque ne charge pas la bibliothèque native de MuPDF au démarrage.
+   **Amendé par l'ADR 0018** : la page tient désormais dans 416 × 552 px (carte « Reprendre la
+   lecture », 104 × 138 dp en xxxhdpi), fichiers `<documentId>-<date>.v2.png` ; une vignette de
+   l'ancien format est tenue pour périmée et redessinée quand la bibliothèque la montre.
    La bibliothèque décode seulement les fichiers des lignes visibles (`ThumbnailLoader`, sur le
    dispatcher d'E/S injecté).
 8. **Page de départ** (`GetStartPageUseCase`) : la page demandée explicitement (argument de
