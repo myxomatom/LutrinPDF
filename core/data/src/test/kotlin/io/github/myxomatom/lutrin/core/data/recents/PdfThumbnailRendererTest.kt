@@ -47,9 +47,9 @@ class PdfThumbnailRendererTest {
         val render = document.renders.single()
         assertThat(render.pageIndex).isEqualTo(0)
         val bitmap = BitmapFactory.decodeFile(destination.path)
-        // A4 fits the 176 x 232 box by its height.
-        assertThat(bitmap.height).isEqualTo(232)
-        assertThat(bitmap.width).isEqualTo(164)
+        // A4 fits the 416 x 552 box (104 x 138 dp at x 4) by its height.
+        assertThat(bitmap.height).isEqualTo(552)
+        assertThat(bitmap.width).isEqualTo(390)
         assertThat(bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)).isEqualTo(FAKE_PAGE_COLOR)
         assertThat(document.isClosed).isTrue()
     }
@@ -61,8 +61,8 @@ class PdfThumbnailRendererTest {
         renderer(engine).render(URI, destination)
 
         val bitmap = BitmapFactory.decodeFile(destination.path)
-        assertThat(bitmap.width).isEqualTo(176)
-        assertThat(bitmap.height).isEqualTo(124)
+        assertThat(bitmap.width).isEqualTo(416)
+        assertThat(bitmap.height).isEqualTo(294)
     }
 
     @Test

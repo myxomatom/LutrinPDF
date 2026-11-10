@@ -30,6 +30,10 @@ import kotlinx.coroutines.withContext
  * private and never backed up; one PNG file per entry, named after its identifier and the
  * date it was drawn, so that a new drawing has a new name and the library shows it at once.
  *
+ * The name also carries the format of the picture ([isCurrent]): a file of an older format,
+ * drawn smaller before the resume card of the library (ADR 0018), is treated as outdated, drawn
+ * again the next time the library shows it, and then deleted.
+ *
  * @property directory where the files are; created on the first write.
  */
 internal class ThumbnailStore(val directory: File) {
@@ -42,7 +46,14 @@ internal class ThumbnailStore(val directory: File) {
      * @param documentId the entry.
      * @param drawnAtMillis when it is drawn, in milliseconds since the epoch.
      */
-    fun newName(documentId: String, drawnAtMillis: Long): String = "$documentId-$drawnAtMillis$EXTENSION"
+    fun newName(documentId: String, drawnAtMillis: Long): String = "$documentId-$drawnAtMillis$CURRENT_FORMAT"
+
+    /**
+     * Whether the file called [name] was drawn in the current format, by [PdfThumbnailRenderer] at
+     * its current size. Files of format 1 (`<id>-<date>.png`, 176 × 232 px at most, ADR 0015)
+     * are not: too small for the resume card.
+     */
+    fun isCurrent(name: String): Boolean = name.endsWith(CURRENT_FORMAT)
 
     /** Deletes the file called [name], if it exists. */
     fun delete(name: String) {
@@ -50,7 +61,12 @@ internal class ThumbnailStore(val directory: File) {
     }
 
     private companion object {
-        const val EXTENSION = ".png"
+        /**
+         * End of the name of a file in the current format (2: [PdfThumbnailRenderer.MAX_WIDTH_PX]
+         * × [PdfThumbnailRenderer.MAX_HEIGHT_PX]). Change it whenever that size changes, so that
+         * the existing files are drawn again.
+         */
+        const val CURRENT_FORMAT = ".v2.png"
     }
 }
 
@@ -66,9 +82,11 @@ internal fun interface ThumbnailRenderer {
 
 /**
  * [ThumbnailRenderer] going through [PdfEngine], the only way to reach MuPDF (ADR 0001, 0015).
- * The page fits in [MAX_WIDTH_PX] × [MAX_HEIGHT_PX] pixels: 44 × 58 dp of the E1 mock-up at
- * the densest screens (xxxhdpi, × 4). The PNG is written to a temporary file next to the
- * destination, then moved over it, so that no partial file is ever visible.
+ * The page fits in [MAX_WIDTH_PX] × [MAX_HEIGHT_PX] pixels: the 104 × 138 dp picture of the
+ * resume card of the library (ADR 0018) at the densest screens (xxxhdpi, × 4). One file serves
+ * every size: the rows of the list (52 × 68 dp) decode it subsampled, so that memory follows
+ * what is shown. The PNG is written to a temporary file next to the destination, then moved
+ * over it, so that no partial file is ever visible.
  *
  * @param engine opens the document, independently of the reader. Lazy: the library must not load
  *   the MuPDF native library at start-up, before a thumbnail is actually drawn.
@@ -125,11 +143,11 @@ internal class PdfThumbnailRenderer @Inject constructor(
 
     /** Size limits of a thumbnail. */
     companion object {
-        /** Largest width of a thumbnail, in pixels. */
-        const val MAX_WIDTH_PX: Float = 176f
+        /** Largest width of a thumbnail, in pixels: 104 dp × 4. */
+        const val MAX_WIDTH_PX: Float = 416f
 
-        /** Largest height of a thumbnail, in pixels. */
-        const val MAX_HEIGHT_PX: Float = 232f
+        /** Largest height of a thumbnail, in pixels: 138 dp × 4. */
+        const val MAX_HEIGHT_PX: Float = 552f
 
         /** Ignored by PNG, which is lossless; required by [Bitmap.compress]. */
         private const val PNG_QUALITY = 100

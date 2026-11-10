@@ -35,6 +35,10 @@ import kotlinx.coroutines.withContext
  * the library never draw the same one twice at once. Removals take the same lock, so that a
  * thumbnail drawn while its entry is removed is never left behind.
  *
+ * A thumbnail of an older format ([ThumbnailStore.isCurrent]), too small for the resume card of
+ * the library (ADR 0018), is reported outdated: the library draws it again when it shows it, and
+ * the old file is deleted then, like any replaced thumbnail.
+ *
  * @param dao the `recent_documents` table.
  * @param access the provider's description of documents and the persisted permissions.
  * @param thumbnails where the thumbnail files are.
@@ -178,7 +182,9 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         lastOpenedAt = Instant.ofEpochMilli(lastOpenedAt),
         lastPage = lastPage,
         thumbnailPath = thumbnailFile?.let(thumbnails::file)?.takeIf { it.exists() }?.absolutePath,
-        thumbnailDrawnAt = thumbnailDrawnAt?.let(Instant::ofEpochMilli),
+        // A picture of an older format counts as never drawn: outdated, so drawn again when shown.
+        thumbnailDrawnAt = thumbnailDrawnAt?.takeIf { thumbnailFile?.let(thumbnails::isCurrent) == true }
+            ?.let(Instant::ofEpochMilli),
         isProtected = isProtected,
     )
 }
