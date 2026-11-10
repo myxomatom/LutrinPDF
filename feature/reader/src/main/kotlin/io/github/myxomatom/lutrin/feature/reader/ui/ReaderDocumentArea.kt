@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
+import io.github.myxomatom.lutrin.core.ui.transition.sharedDocumentPage
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import kotlinx.coroutines.launch
@@ -40,6 +42,8 @@ private val FullscreenIndicatorPadding = 16.dp
  * @param controlsVisible whether the bars are shown (false in full screen, F14).
  * @param onTap called on a single tap on the pages.
  * @param modifier modifier applied to the area; it keeps clear of the top bar and the sides.
+ * @param pageTransition the transition of the page shown, back to its thumbnail in the library
+ *   (ADR 0019); `null` when the reader has none.
  */
 @Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
@@ -52,9 +56,13 @@ internal fun ReaderDocumentArea(
     controlsVisible: Boolean,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
+    pageTransition: DocumentTransition? = null,
 ) {
     val page = navigator.currentPage
     val pageCount = state.pageSizes.size
+    val sharedPage = sharedPageIndex(page, zoom, pageTransition != null)?.let {
+        SharedPage(it, Modifier.sharedDocumentPage(pageTransition))
+    }
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
             state = state,
@@ -64,6 +72,7 @@ internal fun ReaderDocumentArea(
             onTap = onTap,
             contentDescription = stringResource(R.string.reader_document, page + 1, pageCount),
             bottomClearance = if (controlsVisible) floatingPageBarClearance() else 0.dp,
+            sharedPage = sharedPage,
         )
         if (scrubber.isPreviewing) PreviewScrim()
         if (controlsVisible) {
@@ -85,6 +94,7 @@ private fun DocumentPages(
     onTap: () -> Unit,
     contentDescription: String,
     bottomClearance: Dp,
+    sharedPage: SharedPage?,
 ) {
     when (navigator) {
         is ContinuousNavigator ->
@@ -97,6 +107,7 @@ private fun DocumentPages(
                 onTap = onTap,
                 contentDescription = contentDescription,
                 bottomClearance = bottomClearance,
+                sharedPage = sharedPage,
             )
 
         is PagedNavigator ->
@@ -109,6 +120,7 @@ private fun DocumentPages(
                 onTap = onTap,
                 contentDescription = contentDescription,
                 bottomClearance = bottomClearance,
+                sharedPage = sharedPage,
             )
     }
 }

@@ -47,6 +47,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.ui.theme.titleLargeCompact
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
+import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
@@ -67,6 +69,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
             onBack()
         },
         onPasswordSubmit = viewModel::onPasswordSubmit,
+        documentId = viewModel.documentId,
     )
 }
 
@@ -85,6 +88,9 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
  *   calls [onBack].
+ * @param documentId identifier of the document in the recent list, linking its thumbnail in the
+ *   library to the page of the reader (ADR 0019); without it, or outside of the app's navigation,
+ *   the reader has no shared element and only fades in and out.
  */
 @Composable
 fun ReaderScreen(
@@ -96,16 +102,31 @@ fun ReaderScreen(
     onPagePreviewChange: (Boolean) -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
+    documentId: String? = null,
 ) {
-    when (state) {
-        ReaderUiState.Loading -> LoadingContent(modifier)
+    // The opening page and the reader's page each hold their own shared element; never both at once.
+    val openingTransition = rememberDocumentTransition(documentId)
+    val openingPhase = rememberOpeningPagePhase(openingTransition, documentLoading = state == ReaderUiState.Loading)
+    val pageTransition = rememberDocumentTransition(documentId.takeIf { openingPhase == OpeningPagePhase.Gone })
+    Box(modifier.fillMaxSize()) {
+        when (state) {
+            ReaderUiState.Loading -> LoadingContent()
 
-        is ReaderUiState.Error -> ReaderErrorContent(state, onBack, onRemoveFromRecents, modifier)
+            is ReaderUiState.Error -> ReaderErrorContent(state, onBack, onRemoveFromRecents)
 
-        is ReaderUiState.PasswordRequired -> ReaderPasswordContent(state, onBack, onPasswordSubmit, modifier)
+            is ReaderUiState.PasswordRequired -> ReaderPasswordContent(state, onBack, onPasswordSubmit)
 
-        is ReaderUiState.Ready ->
-            ReaderContent(state, onBack, onPageChange, onScrollModeChange, onPagePreviewChange, modifier)
+            is ReaderUiState.Ready ->
+                ReaderContent(
+                    state = state,
+                    onBack = onBack,
+                    onPageChange = onPageChange,
+                    onScrollModeChange = onScrollModeChange,
+                    onPagePreviewChange = onPagePreviewChange,
+                    pageTransition = pageTransition,
+                )
+        }
+        OpeningPage(openingTransition, openingPhase)
     }
 }
 
@@ -126,6 +147,7 @@ private fun ReaderContent(
     onScrollModeChange: (ScrollMode) -> Unit,
     onPagePreviewChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    pageTransition: DocumentTransition? = null,
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
@@ -155,6 +177,7 @@ private fun ReaderContent(
             controlsVisible = controlsVisible,
             onTap = { controlsVisible = !controlsVisible },
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            pageTransition = pageTransition,
         )
     }
     if (optionsVisible) {

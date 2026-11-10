@@ -163,6 +163,15 @@ class ReaderViewModelTest {
     }
 
     @Test
+    fun `the document identifier is the one of the recent list, known before opening`() = runTest(dispatcher) {
+        // Never opened: the key of the thumbnail transition does not wait for the engine (ADR 0019).
+        val viewModel = newViewModel(FakePdfEngine())
+
+        assertThat(viewModel.documentId).isEqualTo(documentIdFor(uri))
+        assertThat(viewModel.uiState.value).isEqualTo(ReaderUiState.Loading)
+    }
+
+    @Test
     fun `display name decodes the last path segment`() {
         assertThat(
             displayName("content://provider/tree/primary%3ADocs%2Frapport%20final.pdf"),

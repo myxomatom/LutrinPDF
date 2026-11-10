@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
+import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
@@ -69,6 +70,13 @@ constructor(
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
     private var document: PdfDocument? = null
+
+    /**
+     * Identifier of the document in the recent list (`documentIdFor`, ADR 0015), known before it
+     * is opened: the key of the shared element linking its thumbnail in the library and its page
+     * in the reader (ADR 0019).
+     */
+    val documentId: String = documentIdFor(uri)
 
     /** State of the screen; [ReaderUiState.Ready] once the document and the settings are read. */
     val uiState: StateFlow<ReaderUiState> =

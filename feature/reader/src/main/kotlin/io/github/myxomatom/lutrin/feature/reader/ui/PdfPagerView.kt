@@ -62,6 +62,7 @@ private val PAGE_MARGIN = 16.dp
  * @param contentDescription what TalkBack announces for the document area (F18).
  * @param bottomClearance height of the floating bar laid over the bottom of the pages (ADR 0018):
  *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
+ * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  */
 @Composable
 internal fun PdfPagerView(
@@ -75,6 +76,7 @@ internal fun PdfPagerView(
     modifier: Modifier = Modifier,
     nightMode: Boolean = false,
     bottomClearance: Dp = 0.dp,
+    sharedPage: SharedPage? = null,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -96,6 +98,7 @@ internal fun PdfPagerView(
                 pagerMoving = pagerState.isScrollInProgress,
                 nightMode = nightMode,
                 bottomClearance = bottomClearance,
+                sharedPage = sharedPage,
             )
         }
     }
@@ -129,6 +132,7 @@ private fun ZoomablePage(
     pagerMoving: Boolean,
     nightMode: Boolean,
     bottomClearance: Dp,
+    sharedPage: SharedPage?,
 ) {
     val horizontal = rememberScrollState()
     val vertical = rememberScrollState()
@@ -157,6 +161,7 @@ private fun ZoomablePage(
                     settled = pinch == null && !pagerMoving && !horizontal.isScrollInProgress &&
                         !vertical.isScrollInProgress,
                     nightMode = nightMode,
+                    pageModifier = Modifier.sharedPage(sharedPage, pageIndex),
                 )
             }
         }

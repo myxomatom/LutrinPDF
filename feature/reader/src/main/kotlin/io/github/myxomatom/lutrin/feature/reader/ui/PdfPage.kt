@@ -41,10 +41,10 @@ import kotlinx.coroutines.delay
 private const val DETAIL_DELAY_MS = 150L
 
 /** Shadow lifting the page off the reading background (mockup E2). */
-private val PAGE_ELEVATION = 1.dp
+internal val PAGE_ELEVATION = 1.dp
 
 /** Page background before its rendering arrives (pages are white paper, whatever the theme). */
-private val PAPER = Color.White
+internal val PAPER = Color.White
 
 /** Page background in night mode, matching the inverted rendering (design tokens, reader.pageNight). */
 private val PAPER_NIGHT = Color(0xFF16181C)
@@ -54,6 +54,9 @@ private val PAPER_NIGHT = Color(0xFF16181C)
  * zoomed in beyond "fit width", a sharp rendering of the visible part drawn on top (F02).
  * Both renderings are cancelled when the page leaves the screen. The activity is reported
  * fully drawn once the pages first shown have their base rendering.
+ *
+ * @param pageModifier modifier applied to the page itself, first (the paper, not the margins
+ *   around it): the shared element of the thumbnail transition ([SharedPage], ADR 0019).
  */
 @Composable
 internal fun PdfPage(
@@ -66,6 +69,7 @@ internal fun PdfPage(
     settled: Boolean,
     nightMode: Boolean,
     modifier: Modifier = Modifier,
+    pageModifier: Modifier = Modifier,
 ) {
     val displayedWidth = pageWidthPx(fitWidth, zoom)
     val baseWidth = baseRenderWidth(fitWidth, zoom)
@@ -92,7 +96,7 @@ internal fun PdfPage(
     val density = LocalDensity.current
     Box(modifier, contentAlignment = Alignment.TopCenter) {
         Box(
-            Modifier
+            pageModifier
                 .size(
                     with(density) {
                         displayedWidth.toDp()
