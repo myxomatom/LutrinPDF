@@ -81,4 +81,54 @@ class PageRendererTest {
         assertThat(BitmapCache.defaultMaxBytes(256L * 1024 * 1024)).isEqualTo(64L * 1024 * 1024)
         assertThat(BitmapCache.defaultMaxBytes(4096L * 1024 * 1024)).isEqualTo(128L * 1024 * 1024)
     }
+
+    @Test
+    fun `renders a preview at its width, with the height of the page`() = runTest {
+        val renderer = renderer()
+
+        val preview = renderer.renderPreview(pageIndex = 2, widthPx = 128)
+
+        assertThat(preview?.width).isEqualTo(128)
+        assertThat(preview?.height).isEqualTo(181)
+        assertThat(preview?.getPixel(5, 5)).isEqualTo(FAKE_PAGE_COLOR)
+        with(document.renders.single()) {
+            assertThat(pageIndex).isEqualTo(2)
+            assertThat(region).isEqualTo(PdfRect(0f, 0f, 595f, 842f))
+        }
+    }
+
+    @Test
+    fun `serves a repeated preview from its own cache, apart from the pages`() = runTest {
+        val pages = BitmapCache(maxBytes = 64L * 1024 * 1024)
+        val previews = BitmapCache(maxBytes = 64L * 1024 * 1024)
+        val renderer =
+            PageRenderer(document, document.pageSizes, StandardTestDispatcher(testScheduler), pages, previews)
+        assertThat(renderer.cachedPreview(0, 128)).isNull()
+
+        val first = renderer.renderPreview(0, 128)
+        val second = renderer.renderPreview(0, 128)
+
+        assertThat(second).isSameInstanceAs(first)
+        assertThat(renderer.cachedPreview(0, 128)).isSameInstanceAs(first)
+        assertThat(document.renders).hasSize(1)
+        assertThat(pages.sizeBytes).isEqualTo(0)
+        assertThat(previews.sizeBytes).isEqualTo(128 * 181 * 4)
+        // A page rendered at the same width is not taken for its preview, nor the other way round.
+        assertThat(renderer.renderPage(0, 128, nightMode = false)).isNotSameInstanceAs(first)
+        assertThat(document.renders).hasSize(2)
+    }
+
+    @Test
+    fun `the preview cache stays within its bounds`() = runTest {
+        val bytesPerPreview = 128 * 181 * 4L
+        val previews = BitmapCache(maxBytes = 2 * bytesPerPreview)
+        val renderer =
+            PageRenderer(document, document.pageSizes, StandardTestDispatcher(testScheduler), previewCache = previews)
+
+        (0..2).forEach { renderer.renderPreview(it, 128) }
+
+        assertThat(previews.sizeBytes).isEqualTo(2 * bytesPerPreview)
+        assertThat(renderer.cachedPreview(0, 128)).isNull()
+        assertThat(renderer.cachedPreview(2, 128)).isNotNull()
+    }
 }
