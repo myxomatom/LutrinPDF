@@ -21,7 +21,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app`, `core:data`, `feature:reader` | Extensions Kotlin d'Android |
 | AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
-| Jetpack Compose (BOM) : UI, Material 3 | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1) |
+| Jetpack Compose (BOM) : UI, Material 3, Animation | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1). `animation` (éléments partagés de la transition vignette → lecteur, ADR 0019) était déjà tirée par Material 3 ; `core:ui` la déclare parce qu'il expose ses portées |
 | Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
 | AndroidX DataStore Preferences | 1.2.1 | Apache-2.0 | `core:data` | Préférences enregistrées sur l'appareil (`SPEC.md` §5, ADR 0010) |
 | AndroidX Room (`room-runtime`) | 2.8.5 | Apache-2.0 | `core:data` | Base locale des récents et des positions de lecture (`SPEC.md` §4.1, §5, ADR 0015). Tire AndroidX SQLite 2.6.2 (`sqlite`, `sqlite-framework`, SQLite du système, pas de SQLite embarqué), `room-common`, AndroidX Collection et Annotation, tous Apache-2.0 ; aucune permission. Licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
