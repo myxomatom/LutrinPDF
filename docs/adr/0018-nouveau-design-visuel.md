@@ -96,9 +96,9 @@ Option **A**, décisions du mainteneur du 2026-11-10 :
    de la liste) est l'élément partagé d'une transition vers le lecteur (`SharedTransitionLayout`
    de Compose, aucune dépendance nouvelle). Elle fait partie du design adopté ; une autre étape
    l'implémente. Quand les animations du système sont réduites ou désactivées, l'état final
-   s'affiche sans animation. **Réalisée** : voir l'ADR 0019 (page d'ouverture que la vignette
-   vise pendant que le document s'ouvre, retour vers la vignette, geste de retour prédictif,
-   cas de repli).
+   s'affiche sans animation. **Réalisée** : voir l'ADR 0019 (retour vers la vignette, geste de
+   retour prédictif, cas de repli). **Amendée le 2026-11-10** : après essai sur appareil, l'aller
+   est un simple fondu ; seul le retour replie la page vers la vignette.
 8. **E9 — progression et résultat** : les feuilles sources glissent sous la feuille centrale,
    pourcentage en grand (`displayLarge`) ; au résultat, la première page du PDF créé (vignette
    réelle) remplace la coche, pastille et mention « Ajouté aux récents » dans l'accent chaud,

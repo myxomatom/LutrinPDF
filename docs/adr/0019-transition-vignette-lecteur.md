@@ -1,6 +1,7 @@
 # 0019 — Transition animée vignette → lecteur
 
-- **Statut** : accepté
+- **Statut** : accepté, **amendé le 2026-11-10** (l'aller devient un simple fondu, voir
+  « Amendement » en fin de document)
 - **Date** : 2026-11-10
 - **Décideurs** : le mainteneur (demande de la transition, ADR 0018 §7) ; règles d'attente, de
   repli et mise en œuvre par l'agent de codage
@@ -201,3 +202,40 @@ fondu court **150 ms** (`short3`).
    retour dans l'application : transition revenue.
 7. Sélecteur de fichier et « Ouvrir avec » sur le document de la carte : fondu seulement.
 8. Mode page par page, thème sombre, grande police, paysage, appareil lent.
+
+## Amendement du 2026-11-10 : l'aller devient un simple fondu
+
+**Constat.** Essayée sur son téléphone par le mainteneur après la fusion (PR #24), l'animation
+« aller » (la vignette qui s'agrandit jusqu'à la page d'ouverture, puis le fondu vers le
+document) était buggée et désagréable. Le retour n'a pas été signalé. Le mainteneur demande de
+remplacer l'aller par un simple fondu ou par la transition système, selon le plus simple.
+
+**Décision.**
+
+- **Aller : simple fondu**, celui de 300 ms que le `NavHost` applique déjà à tous les écrans
+  (§3). C'est le plus simple : la transition système d'Android ne s'applique qu'entre
+  activités, alors que la bibliothèque et le lecteur sont deux destinations d'une même activité.
+- **La page d'ouverture disparaît** (`OpeningPage`, `OpeningPagePhase` et leurs tests sont
+  retirés). Le rond de chargement n'est donc plus recouvert pendant une ouverture lente : le
+  point laissé au mainteneur à ce sujet est réglé.
+- **Retour inchangé** : la page affichée se replie vers sa vignette, geste prédictif compris.
+  Pour cela, `app` ne lie plus le document au toucher mais **une fois le lecteur posé**
+  (`DocumentLink`, `core:ui`) : au toucher, le document est seulement « en ouverture » et rien
+  n'est lié, donc aucun élément partagé pendant l'aller ; quand l'entrée de navigation du
+  lecteur passe à `RESUMED`, ce que Navigation Compose ne fait qu'à la fin de la transition, le
+  document devient lié. Revenir à la bibliothèque avant ce moment ne lie rien (simple fondu).
+  `DocumentLink` est enregistré (`rememberSaveable`) comme l'était l'identifiant touché.
+- **Cas de repli inchangés** (§4) pour le retour : document protégé, page zoomée, animations
+  supprimées, sélecteur de fichier, « Ouvrir avec » et partage ne lient rien.
+- **Test** : `sharedDocumentPage` pose la propriété sémantique `SharedDocumentPage` (ignorée par
+  les services d'accessibilité) ; les tests de `app` vérifient qu'aucun élément partagé n'existe
+  pendant l'aller, et que la page et la vignette sont appariées pendant le retour. Ces tests
+  échouent si le document est lié dès le toucher.
+
+**Conséquences.** Ce qui est dit plus haut de la page d'ouverture (§2 « Ce qui se passe », la
+règle d'attente, le fondu croisé en page par page, la vignette agrandie floue) ne s'applique
+plus. `SharedTransitionLayout` enveloppe toujours toute la navigation : le point de performance
+du §5 reste à mesurer. Essais sur appareil : ouvrir depuis la carte et depuis une ligne (fondu
+seul) ; revenir par la flèche, le bouton et le geste (repli vers la carte) ; revenir aussitôt
+après le toucher (fondu seul) ; ouvrir un PDF lent (le rond de chargement reste visible).
+

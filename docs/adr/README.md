@@ -24,7 +24,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0016](0016-retirer-et-vider-les-recents.md) | Retirer un document des récents (menu de ligne avec annulation, V8) et vider les récents (E3) | Accepté |
 | [0017](0017-mot-de-passe-des-documents-proteges.md) | Mot de passe des documents protégés (V4) : dialogue, mot de passe jamais gardé, récents protégés (schéma 2) | Accepté |
 | [0018](0018-nouveau-design-visuel.md) | Nouveau design visuel (E1, E2, E9) : titres en Fraunces, accent chaud, carte de reprise, barre flottante, aperçu optionnel du curseur | Accepté |
-| [0019](0019-transition-vignette-lecteur.md) | Transition animée vignette → lecteur : éléments partagés, page d'ouverture pendant l'attente, retour prédictif, cas de repli | Accepté |
+| [0019](0019-transition-vignette-lecteur.md) | Transition animée vignette → lecteur : éléments partagés, retour prédictif, cas de repli ; amendé : l'aller est un simple fondu, seul le retour replie la page vers la vignette | Accepté, amendé |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

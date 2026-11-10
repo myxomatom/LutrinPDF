@@ -120,26 +120,25 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    app["LutrinApp : document touché (rememberSaveable)<br/>+ animations actives"] -->|"document lié"| layout["DocumentTransitionLayout<br/>(SharedTransitionLayout)"]
+    app["LutrinApp : DocumentLink (rememberSaveable)<br/>lié une fois le lecteur posé<br/>+ animations actives"] -->|"document lié"| layout["DocumentTransitionLayout<br/>(SharedTransitionLayout)"]
     layout --> nav["NavHost (fondu 300 ms)"]
     nav --> lib["bibliothèque : DocumentTransitionDestination"]
     nav --> rd["readerScreen : DocumentTransitionDestination"]
     lib -->|"rememberDocumentTransition(documentId)"| thumb["vignette de la carte / d'une ligne"]
-    rd -->|"rememberDocumentTransition(ReaderViewModel.documentId)"| open["page d'ouverture (aller)"]
-    rd -->|"puis"| page["page affichée, zoom ≤ 1 (retour)"]
-    thumb <-.->|"DocumentPageKey(documentId), sharedBounds"| open
-    thumb <-.-> page
+    rd -->|"rememberDocumentTransition(ReaderViewModel.documentId)"| page["page affichée, zoom ≤ 1 (retour)"]
+    thumb <-.->|"DocumentPageKey(documentId), sharedBounds"| page
 ```
 
-- `app` choisit le seul document lié : celui que l'utilisateur vient de toucher dans la
-  bibliothèque, tant que les animations du système sont actives. Le sélecteur de fichier et les
-  demandes des autres applications le remettent à `null`.
+- `app` choisit le seul document lié : celui que l'utilisateur a touché dans la bibliothèque,
+  **une fois son lecteur posé** (entrée de navigation `RESUMED`, `DocumentLink`), tant que les
+  animations du système sont actives. L'aller est donc un simple fondu ; seul le retour replie
+  la page vers la vignette. Le sélecteur de fichier et les demandes des autres applications ne
+  lient rien.
 - Les deux features ne se connaissent pas : elles lisent les portées par
   `rememberDocumentTransition`, qui rend `null` hors de l'application (aperçus, tests,
   `BenchmarkReaderActivity`) ; les écrans fonctionnent alors sans transition.
-- Le lecteur pose une page d'ouverture dès la première image, cible de la vignette pendant que
-  le document s'ouvre (`OpeningPagePhase` : partagée, en attente, partie) ; ensuite, c'est la
-  page affichée qui porte l'élément partagé, pour le retour (geste prédictif compris).
+- Dans le lecteur, c'est la page affichée qui porte l'élément partagé, pour le retour (geste
+  prédictif compris).
 
 ## Paramètres (`feature:settings`, `core:data`)
 
