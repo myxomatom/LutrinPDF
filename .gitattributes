@@ -9,3 +9,4 @@ gradlew text eol=lf
 *.jar binary
 # Maquettes : documentation, exclues des statistiques de langage
 docs/design/** linguist-documentation
+*.ttf binary

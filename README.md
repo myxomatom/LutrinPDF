@@ -151,3 +151,5 @@ doit être committé ; le build fonctionne sans lui.
 - Le code source de chaque version publiée, y compris la version exacte de MuPDF
   utilisée, est disponible dans ce dépôt (tags `vX.Y.Z`).
 - Les polices Roboto des maquettes (`docs/design/assets/fonts/`) sont sous licence OFL 1.1.
+- La police des titres, **Fraunces** (poids 600, embarquée dans l'application), est sous
+  licence OFL 1.1 — voir [`LICENSES/OFL-1.1-Fraunces.txt`](LICENSES/OFL-1.1-Fraunces.txt).
