@@ -45,8 +45,11 @@ docs/design/proposals/
   et `track` de `Slider` dans `PageBar` (`feature/reader/.../ReaderScreen.kt`).
 - `E2-Lecteur-Curseur` : pendant le glissement, aperçu de la page visée avec son numéro, et
   le titre de section si le PDF a une table des matières. Le document ne change de page
-  qu'au relâchement — aujourd'hui il suit le curseur en continu, c'est donc un changement
-  de comportement à trancher.
+  qu'au relâchement.
+- **Décision du mainteneur (2026-11-10)** : l'aperçu est une option, activable ou non.
+  Désactivée, le curseur garde le comportement actuel (le document suit le curseur en
+  continu). Restent à fixer dans l'ADR : la valeur par défaut, le libellé, et la place du
+  réglage (feuille « Affichage » V6 ou Paramètres E3).
 - La bulle de défilement rapide à droite disparaît, l'aperçu la remplace.
 
 ## E9 · Progression et résultat
@@ -58,6 +61,16 @@ docs/design/proposals/
   grand. Textes et actions inchangés.
 - Résultat : première page du PDF créé (vignette réelle) à la place de la coche ; pastille
   et mention « Ajouté aux récents » dans l'accent chaud ; « Ouvrir » passe à 56 dp.
+
+## Thème sombre
+
+![Thème sombre](png/theme-sombre.png)
+
+Chaque écran a sa variante `*-Sombre` (même page, classe `dark`), avec le schéma sombre de
+`design-tokens.json`. Les pages et les vignettes restent blanches : le thème de
+l'application ne change pas le rendu du document, qui dépend du réglage « Couleurs du
+document » (F13). La barre flottante et l'aperçu utilisent `surfaceContainerHigh` pour se
+détacher du fond du lecteur.
 
 ## Changements de jetons que l'adoption impliquerait
 
@@ -72,7 +85,9 @@ docs/design/proposals/
 - **Couleurs dynamiques** : sur Android 12+, la palette vient du fond d'écran. L'accent
   chaud n'existe donc que dans le schéma de repli ; l'identité repose surtout sur la
   typographie et les transitions.
-- **Schéma sombre** : aucune de ces propositions n'est dessinée en thème sombre.
+- **Schéma sombre** : voir ci-dessous ; l'accent chaud sombre (`tertiary` `#F5BF48`,
+  `tertiaryContainer` `#5D4200`) est choisi à la main, à régénérer avec Material Color
+  Utilities comme le reste du schéma.
 - **Fraunces** : seul le sous-ensemble latin est copié ici ; vérifier la couverture
   nécessaire (`latin-ext`) et le poids ajouté à l'APK, puis l'inscrire dans
   `docs/dependencies.md`.
@@ -83,4 +98,5 @@ docs/design/proposals/
 ## Régénérer les captures
 
 Chaque écran est capturé sur l'élément `.phone` (390 × 844) à l'échelle 2, fond
-transparent ; les planches `avant-apres-*.png` sont les sections de `index.html`.
+transparent ; les planches `avant-apres-*.png` et `theme-sombre.png` sont les sections de
+`index.html`.

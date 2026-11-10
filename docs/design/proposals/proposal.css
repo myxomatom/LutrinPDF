@@ -11,31 +11,47 @@ body{margin:0;display:flex;justify-content:center;padding:40px 0}
 button{font-family:inherit;cursor:pointer}
 h1,h2,p{margin:0}
 
-.phone{width:390px;height:844px;box-sizing:border-box;background:#F8F9FC;color:#191C20;
+/* Rôles Material 3 : schéma clair de design-tokens.json, accent chaud proposé pour tertiary. */
+.phone{--surface:#F8F9FC;--on-surface:#191C20;--on-surface-variant:#43474E;--surface-container:#ECEEF3;
+  --surface-variant:#E1E2E8;--floating:#F8F9FC;--outline:#73777F;
+  --primary:#2A5B8C;--on-primary:#FFFFFF;--primary-container:#D3E4FF;--on-primary-container:#001C38;
+  --primary-faint:rgba(42,91,140,0.2);--secondary-container:#D7E3F7;--on-secondary-container:#101C2B;
+  --tertiary:#7C5800;--on-tertiary:#FFFFFF;--tertiary-container:#FFDEA6;--on-tertiary-container:#271900;
+  --reader-bg:#E6E8ED}
+/* Schéma sombre de design-tokens.json. Les pages restent blanches : le thème de l'application
+   ne change pas le rendu du document (réglage « Couleurs du document », F13). */
+.phone.dark{--surface:#111418;--on-surface:#E1E2E8;--on-surface-variant:#C3C6CF;--surface-container:#1D2024;
+  --surface-variant:#43474E;--floating:#272A2F;--outline:#8D9199;
+  --primary:#A1CAFD;--on-primary:#003259;--primary-container:#1A4975;--on-primary-container:#D1E4FF;
+  --primary-faint:rgba(161,202,253,0.24);--secondary-container:#3B4858;--on-secondary-container:#D7E3F8;
+  --tertiary:#F5BF48;--on-tertiary:#412D00;--tertiary-container:#5D4200;--on-tertiary-container:#FFDEA6;
+  --reader-bg:#0B0E13}
+
+.phone{width:390px;height:844px;box-sizing:border-box;background:var(--surface);color:var(--on-surface);
   font-family:Roboto,system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;
   position:relative;border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
 .serif{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-0.2px}
-.muted{color:#43474E}
+.muted{color:var(--on-surface-variant)}
 
 /* Icônes et boutons icône (cible 48 dp) */
 .i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#43474E;padding:0;flex:none}
+.ib{width:48px;height:48px;border:0;background:transparent;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--on-surface-variant);padding:0;flex:none}
 
 /* Vignette de page : représente le rendu réel de la première page par PdfEngine */
 .pg{background:#FFFFFF;border:1px solid #C3C6CF;border-radius:4px;box-sizing:border-box;position:relative;flex:none;overflow:hidden}
 .pg .l{height:3px;background:#D9DCE2;border-radius:2px;margin-bottom:5px}
 .pg .l.h{background:#8A8E96}
 .pg.sm{width:52px;height:68px;padding:9px 7px}
-.lock{position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;border-radius:12px;background:#D3E4FF;color:#001C38;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #F8F9FC}
+.lock{position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;border-radius:12px;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface)}
 .lock .i{width:14px;height:14px}
 
 /* Ligne de document */
 .row{display:flex;align-items:center;gap:16px;padding:8px 4px 8px 16px}
 .row .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .row .t{font-size:16px;line-height:22px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .m{font-size:14px;line-height:20px;color:#43474E}
-.bar{height:4px;border-radius:2px;background:#E1E2E8;width:120px;overflow:hidden;margin-top:2px}
-.bar>div{height:100%;background:#2A5B8C;border-radius:2px}
+.row .m{font-size:14px;line-height:20px;color:var(--on-surface-variant)}
+.bar{height:4px;border-radius:2px;background:var(--surface-variant);width:120px;overflow:hidden;margin-top:2px}
+.bar>div{height:100%;background:var(--primary);border-radius:2px}
 
 /* Page du lecteur (rendu du moteur) */
 .sheet{background:#FFFFFF;width:342px;height:484px;box-sizing:border-box;padding:40px 34px;box-shadow:0 1px 3px rgba(0,0,0,0.18);flex:none}
@@ -43,7 +59,7 @@ h1,h2,p{margin:0}
 
 /* Boutons */
 .btn{height:48px;border:0;border-radius:24px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 24px}
-.btn.primary{background:#2A5B8C;color:#FFFFFF}
-.btn.tonal{background:#D7E3F7;color:#101C2B}
-.btn.text{background:transparent;color:#2A5B8C}
-.btn.outlined{background:transparent;color:#2A5B8C;border:1px solid #73777F}
+.btn.primary{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn.text{background:transparent;color:var(--primary)}
+.btn.outlined{background:transparent;color:var(--primary);border:1px solid var(--outline)}

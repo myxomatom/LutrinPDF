@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutrin — Proposition · Résultat (thème sombre)</title>
+<link rel="stylesheet" href="../proposal.css">
+<style>
+.stack{position:relative;width:230px;height:212px;align-self:center}
+.stack .pg{position:absolute;left:49px;top:14px;width:132px;height:176px}
+.spark{position:absolute;fill:#C58B1A}
+</style>
+</head>
+<body>
+<div class="phone dark">
+  <header style="height:64px;display:flex;align-items:center;padding:0 24px;flex:none">
+    <h1 class="serif" style="font-size:24px">Fusion</h1>
+  </header>
+
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px;padding:0 24px 56px">
+    <!-- La première page du PDF créé (vignette réelle), posée sur les feuilles fusionnées.
+         À l'arrivée : les feuilles se rassemblent, la pastille apparaît, vibration brève. -->
+    <div class="stack" aria-hidden="true">
+      <div class="pg" style="transform:rotate(-8deg);background:#E4E6EC"></div>
+      <div class="pg" style="transform:rotate(6deg);background:#F1F2F6"></div>
+      <div class="pg" style="padding:20px 16px;box-shadow:0 10px 28px rgba(0,28,56,0.24)">
+        <div class="l h" style="width:58%;height:5px;margin-bottom:6px"></div>
+        <div class="l" style="width:36%;margin-bottom:12px"></div>
+        <div style="border-top:1px solid #C3C6CF;border-bottom:1px solid #C3C6CF;padding:6px 0 1px;margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:3fr 1fr;column-gap:8px"><div class="l"></div><div class="l"></div><div class="l"></div><div class="l"></div><div class="l"></div><div class="l"></div><div class="l"></div><div class="l"></div></div>
+        </div>
+        <div class="l" style="width:34%;margin-left:66%;background:#2A5B8C;height:4px"></div>
+        <div class="l" style="margin-top:14px"></div><div class="l" style="width:90%"></div><div class="l" style="width:62%"></div>
+      </div>
+      <div style="position:absolute;right:28px;bottom:2px;width:52px;height:52px;border-radius:26px;background:var(--tertiary);color:var(--on-tertiary);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px var(--surface)">
+        <svg class="i" viewBox="0 0 24 24" style="width:28px;height:28px;stroke-width:2.4"><path d="M5 12l5 5 9-10"></path></svg>
+      </div>
+      <svg class="spark" style="left:6px;top:30px" width="22" height="22" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"></path></svg>
+      <svg class="spark" style="right:4px;top:6px;fill:#E0A93B" width="16" height="16" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"></path></svg>
+      <svg class="spark" style="left:24px;bottom:22px;fill:#A1CAFD" width="12" height="12" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"></path></svg>
+    </div>
+
+    <div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center">
+      <h2 class="serif" style="font-size:32px;line-height:40px">PDF créé</h2>
+      <span style="font-size:16px;line-height:22px;font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">fusion_2026-11-03_2054.pdf</span>
+      <span class="muted" style="font-size:14px;line-height:20px">13 pages · 2,1 Mo · Documents/Lutrin</span>
+      <span style="margin-top:6px;height:28px;padding:0 12px;border-radius:8px;background:var(--tertiary-container);color:var(--on-tertiary-container);font-size:12px;font-weight:500;display:inline-flex;align-items:center">Ajouté aux récents</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn primary" style="height:56px;border-radius:28px;font-size:16px">Ouvrir</button>
+      <button class="btn tonal"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"></path></svg>Partager</button>
+      <button class="btn text">Terminé</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

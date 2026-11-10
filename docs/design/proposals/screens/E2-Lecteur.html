@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="../proposal.css">
 </head>
 <body>
-<div class="phone" style="background:#E6E8ED">
-  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none;background:#F8F9FC">
+<div class="phone" style="background:var(--reader-bg)">
+  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none;background:var(--surface)">
     <button class="ib" aria-label="Retour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
     <h1 class="serif" style="margin-left:4px;flex:1;min-width:0;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Contrat de location</h1>
     <button class="ib" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
@@ -24,7 +24,7 @@
       <div class="ln"></div><div class="ln" style="width:97%"></div><div class="ln"></div><div class="ln" style="width:92%"></div><div class="ln"></div><div class="ln" style="width:99%"></div><div class="ln"></div><div class="ln" style="width:64%"></div>
       <div style="height:8px;width:40%;background:#8A8E96;border-radius:3px;margin:18px 0 14px"></div>
       <div class="ln"></div><div class="ln" style="width:98%"></div><div class="ln"></div><div class="ln" style="width:95%"></div><div class="ln"></div><div class="ln" style="width:88%"></div><div class="ln"></div><div class="ln" style="width:97%"></div><div class="ln"></div><div class="ln" style="width:70%"></div><div class="ln"></div><div class="ln" style="width:96%"></div><div class="ln"></div><div class="ln" style="width:58%"></div>
-      <div style="text-decoration:underline;color:#2A5B8C;font-size:9px;margin-top:6px">Voir l’article 4 — Résiliation</div>
+      <div style="text-decoration:underline;color:var(--primary);font-size:9px;margin-top:6px">Voir l’article 4 — Résiliation</div>
     </div>
     <div class="sheet">
       <div class="ln"></div><div class="ln" style="width:98%"></div><div class="ln"></div><div class="ln" style="width:95%"></div><div class="ln"></div><div class="ln" style="width:88%"></div><div class="ln"></div><div class="ln" style="width:97%"></div><div class="ln"></div><div class="ln" style="width:70%"></div><div class="ln"></div><div class="ln" style="width:96%"></div><div class="ln"></div><div class="ln" style="width:58%"></div>
@@ -32,13 +32,13 @@
   </div>
 
   <!-- Barre flottante : mêmes commandes que la barre du bas actuelle (page, curseur, ajustement). -->
-  <footer style="position:absolute;left:16px;right:16px;bottom:20px;height:64px;border-radius:32px;background:#F8F9FC;box-shadow:0 4px 14px rgba(0,0,0,0.20);display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;box-sizing:border-box">
-    <button style="border:0;background:transparent;padding:14px 0;font-size:14px;font-weight:500;color:#191C20;min-width:52px;text-align:left">3 / 8</button>
+  <footer style="position:absolute;left:16px;right:16px;bottom:20px;height:64px;border-radius:32px;background:var(--floating);box-shadow:0 4px 14px rgba(0,0,0,0.20);display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;box-sizing:border-box">
+    <button style="border:0;background:transparent;padding:14px 0;font-size:14px;font-weight:500;color:var(--on-surface);min-width:52px;text-align:left">3 / 8</button>
     <label style="flex:1;display:flex;align-items:center;position:relative;height:48px">
       <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Page</span>
-      <span style="position:absolute;left:0;right:0;height:4px;border-radius:2px;background:#D3E4FF"></span>
-      <span style="position:absolute;left:0;width:28%;height:4px;border-radius:2px;background:#2A5B8C"></span>
-      <span style="position:absolute;left:28%;width:20px;height:20px;margin-left:-10px;border-radius:10px;background:#2A5B8C"></span>
+      <span style="position:absolute;left:0;right:0;height:4px;border-radius:2px;background:var(--primary-container)"></span>
+      <span style="position:absolute;left:0;width:28%;height:4px;border-radius:2px;background:var(--primary)"></span>
+      <span style="position:absolute;left:28%;width:20px;height:20px;margin-left:-10px;border-radius:10px;background:var(--primary)"></span>
       <input type="range" min="1" max="8" value="3" style="position:absolute;left:0;right:0;width:100%;opacity:0;margin:0;height:48px">
     </label>
     <button class="ib" aria-label="Ajuster à la largeur"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg></button>

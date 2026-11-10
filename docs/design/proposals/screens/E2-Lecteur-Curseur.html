@@ -8,8 +8,8 @@
 <link rel="stylesheet" href="../proposal.css">
 </head>
 <body>
-<div class="phone" style="background:#E6E8ED">
-  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none;background:#F8F9FC">
+<div class="phone" style="background:var(--reader-bg)">
+  <header style="height:64px;display:flex;align-items:center;padding:0 4px;flex:none;background:var(--surface)">
     <button class="ib" aria-label="Retour"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg></button>
     <h1 class="serif" style="margin-left:4px;flex:1;min-width:0;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Contrat de location</h1>
     <button class="ib" aria-label="Rechercher"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
@@ -32,7 +32,7 @@
 
   <!-- Aperçu de la page visée, ancré au pouce du curseur. La vignette vient du cache de
        vignettes ; le titre de section n'apparaît que si le PDF a une table des matières. -->
-  <div role="status" style="position:absolute;left:175px;bottom:100px;width:148px;padding:10px;box-sizing:border-box;border-radius:20px;background:#F8F9FC;box-shadow:0 8px 24px rgba(0,0,0,0.28);display:flex;flex-direction:column;align-items:center">
+  <div role="status" style="position:absolute;left:175px;bottom:100px;width:148px;padding:10px;box-sizing:border-box;border-radius:20px;background:var(--floating);box-shadow:0 8px 24px rgba(0,0,0,0.28);display:flex;flex-direction:column;align-items:center">
     <div class="pg" style="width:128px;height:180px;padding:18px 15px" aria-hidden="true">
       <div class="l h" style="width:52%;height:5px;margin-bottom:10px"></div>
       <div class="l"></div><div class="l" style="width:95%"></div><div class="l"></div><div class="l" style="width:88%"></div><div class="l"></div><div class="l" style="width:60%"></div>
@@ -41,17 +41,17 @@
       <div class="l"></div><div class="l" style="width:92%"></div><div class="l" style="width:45%"></div>
     </div>
     <span class="serif" style="font-size:18px;line-height:24px;margin-top:8px">Page 6</span>
-    <span style="font-size:12px;line-height:16px;color:#43474E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Article 4 — Résiliation</span>
+    <span style="font-size:12px;line-height:16px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Article 4 — Résiliation</span>
   </div>
 
-  <footer style="position:absolute;left:16px;right:16px;bottom:20px;height:64px;border-radius:32px;background:#F8F9FC;box-shadow:0 4px 14px rgba(0,0,0,0.20);display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;box-sizing:border-box">
-    <button style="border:0;background:transparent;padding:14px 0;font-size:14px;font-weight:500;color:#2A5B8C;min-width:52px;text-align:left">6 / 8</button>
+  <footer style="position:absolute;left:16px;right:16px;bottom:20px;height:64px;border-radius:32px;background:var(--floating);box-shadow:0 4px 14px rgba(0,0,0,0.20);display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;box-sizing:border-box">
+    <button style="border:0;background:transparent;padding:14px 0;font-size:14px;font-weight:500;color:var(--primary);min-width:52px;text-align:left">6 / 8</button>
     <label style="flex:1;display:flex;align-items:center;position:relative;height:48px">
       <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Page</span>
-      <span style="position:absolute;left:0;right:0;height:4px;border-radius:2px;background:#D3E4FF"></span>
-      <span style="position:absolute;left:0;width:71%;height:4px;border-radius:2px;background:#2A5B8C"></span>
-      <span style="position:absolute;left:71%;width:40px;height:40px;margin-left:-20px;border-radius:20px;background:rgba(42,91,140,0.16)"></span>
-      <span style="position:absolute;left:71%;width:24px;height:24px;margin-left:-12px;border-radius:12px;background:#2A5B8C"></span>
+      <span style="position:absolute;left:0;right:0;height:4px;border-radius:2px;background:var(--primary-container)"></span>
+      <span style="position:absolute;left:0;width:71%;height:4px;border-radius:2px;background:var(--primary)"></span>
+      <span style="position:absolute;left:71%;width:40px;height:40px;margin-left:-20px;border-radius:20px;background:var(--primary-faint)"></span>
+      <span style="position:absolute;left:71%;width:24px;height:24px;margin-left:-12px;border-radius:12px;background:var(--primary)"></span>
       <input type="range" min="1" max="8" value="6" style="position:absolute;left:0;right:0;width:100%;opacity:0;margin:0;height:48px">
     </label>
     <button class="ib" aria-label="Ajuster à la largeur"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg></button>

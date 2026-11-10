@@ -118,8 +118,9 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 **Propositions de design (2026-11-10, non adoptées)** : `docs/design/proposals/` contient des
 maquettes avant / après pour E1, E2 et E9 (carte « Reprendre la lecture », barre flottante et
-curseur fin dans le lecteur, écran de résultat). À trancher par le mainteneur ; toute adoption
-passe par un ADR. Le curseur par défaut de Material 3, jugé trop lourd dans l'application
+curseur fin dans le lecteur, écran de résultat), en thème clair et sombre. À trancher par le
+mainteneur ; toute adoption passe par un ADR. Déjà décidé : l'aperçu de page pendant le
+glissement du curseur sera une option activable (valeur par défaut et emplacement à fixer). Le curseur par défaut de Material 3, jugé trop lourd dans l'application
 compilée, peut être allégé sans attendre le reste (`PageBar` dans `ReaderScreen.kt`).
 
 ## 3. Décisions à connaître
