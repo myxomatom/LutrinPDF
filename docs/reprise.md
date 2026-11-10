@@ -12,7 +12,7 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 Fichiers et récents | 🟡 En cours : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; tout cela testé sous Robolectric, pas encore essayé sur appareil. Reste : essais sur appareil, dont les tests instrumentés des PDF chiffrés |
+| M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
 | M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -107,8 +107,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - ~~« Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents »~~
      **Fait** (ADR 0016, branche `feat/remove-recents`) ;
    - ~~dialogue de mot de passe (V4)~~ **Fait** (ADR 0017, branche `feat/pdf-password`) ;
-   - essais sur appareil de tout M3 (voir §1), y compris les tests instrumentés de `core:pdf`
-     sur les PDF chiffrés ;
+   - ~~essais sur appareil de tout M3~~ **Fait** le 2026-11-10 (voir §1) ;
    - reportés par l'ADR 0015 : zoom et décalage de F12, empreinte des documents (point ouvert 16) ;
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
