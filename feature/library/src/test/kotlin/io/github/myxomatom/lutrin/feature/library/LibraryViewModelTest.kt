@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.library
 
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -64,16 +65,25 @@ class LibraryViewModelTest {
         this,
     )
 
-    private fun document(id: Int, openedAt: Instant = FAKE_NOW, thumbnail: String? = null) = RecentDocument(
+    private fun document(
+        id: Int,
+        openedAt: Instant = FAKE_NOW,
+        thumbnail: String? = null,
+        pageCount: Int = 8,
+        lastPage: Int = 2,
+    ) = RecentDocument(
         documentId = documentIdFor(uri(id)),
         uri = uri(id),
         displayName = "Document $id",
         sizeBytes = null,
-        pageCount = 8,
+        pageCount = pageCount,
         lastOpenedAt = openedAt,
-        lastPage = 2,
+        lastPage = lastPage,
         thumbnailPath = thumbnail,
     )
+
+    /** Every document shown, the one of the resume card first. */
+    private val LibraryUiState.Content.documents get() = listOf(resume) + others
 
     @Test
     fun `starts loading, then shows the empty state without recent documents`() = runTest(dispatcher) {
@@ -86,26 +96,29 @@ class LibraryViewModelTest {
     }
 
     @Test
-    fun `lists the recent documents in the repository order`() = runTest(dispatcher) {
-        val repository = FakeRecentDocumentsRepository(listOf(document(2, thumbnail = "/thumbs/2.png"), document(1)))
+    fun `the most recent document goes to the resume card, the others to the list in order`() = runTest(dispatcher) {
+        val repository =
+            FakeRecentDocumentsRepository(listOf(document(3, thumbnail = "/thumbs/3.png"), document(2), document(1)))
         val viewModel = viewModel(repository)
 
         viewModel.uiState.test {
             skipItems(1)
             val content = awaitItem() as LibraryUiState.Content
-            assertThat(content.documents.map { it.uri }).containsExactly(uri(2), uri(1)).inOrder()
-            assertThat(content.documents.first())
+            assertThat(content.resume.uri).isEqualTo(uri(3))
+            assertThat(content.others.map { it.uri }).containsExactly(uri(2), uri(1)).inOrder()
+            assertThat(content.resume)
                 .isEqualTo(
                     RecentDocumentItem(
-                        documentId = documentIdFor(uri(2)),
-                        uri = uri(2),
-                        name = "Document 2",
+                        documentId = documentIdFor(uri(3)),
+                        uri = uri(3),
+                        name = "Document 3",
                         pageCount = 8,
                         lastPage = 2,
                         openedOn = OpenedOn.Today(LocalTime.of(20, 41)),
-                        thumbnailPath = "/thumbs/2.png",
+                        thumbnailPath = "/thumbs/3.png",
                         // Never drawn since the opening (no date): to draw again.
                         thumbnailOutdated = true,
+                        isReadingInProgress = true,
                     ),
                 )
         }
@@ -187,7 +200,7 @@ class LibraryViewModelTest {
     fun `a thumbnail file that cannot be read gives no picture`() = runTest(dispatcher) {
         val viewModel = viewModel(FakeRecentDocumentsRepository())
 
-        assertThat(viewModel.loadThumbnail("/no/such/file.png")).isNull()
+        assertThat(viewModel.loadThumbnail("/no/such/file.png", IntSize(208, 272))).isNull()
     }
 
     @Test
@@ -213,6 +226,81 @@ class LibraryViewModelTest {
 
         assertThat(item.progress).isEqualTo(0.25f)
         assertThat(item.copy(lastPage = 3).progress).isEqualTo(1f)
+    }
+
+    @Test
+    fun `a single document takes the card and leaves the list empty`() = runTest(dispatcher) {
+        viewModel(FakeRecentDocumentsRepository(listOf(document(1)))).uiState.test {
+            skipItems(1)
+            val content = awaitItem() as LibraryUiState.Content
+            assertThat(content.resume.uri).isEqualTo(uri(1))
+            assertThat(content.others).isEmpty()
+        }
+    }
+
+    @Test
+    fun `a protected document most recently opened still takes the card`() = runTest(dispatcher) {
+        val protected = document(2).copy(isProtected = true)
+
+        viewModel(FakeRecentDocumentsRepository(listOf(protected, document(1)))).uiState.test {
+            skipItems(1)
+            val content = awaitItem() as LibraryUiState.Content
+            assertThat(content.resume.uri).isEqualTo(uri(2))
+            assertThat(content.resume.isProtected).isTrue()
+            assertThat(content.others.map { it.uri }).containsExactly(uri(1))
+        }
+    }
+
+    @Test
+    fun `only a reading stopped before the last page is in progress`() = runTest(dispatcher) {
+        val documents =
+            listOf(
+                document(4, pageCount = 8, lastPage = 0),
+                document(3, pageCount = 8, lastPage = 5),
+                document(2, pageCount = 8, lastPage = 7),
+                document(1, pageCount = 1, lastPage = 0),
+            )
+
+        viewModel(FakeRecentDocumentsRepository(documents)).uiState.test {
+            skipItems(1)
+            val content = awaitItem() as LibraryUiState.Content
+            // First page of several, middle: in progress. Last page, single page: not.
+            assertThat(content.documents.map { it.isReadingInProgress }).containsExactly(true, true, false, false)
+                .inOrder()
+        }
+    }
+
+    @Test
+    fun `removing the document of the card brings up the next one, and undoing puts it back`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeRecentDocumentsRepository(listOf(document(3), document(2), document(1))))
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(3)))
+
+            val removed = awaitItem() as LibraryUiState.Content
+            assertThat(removed.resume.uri).isEqualTo(uri(2))
+            assertThat(removed.others.map { it.uri }).containsExactly(uri(1))
+
+            viewModel.onUndoRemoval(removal(3))
+            val restored = awaitItem() as LibraryUiState.Content
+            assertThat(restored.resume.uri).isEqualTo(uri(3))
+            assertThat(restored.others.map { it.uri }).containsExactly(uri(2), uri(1)).inOrder()
+        }
+    }
+
+    @Test
+    fun `removing a document of the list keeps the card`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeRecentDocumentsRepository(listOf(document(2), document(1))))
+
+        viewModel.uiState.test {
+            skipItems(2)
+            viewModel.onRemove(documentIdFor(uri(1)))
+
+            val content = awaitItem() as LibraryUiState.Content
+            assertThat(content.resume.uri).isEqualTo(uri(2))
+            assertThat(content.others).isEmpty()
+        }
     }
 
     private companion object {

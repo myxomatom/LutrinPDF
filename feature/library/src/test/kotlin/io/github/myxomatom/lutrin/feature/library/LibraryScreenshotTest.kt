@@ -29,13 +29,16 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Screenshot references of the library with recent documents (E1): light, dark, large font and
- * French. Rows with a thumbnail, and a protected row with its lock and no thumbnail (ADR 0017),
- * like the mock-up; the row menu open, and the message offering to undo a removal (ADR 0016).
+ * Screenshot references of the library with recent documents (E1, mock-up adopted by ADR 0018,
+ * at its size: 390 × 844 dp at × 2): light, dark, large font and French. The most recent document
+ * in the resume card; rows with a thumbnail, a protected row with its lock and no thumbnail
+ * (ADR 0017), rows in progress with a bar and rows without (read to the end, single page), like
+ * the mock-up; a single document (card only), a protected one in the card; the menu of the card
+ * open, and the message offering to undo a removal (ADR 0016).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w360dp-h640dp-xhdpi")
+@Config(qualifiers = "w390dp-h844dp-xhdpi")
 class LibraryScreenshotTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -44,6 +47,7 @@ class LibraryScreenshotTest {
         listOf(
             item("1", "Contrat de location", lastPage = 2, pageCount = 8, OpenedOn.Today(LocalTime.of(20, 41))),
             item("2", "Facture octobre 2026", lastPage = 0, pageCount = 2, OpenedOn.Today(LocalTime.of(18, 5))),
+            // Read to its last page: « 4 pages · hier », no bar, like the mock-up.
             item("3", "Relevé de compte", lastPage = 3, pageCount = 4, OpenedOn.Yesterday, protected = true),
             item(
                 "4",
@@ -64,7 +68,7 @@ class LibraryScreenshotTest {
                 "Billet de train Lyon–Paris",
                 lastPage = 0,
                 pageCount = 1,
-                OpenedOn.OtherYear(LocalDate.of(2025, 10, 19)),
+                OpenedOn.ThisYear(LocalDate.of(2026, 10, 19)),
             ),
         )
 
@@ -85,6 +89,8 @@ class LibraryScreenshotTest {
         // A protected document never has a thumbnail (ADR 0017).
         thumbnailPath = if (protected) null else "/thumbnails/$id.png",
         isProtected = protected,
+        // As RecentDocument.isReadingInProgress: before the last page.
+        isReadingInProgress = lastPage < pageCount - 1,
     )
 
     private fun show(
@@ -99,11 +105,11 @@ class LibraryScreenshotTest {
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
                 LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
                     LibraryScreen(
-                        state = LibraryUiState.Content(shown),
+                        state = LibraryUiState.Content(shown.first(), shown.drop(1)),
                         onOpenFile = {},
                         onOpenSettings = {},
                         onOpenDocument = {},
-                        loadThumbnail = { page },
+                        loadThumbnail = { _, _ -> page },
                         pendingRemoval = pendingRemoval,
                     )
                 }
@@ -111,12 +117,17 @@ class LibraryScreenshotTest {
         }
     }
 
-    private fun capture(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
-        show(darkTheme, fontScale)
+    private fun capture(
+        name: String,
+        darkTheme: Boolean,
+        fontScale: Float = 1f,
+        shown: List<RecentDocumentItem> = documents,
+    ) {
+        show(darkTheme, fontScale, shown)
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
-    /** The menu of the first row, open; the menu is a separate window. */
+    /** The menu of the resume card, open; the menu is a separate window. */
     @OptIn(ExperimentalRoborazziApi::class)
     private fun captureMenu(name: String, darkTheme: Boolean, menuLabel: String, fontScale: Float = 1f) {
         show(darkTheme, fontScale)
@@ -125,7 +136,7 @@ class LibraryScreenshotTest {
         captureScreenRoboImage("src/test/screenshots/$name.png")
     }
 
-    /** The second row just removed: hidden, with the message offering to undo it. */
+    /** The first row just removed: hidden, with the message offering to undo it. */
     private fun captureRemoval(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
         val removed = documents[1]
         show(darkTheme, fontScale, documents - removed, PendingRemoval(removed.documentId, removed.name, REMOVED_AT))
@@ -134,7 +145,10 @@ class LibraryScreenshotTest {
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
-    /** A white page with a title and lines of text, as a drawn first page would look. */
+    /**
+     * A white A4 page with a title and lines of text, as a drawn first page would look, at the
+     * size of a thumbnail file (390 × 552 px).
+     */
     private fun fakePage(): ImageBitmap {
         val bitmap = ImageBitmap(PAGE_WIDTH, PAGE_HEIGHT)
         val canvas = Canvas(bitmap)
@@ -145,10 +159,12 @@ class LibraryScreenshotTest {
             },
         )
         val ink = Paint().apply { color = Color(0xFF8A8E96) }
-        canvas.drawRect(Rect(Offset(20f, 24f), Offset(110f, 34f)), ink)
+        val text = Paint().apply { color = Color(0xFFC3C6CF) }
+        canvas.drawRect(Rect(Offset(MARGIN, 56f), Offset(250f, 80f)), ink)
         (0 until LINES).forEach { line ->
-            val top = 52f + line * 16f
-            canvas.drawRect(Rect(Offset(20f, top), Offset(if (line % 4 == 3) 90f else 144f, top + 5f)), ink)
+            val top = 120f + line * 36f
+            val end = if (line % 4 == 3) 220f else PAGE_WIDTH - MARGIN
+            canvas.drawRect(Rect(Offset(MARGIN, top), Offset(end, top + 11f)), text)
         }
         return bitmap
     }
@@ -165,6 +181,27 @@ class LibraryScreenshotTest {
     @Test
     @Config(qualifiers = "+fr")
     fun french() = capture("library_recents_light_fr", darkTheme = false)
+
+    @Test
+    fun single() = capture("library_single_light", darkTheme = false, shown = documents.take(1))
+
+    @Test
+    fun singleDark() = capture("library_single_dark", darkTheme = true, shown = documents.take(1))
+
+    /** A protected document in the card: placeholder page with its lock, read to the end. */
+    @Test
+    fun protectedCard() = capture("library_protected_card_light", darkTheme = false, shown = documents.drop(2))
+
+    @Test
+    fun protectedCardDark() = capture("library_protected_card_dark", darkTheme = true, shown = documents.drop(2))
+
+    @Test
+    fun largeFontSingle() = capture(
+        "library_single_light_font200",
+        darkTheme = false,
+        fontScale = 2f,
+        shown = listOf(documents[0].copy(name = "Contrat de location meublée et ses annexes")),
+    )
 
     @Test
     fun menu() = captureMenu("library_row_menu_light", darkTheme = false, MENU_EN)
@@ -202,8 +239,9 @@ class LibraryScreenshotTest {
         /** Enough for the message to slide in, far below its 10 s timeout. */
         const val MESSAGE_ANIMATION_MS = 1_000L
 
-        const val PAGE_WIDTH = 164
-        const val PAGE_HEIGHT = 232
-        const val LINES = 10
+        const val PAGE_WIDTH = 390
+        const val PAGE_HEIGHT = 552
+        const val MARGIN = 48f
+        const val LINES = 11
     }
 }

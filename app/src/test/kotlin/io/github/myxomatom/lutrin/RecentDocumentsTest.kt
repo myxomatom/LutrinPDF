@@ -131,7 +131,8 @@ class RecentDocumentsTest {
         launch(launcher())
 
         waitForText("Contrat de location")
-        composeRule.onNodeWithText("1 document").assertIsDisplayed()
+        // The only document takes the resume card (ADR 0018).
+        composeRule.onNodeWithContentDescription("Resume reading Contrat de location, page 1 of 6").assertIsDisplayed()
         composeRule.onNodeWithText("No recent documents").assertDoesNotExist()
     }
 
@@ -251,7 +252,7 @@ class RecentDocumentsTest {
         record(page = 0)
         record(page = 0, uri = OTHER_DOCUMENT, name = "Facture")
         launch(launcher())
-        waitForText("2 documents")
+        waitForText("1 other document")
 
         composeRule.onNodeWithContentDescription("Settings").performClick()
         composeRule.onNodeWithText("Clear recent documents").performScrollTo().performClick()

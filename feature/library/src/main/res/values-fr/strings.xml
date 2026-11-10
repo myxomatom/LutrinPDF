@@ -11,14 +11,29 @@
     <string name="library_error_title">Documents récents indisponibles</string>
     <string name="library_error_message">La liste des documents récents n’a pas pu être lue. Vous pouvez toujours ouvrir un fichier.</string>
     <string name="library_recents">Récents</string>
-    <plurals name="library_document_count">
-        <item quantity="one">%d document</item>
-        <item quantity="many">%d de documents</item>
-        <item quantity="other">%d documents</item>
+    <plurals name="library_other_documents">
+        <item quantity="one">%d autre document</item>
+        <item quantity="many">%d d’autres documents</item>
+        <item quantity="other">%d autres documents</item>
     </plurals>
-    <string name="library_recent_details">Page %1$d / %2$d · %3$s</string>
-    <string name="library_opened_today">Aujourd’hui, %s</string>
-    <string name="library_opened_yesterday">Hier</string>
+    <string name="library_reading_position">Page %1$d sur %2$d · %3$s</string>
+    <plurals name="library_page_count">
+        <item quantity="one">%1$d page · %2$s</item>
+        <item quantity="many">%1$d de pages · %2$s</item>
+        <item quantity="other">%1$d pages · %2$s</item>
+    </plurals>
+    <string name="library_opened_today">aujourd’hui, %s</string>
+    <string name="library_opened_yesterday">hier</string>
+    <string name="library_resume">Reprendre la lecture</string>
+    <string name="library_continue">Continuer</string>
+    <!-- Espace insécable avant le deux-points (typographie française). -->
+    <string name="library_resume_position">Reprendre la lecture : %1$s, page %2$d sur %3$d</string>
+    <plurals name="library_resume_pages">
+        <item quantity="one">Reprendre la lecture : %1$s, %2$d page</item>
+        <item quantity="many">Reprendre la lecture : %1$s, %2$d de pages</item>
+        <item quantity="other">Reprendre la lecture : %1$s, %2$d pages</item>
+    </plurals>
+    <string name="library_resume_protected">%s, document protégé</string>
     <string name="library_thumbnail">Première page de %s</string>
     <string name="library_open_document">Ouvrir</string>
     <string name="library_row_menu">Plus d’actions pour %s</string>

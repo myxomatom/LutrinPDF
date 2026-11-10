@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.ui.R as UiR
 import io.github.myxomatom.lutrin.core.ui.component.StatusMessage
@@ -58,24 +59,33 @@ private val OfflineNoticeGap = 8.dp
 /** Gap between the icon and the label of the floating button (Material 3). */
 private val FabIconSpacing = 12.dp
 
+/** Height of the top bar, for the 32 sp title « Lutrin » (E1 mock-up adopted by ADR 0018). */
+private val TopBarHeight = 72.dp
+
 /**
- * Library screen (E1): the recent documents (F11) of `docs/design/png/E1-Bibliotheque.png`, the
- * empty state of `E1-Bibliotheque-Vide.png` when there are none, or a message when the list
- * cannot be read. « Ouvrir un fichier » is a button of the empty state and a floating button
- * over the list. The tools and display actions of the mock-up appear with their screens
- * (ADR 0009, 0015). Each row has a « ⋮ » menu with « Retirer des récents »; a removed row
- * disappears at once and a message offers « Annuler » while [pendingRemoval] is set (ADR 0016).
+ * Library screen (E1): the recent documents (F11) of
+ * `docs/design/proposals/png/E1-Bibliotheque.png` (ADR 0018), the most recent one in a
+ * « Reprendre la lecture » card and the others in a list; the empty state of
+ * `docs/design/png/E1-Bibliotheque-Vide.png` when there are none, or a message when the list
+ * cannot be read. The title « Lutrin » is set in `headlineLarge`. « Ouvrir un fichier » is a
+ * button of the empty state and a floating button, in the primary colour, over the list. The
+ * tools and display actions of the mock-up appear with their screens (ADR 0009, 0015). The card
+ * and each row have a « ⋮ » menu with « Retirer des récents »; a removed document disappears at
+ * once (the next one takes the card) and a message offers « Annuler » while [pendingRemoval] is
+ * set (ADR 0016).
  *
  * @param state what to show.
  * @param onOpenFile called when the user asks to pick a PDF with the system file picker.
  * @param onOpenSettings called when the user opens the settings (E3).
- * @param onOpenDocument called with the URI of the recent document the user taps.
+ * @param onOpenDocument called with the URI of the recent document the user taps (card or row).
  * @param modifier modifier applied to the screen.
- * @param loadThumbnail reads a thumbnail file, off the main thread; `null` when it cannot.
+ * @param loadThumbnail reads a thumbnail file for a frame of the given size in pixels, off the
+ *   main thread; `null` when it cannot.
  * @param onRefreshThumbnail called with the identifier of a row shown with a missing or
  *   outdated thumbnail.
  * @param pendingRemoval the removal for which « Annuler » is offered, or `null`.
- * @param onRemove called with the identifier of the row whose « Retirer des récents » is chosen.
+ * @param onRemove called with the identifier of the document whose « Retirer des récents » is
+ *   chosen, in the card or in a row.
  * @param onUndoRemoval called when the user taps « Annuler ».
  * @param onConfirmRemoval called when the offer to undo ends without undo: timeout, swipe, or
  *   the screen leaving the composition.
@@ -88,7 +98,7 @@ fun LibraryScreen(
     onOpenSettings: () -> Unit,
     onOpenDocument: (String) -> Unit,
     modifier: Modifier = Modifier,
-    loadThumbnail: suspend (String) -> ImageBitmap? = { null },
+    loadThumbnail: suspend (String, IntSize) -> ImageBitmap? = { _, _ -> null },
     onRefreshThumbnail: (String) -> Unit = {},
     pendingRemoval: PendingRemoval? = null,
     onRemove: (String) -> Unit = {},
@@ -101,7 +111,10 @@ fun LibraryScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.library_title)) },
+                title = {
+                    Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineLarge)
+                },
+                expandedHeight = TopBarHeight,
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.library_settings))
@@ -122,7 +135,7 @@ fun LibraryScreen(
 
             is LibraryUiState.Content ->
                 RecentDocumentList(
-                    documents = state.documents,
+                    content = state,
                     onOpen = onOpenDocument,
                     onRemove = onRemove,
                     loadThumbnail = loadThumbnail,
@@ -212,12 +225,17 @@ private fun OpenFileButton(onClick: () -> Unit) {
 }
 
 /**
- * The content-slot overload: with the `text` and `icon` slots, the label was not merged into the
- * button's semantics under Robolectric (a button without name for screen readers).
+ * In the primary colour (ADR 0018). The content-slot overload: with the `text` and `icon` slots,
+ * the label was not merged into the button's semantics under Robolectric (a button without name
+ * for screen readers).
  */
 @Composable
 private fun OpenFileFab(onClick: () -> Unit) {
-    ExtendedFloatingActionButton(onClick = onClick) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+    ) {
         Icon(painter = painterResource(UiR.drawable.ic_folder), contentDescription = null)
         Spacer(Modifier.width(FabIconSpacing))
         Text(stringResource(R.string.library_open_file))
@@ -270,10 +288,19 @@ private fun LibraryScreenContentPreview() {
             lastPage = 2,
             openedOn = OpenedOn.Today(PreviewOpenedAt),
             thumbnailPath = null,
+            isReadingInProgress = true,
+        )
+    val other =
+        document.copy(
+            documentId = "2",
+            name = "Billet de train",
+            pageCount = 1,
+            lastPage = 0,
+            isReadingInProgress = false,
         )
     LutrinTheme(dynamicColor = false) {
         LibraryScreen(
-            state = LibraryUiState.Content(listOf(document)),
+            state = LibraryUiState.Content(document, listOf(other)),
             onOpenFile = {},
             onOpenSettings = {},
             onOpenDocument = {},

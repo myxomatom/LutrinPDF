@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.unit.IntSize
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -61,7 +62,8 @@ private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null
  *
  * @param libraryState the recent documents, collected while the library is shown.
  * @param modifier modifier applied to the screen.
- * @param loadThumbnail reads the thumbnail file of a recent document.
+ * @param loadThumbnail reads the thumbnail file of a recent document, for a frame of the given
+ *   size in pixels.
  * @param onRefreshThumbnail called with a recent document shown with a missing or outdated
  *   thumbnail.
  * @param pendingRemoval the removal of a recent document for which « Annuler » is offered.
@@ -76,7 +78,7 @@ private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null
 fun LutrinApp(
     libraryState: StateFlow<LibraryUiState>,
     modifier: Modifier = Modifier,
-    loadThumbnail: suspend (String) -> ImageBitmap? = { null },
+    loadThumbnail: suspend (String, IntSize) -> ImageBitmap? = { _, _ -> null },
     onRefreshThumbnail: (String) -> Unit = {},
     pendingRemoval: StateFlow<PendingRemoval?> = NoPendingRemoval,
     onRemoveRecent: (String) -> Unit = {},

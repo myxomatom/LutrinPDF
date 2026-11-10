@@ -164,7 +164,8 @@ class ProtectedDocumentsTest {
 
         composeRule.onNodeWithText("Cancel").performClick()
 
-        waitForText("Recent")
+        // The only recent document is in the resume card (ADR 0018), without « Recent » header.
+        waitForText("RESUME READING")
         composeRule.onNodeWithText("Relevé de compte").assertIsDisplayed()
         composeRule.onNodeWithText("Protected document").assertDoesNotExist()
     }
