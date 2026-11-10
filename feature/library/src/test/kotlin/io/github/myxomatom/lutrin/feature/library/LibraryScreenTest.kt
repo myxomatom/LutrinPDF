@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.library
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -11,6 +19,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTouchHeightIsEqualTo
 import androidx.compose.ui.test.assertTouchWidthIsEqualTo
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -19,6 +28,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -28,6 +38,7 @@ import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -434,6 +445,44 @@ class LibraryScreenTest {
     }
 
     @Test
+    fun `the card never shows the picture of the document it showed before`() {
+        val picture = ImageBitmap(104, 138).apply {
+            Canvas(this).drawRect(0f, 0f, 104f, 138f, Paint().apply { color = Color.Red })
+        }
+        val next = statement.copy(thumbnailPath = "/thumbnails/statement.png", thumbnailOutdated = false)
+        // The picture of the next document is still being decoded.
+        val nextPicture = CompletableDeferred<ImageBitmap?>()
+        var state by mutableStateOf(content(contract))
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                LibraryScreen(
+                    state = state,
+                    onOpenFile = {},
+                    onOpenSettings = {},
+                    onOpenDocument = {},
+                    loadThumbnail = { path, _ -> if (path == contract.thumbnailPath) picture else nextPicture.await() },
+                )
+            }
+        }
+        assertThat(cardPictureCenter()).isEqualTo(Color.Red.toArgb())
+
+        // The document of the card is removed (or another one opened): the next one takes the card.
+        state = content(next)
+
+        assertThat(cardPictureCenter()).isNotEqualTo(Color.Red.toArgb())
+    }
+
+    /** The colour at the centre of the page of the resume card, on screen. */
+    private fun cardPictureCenter(): Int {
+        composeRule.waitForIdle()
+        val card = composeRule.onNode(hasClickAction() and hasContentDescription("Resume reading", substring = true))
+            .fetchSemanticsNode().boundsInRoot
+        val screen = composeRule.onRoot().captureToImage().asAndroidBitmap()
+        // Robolectric's density is 1: the 104 x 138 dp page starts 16 dp inside the card.
+        return screen.getPixel((card.left + CARD_PICTURE_CENTER_X).toInt(), (card.top + CARD_PICTURE_CENTER_Y).toInt())
+    }
+
+    @Test
     fun `a very long title stays within the card`() {
         val long = contract.copy(
             name = "Contrat de location meublée — annexes, état des lieux et inventaire ".repeat(3),
@@ -545,6 +594,10 @@ class LibraryScreenTest {
 
         /** Description of the resume card of [contract]. */
         const val RESUME_CONTRACT = "Resume reading Contrat de location, page 3 of 8"
+
+        /** Centre of the page of the resume card, from the card's corner: padding + half the page. */
+        const val CARD_PICTURE_CENTER_X = 16f + 52f
+        const val CARD_PICTURE_CENTER_Y = 16f + 69f
 
         /** The card holds its 138 dp page and 16 dp of padding above and below. */
         val CARD_MIN_HEIGHT = 170.dp

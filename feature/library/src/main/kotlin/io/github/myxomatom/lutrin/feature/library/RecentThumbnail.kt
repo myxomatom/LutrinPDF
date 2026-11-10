@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -139,7 +140,12 @@ private fun rememberThumbnail(
     val pixels = with(LocalDensity.current) { IntSize(size.width.roundToPx(), size.height.roundToPx()) }
     val currentLoad by rememberUpdatedState(loadThumbnail)
     val currentOnOutdated by rememberUpdatedState(onRefreshThumbnail)
-    val picture by produceState<ImageBitmap?>(null, path, pixels) { value = path?.let { currentLoad(it, pixels) } }
+    // produceState keeps its value when its keys change: an old picture of the same document stays
+    // while the new one is decoded, but the resume card, reused when another document takes it,
+    // must never show the picture of the previous one meanwhile.
+    val picture by key(document.documentId) {
+        produceState<ImageBitmap?>(null, path, pixels) { value = path?.let { currentLoad(it, pixels) } }
+    }
     LaunchedEffect(document.documentId, document.thumbnailOutdated, document.openedOn) {
         // Never for a protected document, which cannot be opened without its password (ADR 0017).
         if (document.thumbnailOutdated && !document.isProtected) currentOnOutdated(document.documentId)
