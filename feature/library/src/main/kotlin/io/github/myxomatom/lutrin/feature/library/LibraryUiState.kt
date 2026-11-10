@@ -62,6 +62,13 @@ data class RecentDocumentItem(
 ) {
     /** Reading progress, from 1 / [pageCount] on the first page to 1 on the last; shown in progress only. */
     val progress: Float get() = (lastPage + 1).toFloat() / pageCount.coerceAtLeast(1)
+
+    /**
+     * The document whose thumbnail grows into the reader's page when it is opened (ADR 0019), or
+     * `null` for a protected document: it has no picture to grow, and the reader asks for its
+     * password first; it only fades.
+     */
+    val transitionDocumentId: String? get() = documentId.takeUnless { isProtected }
 }
 
 /** When a document was last opened, as the library writes it (« aujourd'hui, 20:41 », « hier », « 28 oct. »). */

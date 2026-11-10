@@ -22,11 +22,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
@@ -39,6 +40,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinDimens
+import io.github.myxomatom.lutrin.core.ui.transition.animateWithDocumentTransition
+import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
 
 /** Margins of the card (E1 mock-up: 4 dp above, 12 dp below, the screen gutter on the sides). */
 private val CardTopMargin = 4.dp
@@ -123,20 +126,7 @@ internal fun ResumeCard(
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
     ) {
-        val thumbnail = @Composable {
-            RecentThumbnail(
-                document = document,
-                placement = ThumbnailPlacement.InCard,
-                loadThumbnail = loadThumbnail,
-                onRefreshThumbnail = onRefreshThumbnail,
-                // Said by the description of the card.
-                modifier = Modifier
-                    .rotate(PAGE_TILT_DEGREES)
-                    // Not clipped: the lock of a protected document overlaps the corner of the page.
-                    .shadow(PageElevation, RoundedCornerShape(PageCorner), clip = false)
-                    .clearAndSetSemantics {},
-            )
-        }
+        val thumbnail = @Composable { ResumeThumbnail(document, loadThumbnail, onRefreshThumbnail) }
         val actions = @Composable { ResumeActions(document.name, onRemove) }
         if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
             StackedResumeContent(document, thumbnail, actions)
@@ -144,6 +134,33 @@ internal fun ResumeCard(
             SideBySideResumeContent(document, thumbnail, actions)
         }
     }
+}
+
+/**
+ * The page of the card, tilted, with its shadow. Tapped, it grows into the reader's page and
+ * straightens on the way; it leans again as it comes back (ADR 0019).
+ */
+@Composable
+private fun ResumeThumbnail(
+    document: RecentDocumentItem,
+    loadThumbnail: suspend (String, IntSize) -> ImageBitmap?,
+    onRefreshThumbnail: (String) -> Unit,
+) {
+    val transition = rememberDocumentTransition(document.transitionDocumentId)
+    val tilt by animateWithDocumentTransition(transition, atRest = PAGE_TILT_DEGREES, inFlight = 0f)
+    RecentThumbnail(
+        document = document,
+        placement = ThumbnailPlacement.InCard,
+        loadThumbnail = loadThumbnail,
+        onRefreshThumbnail = onRefreshThumbnail,
+        // Said by the description of the card. Drawn in a layer, so that the tilt does not recompose.
+        modifier = Modifier
+            .graphicsLayer { rotationZ = tilt }
+            // Not clipped: the lock of a protected document overlaps the corner of the page.
+            .shadow(PageElevation, RoundedCornerShape(PageCorner), clip = false)
+            .clearAndSetSemantics {},
+        transition = transition,
+    )
 }
 
 /** The layout of the mock-up: the page on the left, every text on its right. */

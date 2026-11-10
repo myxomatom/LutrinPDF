@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.ui.R as CoreUiR
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
+import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
+import io.github.myxomatom.lutrin.core.ui.transition.sharedDocumentPage
 
 /** Corner radius and edge of a thumbnail (E1 mock-up). */
 private val ThumbnailCorner = 4.dp
@@ -78,7 +81,10 @@ private const val PLACEHOLDER_GAP_RATIO = 0.085f
  * @param placement row or card: size and colours of the frame.
  * @param loadThumbnail reads a thumbnail file for a frame of the given size in pixels.
  * @param onRefreshThumbnail called for a document shown with a missing or outdated thumbnail.
- * @param modifier modifier applied to the frame, lock included (rotation, shadow, semantics).
+ * @param modifier modifier applied to the frame, lock included (rotation, shadow, semantics);
+ *   it travels with the frame during the transition to the reader.
+ * @param transition the transition of this thumbnail to the reader's page (ADR 0019), from
+ *   [rememberDocumentTransition] with [RecentDocumentItem.transitionDocumentId]; `null` for none.
  */
 @Composable
 internal fun RecentThumbnail(
@@ -87,6 +93,7 @@ internal fun RecentThumbnail(
     loadThumbnail: suspend (String, IntSize) -> ImageBitmap?,
     onRefreshThumbnail: (String) -> Unit,
     modifier: Modifier = Modifier,
+    transition: DocumentTransition? = null,
 ) {
     val size = placement.size
     val picture = rememberThumbnail(document, placement, loadThumbnail, onRefreshThumbnail)
@@ -99,7 +106,7 @@ internal fun RecentThumbnail(
         .border(ThumbnailBorder, edge, shape)
     // A protected document is never drawn (ADR 0017): an old picture is not shown either.
     val image = picture?.takeUnless { document.isProtected }
-    Box(modifier) {
+    Box(Modifier.sharedDocumentPage(transition).then(modifier)) {
         if (image != null) {
             Image(
                 bitmap = image,

@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinDimens
+import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -165,7 +166,13 @@ private fun RecentDocumentRow(
         horizontalArrangement = Arrangement.spacedBy(RowGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RecentThumbnail(document, ThumbnailPlacement.InList, loadThumbnail, onRefreshThumbnail)
+        RecentThumbnail(
+            document = document,
+            placement = ThumbnailPlacement.InList,
+            loadThumbnail = loadThumbnail,
+            onRefreshThumbnail = onRefreshThumbnail,
+            transition = rememberDocumentTransition(document.transitionDocumentId),
+        )
         RecentDocumentTexts(document, Modifier.weight(1f))
         DocumentMenu(document.name, onRemove, MaterialTheme.colorScheme.onSurfaceVariant)
     }
