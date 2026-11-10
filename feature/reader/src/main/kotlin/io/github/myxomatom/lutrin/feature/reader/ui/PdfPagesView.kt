@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
@@ -56,6 +57,8 @@ private val PAGE_GUTTER = 16.dp
  * @param onZoomChange called with the new, clamped zoom.
  * @param onTap called on a single tap, to show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
+ * @param bottomClearance extra free space after the last page, so that it can scroll above the
+ *   floating bar laid over the bottom of the list (ADR 0018); not scaled by the zoom.
  */
 @Composable
 internal fun PdfPagesView(
@@ -68,6 +71,7 @@ internal fun PdfPagesView(
     contentDescription: String,
     modifier: Modifier = Modifier,
     nightMode: Boolean = false,
+    bottomClearance: Dp = 0.dp,
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -78,7 +82,7 @@ internal fun PdfPagesView(
         pendingHorizontal = null
     }
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val layout = pagesLayout(constraints.maxWidth, zoom)
+        val layout = pagesLayout(constraints.maxWidth, zoom, bottomClearance)
         val commit = rememberCommit(zoom, onZoomChange, listState, horizontal) { newZoom ->
             { index: Int -> layout.itemExtent(pageSizes[index], newZoom) }
         }
@@ -115,21 +119,27 @@ internal fun PdfPagesView(
  * @property fitWidth page width at zoom 1: the viewport minus a margin on both sides.
  * @property contentWidth width of the scrollable content, at least the viewport.
  * @property spacingPx gap between pages at zoom 1, in pixels.
+ * @property bottomClearance free space after the last page, above the floating bar.
  */
-private data class PagesLayout(val fitWidth: Int, val contentWidth: Int, val spacingPx: Float) {
+private data class PagesLayout(
+    val fitWidth: Int,
+    val contentWidth: Int,
+    val spacingPx: Float,
+    val bottomClearance: Dp,
+) {
     /** Height of [page] plus the gap below it, at [zoom], in pixels. */
     fun itemExtent(page: PageSize, zoom: Float): Int =
         pageHeightPx(page, pageWidthPx(fitWidth, zoom)) + (spacingPx * zoom).toInt()
 }
 
 @Composable
-private fun pagesLayout(viewportWidth: Int, zoom: Float): PagesLayout {
+private fun pagesLayout(viewportWidth: Int, zoom: Float, bottomClearance: Dp): PagesLayout {
     val density = LocalDensity.current
     val gutterPx = with(density) { PAGE_GUTTER.roundToPx() }
     // "Fit width" leaves a margin on both sides: pages are sized against the remaining width.
     val fitWidth = (viewportWidth - 2 * gutterPx).coerceAtLeast(1)
     val contentWidth = maxOf(viewportWidth, pageWidthPx(fitWidth, zoom) + (2 * gutterPx * zoom).toInt())
-    return PagesLayout(fitWidth, contentWidth, with(density) { PAGE_SPACING.toPx() })
+    return PagesLayout(fitWidth, contentWidth, with(density) { PAGE_SPACING.toPx() }, bottomClearance)
 }
 
 /** The list of pages, drawn with the [pinch] transform while a pinch is in progress. */
@@ -156,7 +166,10 @@ private fun PagesList(
                 .onGloballyPositioned { viewport = Viewport(it, it.size) }
                 .pinchLayer { pinch }
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
-        contentPadding = PaddingValues(vertical = PAGE_SPACING * zoom),
+        contentPadding = PaddingValues(
+            top = PAGE_SPACING * zoom,
+            bottom = PAGE_SPACING * zoom + layout.bottomClearance,
+        ),
         verticalArrangement = Arrangement.spacedBy(PAGE_SPACING * zoom),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

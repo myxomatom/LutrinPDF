@@ -4,11 +4,19 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -286,6 +294,61 @@ class ReaderScreenTest {
 
         composeRule.onNodeWithText("Page 1 / 3").assertIsDisplayed()
         composeRule.onNodeWithText("Contrat de location").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the display options offer the page preview, on by default, and turn it off`() {
+        val chosen = mutableListOf<Boolean>()
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                ReaderScreen(ready(), onBack = {}, onPagePreviewChange = { chosen += it })
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Page preview").assertIsDisplayed()
+        composeRule
+            .onNode(isToggleable() and hasText("Page preview"))
+            .assertIsOn()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+            .performClick()
+
+        assertThat(chosen).containsExactly(false)
+        composeRule.onNodeWithText("Display").assertIsDisplayed()
+    }
+
+    @Test
+    fun `turning the page preview back on reports it`() {
+        val chosen = mutableListOf<Boolean>()
+        var state by mutableStateOf(ready().copy(pagePreview = false))
+        composeRule.setContent {
+            LutrinTheme(dynamicColor = false) {
+                ReaderScreen(state, onBack = {}, onPagePreviewChange = {
+                    chosen += it
+                    state = state.copy(pagePreview = it)
+                })
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsOff().performClick()
+
+        assertThat(chosen).containsExactly(true)
+        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsOn()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the page preview option is translated into French`() {
+        show(ready())
+
+        composeRule.onNodeWithContentDescription("Plus d’options").performClick()
+
+        composeRule.onNodeWithText("Aperçu de la page").assertIsDisplayed()
+        val summary =
+            "Montre la page pendant que vous faites glisser le curseur\u00A0; " +
+                "le document s’y rend quand vous relâchez."
+        composeRule.onNodeWithText(summary).assertIsDisplayed()
     }
 
     @Test

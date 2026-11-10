@@ -12,6 +12,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
  * document. A successful opening is added to the recent list (F11) and the page shown is saved
  * as the user reads ([ReadingHistory]). A document that cannot be opened but is in the recent
  * list can be removed from it from the error screen (V8, [onRemoveFromRecents]). Also follows the
- * scroll mode setting (F03) and remembers the current page, so that switching mode keeps it.
+ * scroll mode (F03) and page preview (F05, ADR 0018) settings, and remembers the current page, so
+ * that switching mode keeps it.
  *
  * An encrypted document asks for its password ([ReaderUiState.PasswordRequired], V4, F10); each
  * password tried ([onPasswordSubmit]) goes through the same opening as any document, so that a
@@ -44,10 +45,13 @@ import kotlinx.coroutines.launch
  * engine checks it. After a rotation the question is asked again with an empty field; after the
  * death of the process the document is opened again from its URI and asks again.
  *
- * @param observeSettings reads the scroll mode, shared by every document (ADR 0011).
+ * @param observeSettings reads the scroll mode and the page preview setting, shared by every
+ *   document (ADR 0011, ADR 0018).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
+ * @param setPagePreview stores the page preview choice made in the reader options.
  * @param history the recent list and the reading position of this document.
  */
+@Suppress("LongParameterList") // Dependencies injected by Hilt.
 @HiltViewModel
 class ReaderViewModel
 @Inject
@@ -57,6 +61,7 @@ constructor(
     @param:DefaultDispatcher private val renderDispatcher: CoroutineDispatcher,
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
+    private val setPagePreview: SetPagePreviewUseCase,
     private val history: ReadingHistory,
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
@@ -67,8 +72,12 @@ constructor(
 
     /** State of the screen; [ReaderUiState.Ready] once the document and the settings are read. */
     val uiState: StateFlow<ReaderUiState> =
-        combine(documentState, observeSettings().map { it.scrollMode }, currentPage) { state, mode, page ->
-            if (state is ReaderUiState.Ready) state.copy(scrollMode = mode, currentPage = page) else state
+        combine(documentState, observeSettings(), currentPage) { state, settings, page ->
+            if (state is ReaderUiState.Ready) {
+                state.copy(scrollMode = settings.scrollMode, pagePreview = settings.pagePreview, currentPage = page)
+            } else {
+                state
+            }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ReaderUiState.Loading)
 
     init {
@@ -92,6 +101,16 @@ constructor(
      */
     fun onScrollModeChange(mode: ScrollMode) {
         viewModelScope.launch { setScrollMode(mode) }
+    }
+
+    /**
+     * Stores whether dragging the page slider previews the page and moves the document only on
+     * release (ADR 0018); it applies to every document.
+     *
+     * @param enabled whether the slider previews the page.
+     */
+    fun onPagePreviewChange(enabled: Boolean) {
+        viewModelScope.launch { setPagePreview(enabled) }
     }
 
     /**

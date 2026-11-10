@@ -17,6 +17,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
@@ -66,6 +67,7 @@ class ReaderViewModelTest {
         dispatcher,
         ObserveSettingsUseCase(settings),
         SetScrollModeUseCase(settings),
+        SetPagePreviewUseCase(settings),
         ReadingHistory(
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
@@ -193,6 +195,50 @@ class ReaderViewModelTest {
 
         assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
         assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `the page preview of the slider is on by default`() = runTest(dispatcher) {
+        assertThat(openDocument().ready.pagePreview).isTrue()
+    }
+
+    @Test
+    fun `exposes the stored page preview choice`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository(AppSettings(pagePreview = false))
+
+        assertThat(openDocument(settings = settings).ready.pagePreview).isFalse()
+    }
+
+    @Test
+    fun `turning the page preview off and on stores it and shows it, keeping the page`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(pageCount = 5, settings = settings)
+        viewModel.onPageChange(2)
+
+        viewModel.onPagePreviewChange(false)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.pagePreview).isFalse()
+        assertThat(viewModel.ready.pagePreview).isFalse()
+        assertThat(viewModel.ready.currentPage).isEqualTo(2)
+        assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+
+        viewModel.onPagePreviewChange(true)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.pagePreview).isTrue()
+        assertThat(viewModel.ready.pagePreview).isTrue()
+    }
+
+    @Test
+    fun `the page preview choice made elsewhere reaches the open reader`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        settings.setPagePreview(false)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.pagePreview).isFalse()
     }
 
     @Test
