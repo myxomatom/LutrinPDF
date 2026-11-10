@@ -30,7 +30,7 @@ changement y est signalé.
 - **Aperçu de la page pendant le glissement du curseur** (ADR 0018), activé par défaut : le
   document reste où il est, atténué, une carte au-dessus du pouce montre la page visée (rendue
   par le moteur, page blanche le temps du rendu) et « Page 6 », l'indicateur passe à « 6 / 8 » en
-  couleur primaire ; le document y va au relâchement. Un appui sur la piste, le clavier et
+  couleur primaire ; le document y va au relâchement. Un appui sur la piste, le clavier (non essayé sur appareil) et
   TalkBack vont directement à la page ; un geste annulé reste sur la page de départ. Fonctionne
   en défilement continu comme en page par page. Interrupteur « Aperçu de la page » dans la
   feuille « Affichage » (section « Défilement »), enregistré avec DataStore ; désactivé, le

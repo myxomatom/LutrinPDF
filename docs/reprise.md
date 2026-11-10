@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-09.**
+> session de travail. **Dernière mise à jour : 2026-11-10.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -116,12 +116,36 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
 
-**Propositions de design (2026-11-10, non adoptées)** : `docs/design/proposals/` contient des
-maquettes avant / après pour E1, E2 et E9 (carte « Reprendre la lecture », barre flottante et
-curseur fin dans le lecteur, écran de résultat), en thème clair et sombre. À trancher par le
-mainteneur ; toute adoption passe par un ADR. Déjà décidé : l'aperçu de page pendant le
-glissement du curseur sera une option activable (valeur par défaut et emplacement à fixer). Le curseur par défaut de Material 3, jugé trop lourd dans l'application
-compilée, peut être allégé sans attendre le reste (`PageBar` dans `ReaderScreen.kt`).
+**Nouveau design visuel (2026-11-10, ADR 0018 et 0019, branche `ccr-d7c547a8-psu5t2`)** : adopté
+pour E1, E2 et E9 ; les maquettes de référence de ces écrans sont dans `docs/design/proposals/`.
+Implémenté et vert sous Robolectric, **jamais essayé sur appareil** :
+
+- titres en Fraunces (police embarquée) et accent chaud dans le schéma de repli ;
+- E1 : carte « Reprendre la lecture », vignettes de 416 × 552 px au plus (les anciennes sont
+  redessinées à l'affichage), barre de progression seulement pour une lecture en cours ;
+- E2 : barre flottante, curseur fin, aperçu de page pendant le glissement (réglage « Aperçu de la
+  page » de la feuille « Affichage », activé par défaut) ;
+- transition vignette → lecteur par élément partagé, retour prédictif activé dans le manifeste ;
+- E9 : maquettes seulement, à implémenter avec M6.
+
+**À faire sur appareil avant de fusionner** (liste complète dans l'ADR 0019) :
+
+1. refaire les Macrobenchmarks de l'ADR 0012 (référence : P90 4,0 ms en défilement continu) et
+   régénérer le Baseline Profile : `SharedTransitionLayout` enveloppe toute la navigation et son
+   coût n'est pas mesuré ; en cas de dégradation, ne poser l'élément partagé que pendant la
+   transition ;
+2. la transition : carte, ligne, retour par la flèche, le bouton et le geste (lent, puis annulé),
+   PDF de 600 pages, PDF chiffré, fichier supprimé, rotation en cours de route, mode page par
+   page, « Supprimer les animations » ;
+3. le curseur : fluidité des aperçus sur un gros PDF, geste annulé (tirer le volet de
+   notifications pendant le glissement), TalkBack, **clavier physique** (non couvert par un test :
+   sous Robolectric le curseur ne réagit pas aux flèches, avec ou sans aperçu) ;
+4. le retour depuis « Ouvrir avec », la feuille « Affichage », le dialogue de mot de passe ;
+5. paysage, navigation à trois boutons, grande police, couleurs dynamiques claires et sombres.
+
+**À trancher par le mainteneur** : pendant une ouverture lente, la page blanche d'attente de la
+transition recouvre le rond de chargement (ADR 0019) ; le laisser ainsi ou dessiner l'indicateur
+sur la page.
 
 ## 3. Décisions à connaître
 
@@ -295,17 +319,32 @@ Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
    "ndk;28.2.13676358" "cmake;3.22.1"`. Créer ensuite `local.properties` avec
    `sdk.dir=/opt/android-sdk`. Ce fichier est ignoré par Git.
 2. **MuPDF** : lancer `./scripts/init-mupdf.sh`.
-3. **Maven Central derrière le proxy** : si Gradle échoue avec des erreurs 429, ajouter un
-   script d'initialisation **local** (jamais dans le dépôt),
-   `~/.gradle/init.d/central-mirror.init.gradle.kts`. Il ajoute en premier le miroir
-   `https://maven-central.storage-download.googleapis.com/maven2/` à `pluginManagement` et à
-   `dependencyResolutionManagement`, et remet `gradlePluginPortal()` quand `pluginManagement` n'a
-   pas d'autre dépôt. Sans ce miroir, le symptôme n'est pas forcément une erreur 429 : la
-   configuration échoue avec `Plugin [id: 'io.github.takahirom.roborazzi', …] was not found`.
+3. **Maven Central derrière le proxy** : si Gradle échoue avec des erreurs 429, ou avec
+   `Plugin [id: 'io.github.takahirom.roborazzi', …] was not found`, ajouter un script
+   d'initialisation **local** (jamais dans le dépôt),
+   `~/.gradle/init.d/central-mirror.init.gradle.kts` :
+   ```kotlin
+   val mirror = "https://maven-central.storage-download.googleapis.com/maven2/"
+   beforeSettings {
+       pluginManagement { repositories { maven(url = mirror) } }
+       dependencyResolutionManagement { repositories { maven(url = mirror) } }
+   }
+   settingsEvaluated {
+       if (pluginManagement.repositories.size == 1) {
+           pluginManagement.repositories.gradlePluginPortal()
+       }
+   }
+   ```
+   Le portail des plugins n'est remis que si le miroir est le seul dépôt (cas de `build-logic`) :
+   placé avant `google()`, il répond 429, Gradle le désactive et toute la résolution échoue. Le
+   miroir ne contient pas `com.android.tools.build:*`, qui vient de `google()`.
 4. **Vérifier** : `./gradlew check assembleRelease :dokkaGenerate`, comme la CI. Compter 5 à
    10 minutes au premier lancement, à cause de la compilation de MuPDF pour la machine hôte
    et pour les trois ABI. Un agent dont les commandes au premier plan sont limitées à
-   10 minutes doit lancer cette première compilation en arrière-plan.
+   10 minutes doit lancer cette première compilation en arrière-plan, dans un journal terminé par
+   `echo EXIT $?`, et attendre avec `timeout 570 bash -c 'until grep -q "^EXIT" journal; do sleep 10; done'`
+   (un `sleep` long au premier plan est refusé). Mesuré le 2026-11-10 : 14 min 39 s à froid,
+   2 à 4 min ensuite.
 5. **Captures d'écran** : après un changement visuel voulu, `./gradlew recordRoborazziDebug`,
    puis relire les images avant de les committer.
 
