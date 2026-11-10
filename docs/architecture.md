@@ -22,7 +22,7 @@
 | `:core:data` | Repositories, Room (récents, positions, signets), DataStore (préférences) |
 | `:core:pdf` | `PdfEngine` / `PdfWriter` et leur implémentation MuPDF |
 | `:third-party:mupdf` | MuPDF compilé depuis son sous-module (Java + JNI, NDK) ; seul `core:pdf` en dépend (ADR 0007) |
-| `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés |
+| `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés, portées de la transition vignette → lecteur (ADR 0019) |
 | `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) |
 | `:feature:library` | Bibliothèque / récents (E1) |
 | `:feature:reader` | Lecteur, recherche, table des matières, dialogues (E2, V1–V8) |
@@ -115,6 +115,31 @@ flowchart LR
     screen -->|"CONTINUOUS"| list["PdfPagesView (LazyColumn)"]
     screen -->|"PAGED"| pager["PdfPagerView (HorizontalPager)"]
 ```
+
+## Transition vignette → lecteur (`core:ui`, `app`, ADR 0019)
+
+```mermaid
+flowchart TD
+    app["LutrinApp : document touché (rememberSaveable)<br/>+ animations actives"] -->|"document lié"| layout["DocumentTransitionLayout<br/>(SharedTransitionLayout)"]
+    layout --> nav["NavHost (fondu 300 ms)"]
+    nav --> lib["bibliothèque : DocumentTransitionDestination"]
+    nav --> rd["readerScreen : DocumentTransitionDestination"]
+    lib -->|"rememberDocumentTransition(documentId)"| thumb["vignette de la carte / d'une ligne"]
+    rd -->|"rememberDocumentTransition(ReaderViewModel.documentId)"| open["page d'ouverture (aller)"]
+    rd -->|"puis"| page["page affichée, zoom ≤ 1 (retour)"]
+    thumb <-.->|"DocumentPageKey(documentId), sharedBounds"| open
+    thumb <-.-> page
+```
+
+- `app` choisit le seul document lié : celui que l'utilisateur vient de toucher dans la
+  bibliothèque, tant que les animations du système sont actives. Le sélecteur de fichier et les
+  demandes des autres applications le remettent à `null`.
+- Les deux features ne se connaissent pas : elles lisent les portées par
+  `rememberDocumentTransition`, qui rend `null` hors de l'application (aperçus, tests,
+  `BenchmarkReaderActivity`) ; les écrans fonctionnent alors sans transition.
+- Le lecteur pose une page d'ouverture dès la première image, cible de la vignette pendant que
+  le document s'ouvre (`OpeningPagePhase` : partagée, en attente, partie) ; ensuite, c'est la
+  page affichée qui porte l'élément partagé, pour le retour (geste prédictif compris).
 
 ## Paramètres (`feature:settings`, `core:data`)
 

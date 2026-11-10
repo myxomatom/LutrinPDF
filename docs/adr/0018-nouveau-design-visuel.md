@@ -94,7 +94,9 @@ Option **A**, décisions du mainteneur du 2026-11-10 :
    de la liste) est l'élément partagé d'une transition vers le lecteur (`SharedTransitionLayout`
    de Compose, aucune dépendance nouvelle). Elle fait partie du design adopté ; une autre étape
    l'implémente. Quand les animations du système sont réduites ou désactivées, l'état final
-   s'affiche sans animation.
+   s'affiche sans animation. **Réalisée** : voir l'ADR 0019 (page d'ouverture que la vignette
+   vise pendant que le document s'ouvre, retour vers la vignette, geste de retour prédictif,
+   cas de repli).
 8. **E9 — progression et résultat** : les feuilles sources glissent sous la feuille centrale,
    pourcentage en grand (`displayLarge`) ; au résultat, la première page du PDF créé (vignette
    réelle) remplace la coche, pastille et mention « Ajouté aux récents » dans l'accent chaud,
@@ -232,7 +234,7 @@ directement à la page visée au relâchement.
   (blanc sur `#7C5800` : 6,5 ; `#271900` sur `#FFDEA6` : 13,3 ; `#412D00` sur `#F5BF48` : 7,8 ;
   `#FFDEA6` sur `#5D4200` : 7,2), tous au-dessus de 4,5 (WCAG AA).
 - **Suite** : E1, E2 (avec le réglage de l'aperçu dans V6 et son test) et la transition
-  vignette → lecteur sont réalisés par des étapes séparées ; E9 au jalon M6 ; le point ouvert
+  vignette → lecteur (ADR 0019) sont réalisés par des étapes séparées ; E9 au jalon M6 ; le point ouvert
   n° 10 est mis à jour ; `docs/design/design-tokens.json` est synchronisé avec le thème par un
   test (`DesignTokensTest`) ; les maquettes de `proposals/` gardent leurs fichiers, y compris
   `fonts/` (documentation, jamais embarquée dans l'APK).

@@ -10,6 +10,16 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Transition vignette → lecteur** (ADR 0018 §7, ADR 0019) : en touchant la carte « Reprendre
+  la lecture » ou une ligne des récents, la vignette du document s'agrandit jusqu'à la page du
+  lecteur, en se redressant pour la carte ; une page blanche tient sa place tant que le document
+  s'ouvre, puis s'efface sur le document, le dialogue de mot de passe ou l'écran d'erreur. Au
+  retour (bouton, flèche ou geste de retour, qui pilote l'animation sous Android 14 et plus), la
+  page se replie vers la vignette si elle est visible, sinon simple fondu. Un document protégé,
+  une page zoomée, le sélecteur de fichier, « Ouvrir avec » et le partage gardent un simple
+  fondu ; avec « Supprimer les animations », l'écran change aussitôt. Les écrans passent de
+  l'un à l'autre par un fondu de 300 ms (700 ms avant). Le manifeste active le retour
+  prédictif pour Android 13 à 15.
 - Lecteur (E2) au nouveau design (ADR 0018) : la barre du bas devient une **barre flottante** en
   pilule, au-dessus du document qui défile dessous jusqu'en bas de l'écran, à l'écart de la barre
   de navigation, de la zone des gestes et de l'encoche ; la dernière page peut toujours défiler
