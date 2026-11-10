@@ -117,7 +117,9 @@ la référence du contenu et de la structure de leur état ; ils prennent la typ
 principes ci-dessus (titres Fraunces, bouton primaire, barre flottante, curseur fin). L'agent
 qui les implémente tranche le détail et le consigne s'il s'écarte de cet ADR. Le comportement de
 l'aperçu en lecture page par page (ADR 0011) n'est pas dessiné non plus : il suit la même règle
-que le défilement continu (page atteinte au relâchement), à confirmer par l'implémentation.
+que le défilement continu (page atteinte au relâchement) ; **confirmé par l'implémentation**
+(étape E2, voir « Choix de l'étape E2 ») : le pager ne tourne pas pendant le glissement et va
+directement à la page visée au relâchement.
 
 ## Conséquences
 
@@ -162,6 +164,70 @@ que le défilement continu (page atteinte au relâchement), à confirmer par l'i
     à venir) ; la carte mesure 10 dp de plus (la ligne de « Continuer » a la hauteur du bouton
     « ⋮ », 48 dp) ; le bouton flottant garde la marge de 16 dp de Material 3 (24 dp sur la
     maquette) ; l'icône des paramètres reste l'engrenage de Material.
+- **Choix de l'étape E2 (2026-11-10)** :
+  - **réglage** : `AppSettings.pagePreview` (DataStore, clé `page_preview`, activé par défaut),
+    interrupteur de la feuille « Affichage », section « Défilement », sous le choix du mode :
+    « Aperçu de la page » / « Montre la page pendant que vous faites glisser le curseur ; le
+    document s'y rend quand vous relâchez. » (EN : « Page preview » / « Shows the page while you
+    drag the slider; the document moves there when you let go. »), libellés à relire par le
+    mainteneur ; toute la ligne bascule l'interrupteur ;
+  - **aperçu activé** (`PageScrubber`) : pendant le glissement, le document reste où il est,
+    atténué par un voile du fond du lecteur à 45 % (la maquette l'affiche à 55 % d'opacité ; un
+    voile évite une couche hors écran sur la liste), l'indicateur passe à la page visée en
+    couleur primaire, le pouce grossit (24 dp dans un halo de 40 dp) et la carte d'aperçu
+    s'affiche au-dessus du pouce. Au relâchement, le document va à la page visée sans animation
+    (haut de la page en continu, la page en page par page) ; l'indicateur et le pouce gardent la
+    page visée jusqu'à l'arrivée, pour ne pas revenir une image sur l'ancienne page. Un appui
+    simple sur la piste, les touches du clavier et le réglage de TalkBack (« régler la valeur »)
+    vont directement à la page. **Annulation** : un geste annulé par le système (Compose le
+    termine par des pointeurs relevés déjà consommés, repérés avant le curseur) ou une barre
+    retirée en plein geste ne change pas de page ; relâcher sur la page de départ non plus ;
+  - **aperçu désactivé** : comportement d'avant (le document suit le curseur), sans carte ni
+    voile ;
+  - **carte d'aperçu** (`PagePreviewCard`) : 148 dp de large, page ajustée dans 128 × 180 dp
+    (moins dans une fenêtre trop basse, en paysage : la carte tient toujours au-dessus de la
+    barre), « Page 6 » en `titleMediumSerif`, centrée sur le pouce mais jamais hors de la barre
+    aux extrémités. Le **titre de section** n'est pas affiché : la table des matières arrive au
+    jalon M4 ; `FloatingPageBar` a déjà un paramètre optionnel `sectionTitle` que la carte affiche
+    sous « Page N ». La carte n'est pas une région « live » : TalkBack lit la page visée comme
+    valeur du curseur (« Page 6 sur 8 »), une annonce par page et non par pixel ;
+  - **rendu de l'aperçu** : `PageRenderer.renderPreview`, par `PdfDocument` (jamais de type
+    MuPDF hors de `core:pdf`), bitmap alloué sur le dispatcher injecté, dessin sur le thread du
+    document, à la taille affichée (128 dp de large : 352 × 498 px, 0,7 Mo à 2,75×, 1,5 Mo à 4×).
+    Viser une autre page annule le rendu en cours (le `Cookie` de MuPDF interrompt le dessin) ;
+    une page déjà rendue s'affiche aussitôt ; pendant le rendu, une page blanche bordée. Les
+    aperçus ont leur **propre cache LRU de 8 Mo** (5 à 11 aperçus), séparé de celui des pages
+    pour ne jamais en chasser une page affichée ; comme pour les pages, un bitmap sorti du cache
+    n'est pas recyclé explicitement (il peut encore être à l'écran) : le ramasse-miettes le
+    libère. Un manque de mémoire vide les deux caches. Aucun rendu hors du glissement, et pendant
+    le glissement le document est immobile : le défilement (ADR 0012) n'est pas touché ;
+  - **barre** : pilule de 64 dp, coins pleins, ombre de 6 dp, à 16 dp des bords de la **zone
+    sûre** (barre de navigation, zone des gestes, encoche, côtés en paysage) : elle ne déborde
+    jamais sur la zone des gestes du système, où un glissement horizontal changerait
+    d'application. Fond `surfaceBright` (le plus clair des fonds dans les deux thèmes, aussi avec
+    les couleurs dynamiques) sur le fond du lecteur `surfaceContainerHigh`, inchangé ; indicateur
+    en `titleSmall` (14 sp, 500), d'au moins 52 dp ; bouton d'ajustement en `onSurfaceVariant`.
+    Document d'une page : même barre, sans curseur. En plein écran, la barre disparaît comme
+    l'ancienne. **Fin du document** : les pages reçoivent en bas l'espace de la barre
+    (`floatingPageBarClearance()` : marge système du bas + 16 + 64 + 16 dp) ; en continu, la
+    dernière page peut défiler au-dessus de la barre ; en page par page, la page à zoom 1 tient
+    au-dessus de la barre et, zoomée, peut défiler au-dessus d'elle ;
+  - **curseur** : `Slider` de Material 3 avec ses paramètres `thumb` et `track`
+    (`SliderDefaults.Track`, encore expérimental en Material 3 1.4, sans point d'arrêt ni
+    graduation ni espace autour du pouce, piste de 4 dp `primary` / `primaryContainer`). Le pouce
+    est dessiné à 20 dp mais occupe 20 × 48 dp : le curseur de Material a la hauteur de son
+    pouce, et c'est ce qui garde la cible tactile à 48 dp. Libellé « Aller à la page », valeur
+    « Page x sur n » (nouvelle), réglable au clavier et par TalkBack ;
+  - **benchmark** : `:benchmark` laisse désormais un quart de la hauteur de l'écran libre en bas
+    des gestes de défilement (`setGestureMargins`), sinon le geste commencerait sur la barre
+    flottante et déplacerait le curseur. Les mesures de l'ADR 0012 sont à refaire sur appareil ;
+  - **écarts restants avec la maquette E2** : pas d'icônes « Rechercher » ni « Table des
+    matières » (M4, ADR 0009 §3), pas de titre de section dans l'aperçu (M4) ; en thème sombre,
+    la barre est `surfaceBright` (#36393E) sur le fond actuel du lecteur (#272A2F) au lieu de
+    #272A2F sur #0B0E13 : le contraste entre les deux est voisin (1,23 contre 1,34) et le fond du
+    lecteur reste celui des jetons ; la barre est à 16 dp au-dessus de la zone sûre et non à
+    20 dp du bord de l'écran ; en très grande police, « Page 600 » peut passer sur deux lignes
+    dans la carte, de largeur fixe.
 - **Contraste** : le contraste des paires ambre a été mesuré
   (blanc sur `#7C5800` : 6,5 ; `#271900` sur `#FFDEA6` : 13,3 ; `#412D00` sur `#F5BF48` : 7,8 ;
   `#FFDEA6` sur `#5D4200` : 7,2), tous au-dessus de 4,5 (WCAG AA).

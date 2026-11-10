@@ -10,6 +10,21 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- Lecteur (E2) au nouveau design (ADR 0018) : la barre du bas devient une **barre flottante** en
+  pilule, au-dessus du document qui défile dessous jusqu'en bas de l'écran, à l'écart de la barre
+  de navigation, de la zone des gestes et de l'encoche ; la dernière page peut toujours défiler
+  au-dessus d'elle (et tient au-dessus d'elle en page par page). **Curseur fin** : piste de 4 dp,
+  pouce rond, sans point d'arrêt, cible tactile de 48 dp ; TalkBack lit « Aller à la page » et
+  « Page 3 sur 8 ». Titre de la barre du haut en Fraunces 20 sp. Elle disparaît en plein écran
+  comme avant ; un document d'une page garde la barre, sans curseur.
+- **Aperçu de la page pendant le glissement du curseur** (ADR 0018), activé par défaut : le
+  document reste où il est, atténué, une carte au-dessus du pouce montre la page visée (rendue
+  par le moteur, page blanche le temps du rendu) et « Page 6 », l'indicateur passe à « 6 / 8 » en
+  couleur primaire ; le document y va au relâchement. Un appui sur la piste, le clavier et
+  TalkBack vont directement à la page ; un geste annulé reste sur la page de départ. Fonctionne
+  en défilement continu comme en page par page. Interrupteur « Aperçu de la page » dans la
+  feuille « Affichage » (section « Défilement »), enregistré avec DataStore ; désactivé, le
+  document suit le curseur comme avant.
 - Bibliothèque (E1) au nouveau design (ADR 0018) : titre « Lutrin » en grand (Fraunces, 32 sp) ;
   carte **« Reprendre la lecture »** pour le dernier document ouvert, avec sa première page en
   grand, légèrement inclinée, son titre, « Page 3 sur 8 · aujourd'hui, 20:41 », une barre de
@@ -31,8 +46,7 @@ changement y est signalé.
   violet ; avec les couleurs dynamiques (activées par défaut), l'accent vient du fond d'écran
   comme avant. Les jetons de `docs/design/design-tokens.json` suivent (vignette de liste
   52 × 68 dp) et un test les compare au thème. Les maquettes de `docs/design/proposals/` sont la
-  référence de E1, E2 et E9 ; l'aperçu de page pendant le glissement du curseur sera une option
-  activée par défaut dans la feuille « Affichage ». Les captures d'écran de référence sont
+  référence de E1, E2 et E9. Les captures d'écran de référence sont
   régénérées.
 - Documents protégés par mot de passe (F10, ADR 0017) : un PDF chiffré (RC4, AES-128, AES-256)
   ouvre le dialogue « Document protégé » (V4) au lieu de l'écran d'erreur : champ masqué avec un
@@ -189,6 +203,8 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
+  désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
 - L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
   passe (ADR 0017).
 - « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document

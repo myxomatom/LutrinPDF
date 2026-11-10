@@ -96,15 +96,22 @@ flowchart LR
   mêmes gestes (`ReaderGestures.kt`) et le même `PdfPage` que le mode continu. Le zoom 1 y
   vaut « page entière » (`PagedGeometry.kt`).
 - `PageNavigator` donne la page courante et le saut de page au curseur, à l'indicateur et au
-  ViewModel, quel que soit le mode. Le mode vient des paramètres :
+  ViewModel, quel que soit le mode. Le mode vient des paramètres.
+- Barre flottante (ADR 0018) : `ReaderDocumentArea` pose `FloatingPageBar` au-dessus des pages,
+  qui défilent dessous jusqu'en bas de l'écran ; `floatingPageBarClearance()` donne aux deux vues
+  l'espace de fin (marges système du bas, barre, marges). `PageScrubber` décide de ce que fait le
+  curseur : avec l'aperçu (`AppSettings.pagePreview`, activé par défaut), le glissement ne fait
+  que viser une page, montrée par `PagePreviewCard` (rendue par `PageRenderer.renderPreview`, dans
+  un cache à part de 8 Mo) et le document y va au relâchement ; sans l'aperçu, le document suit
+  le curseur.
 
 ```mermaid
 flowchart LR
-    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange"| rvm["ReaderViewModel"]
-    rvm -->|"SetScrollModeUseCase"| repo["SettingsRepository (DataStore)"]
-    repo -->|"Flow&lt;AppSettings&gt;.scrollMode"| rvm
+    v6["Feuille Affichage (V6)"] -->|"onScrollModeChange, onPagePreviewChange"| rvm["ReaderViewModel"]
+    rvm -->|"SetScrollModeUseCase, SetPagePreviewUseCase"| repo["SettingsRepository (DataStore)"]
+    repo -->|"Flow&lt;AppSettings&gt;"| rvm
     screen["ReaderScreen"] -->|"onPageChange"| rvm
-    rvm -->|"Ready(scrollMode, currentPage)"| screen
+    rvm -->|"Ready(scrollMode, pagePreview, currentPage)"| screen
     screen -->|"CONTINUOUS"| list["PdfPagesView (LazyColumn)"]
     screen -->|"PAGED"| pager["PdfPagerView (HorizontalPager)"]
 ```
@@ -125,9 +132,9 @@ flowchart LR
   sur le dispatcher d'I/O injecté).
 - `MainActivity` observe les paramètres : le thème change dès que l'interrupteur bouge, sans
   redémarrer (ADR 0010).
-- Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) est stocké de la même
-  façon ; le lecteur le lit et l'écrit par ses propres cas d'usage, sans dépendre de
-  `feature:settings`.
+- Le mode de défilement du lecteur (`AppSettings.scrollMode`, ADR 0011) et l'aperçu du curseur
+  (`AppSettings.pagePreview`, ADR 0018) sont stockés de la même façon ; le lecteur les lit et
+  les écrit par ses propres cas d'usage, sans dépendre de `feature:settings`.
 
 ## Récents et reprise de lecture (`feature:library`, `feature:reader`, `core:data`)
 
