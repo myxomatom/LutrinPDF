@@ -176,6 +176,8 @@ Travaille par petites étapes livrables. Une fonctionnalité = une branche = une
 - Suivre Material 3 et les recommandations grands écrans.
 - Avant d'implémenter ou de modifier un écran, consulte sa maquette dans
   `docs/design/png/` (capture) et `docs/design/screens/` (structure, textes).
+  **Exception : E1, E2 et E9**, dont la référence est `docs/design/proposals/`
+  (`png/`, `screens/`) depuis l'ADR 0018.
   Les maquettes sont une référence visuelle : SPEC.md fait foi, et tout écart
   volontaire est documenté dans un ADR.
 - Les couleurs, tailles de texte et formes du thème `core:ui` reprennent

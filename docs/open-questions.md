@@ -23,7 +23,7 @@ puis déplacé dans la section « Tranchés ».
 | 4 | Injection de dépendances | Hilt — [ADR 0002](adr/0002-injection-dependances-hilt.md) |
 | 5 | Licences tierces | Licensee (CI) et AboutLibraries (écran, M5) — [ADR 0003](adr/0003-licences-tierces.md) |
 | 9 | Réglage « Couleurs dynamiques » | Interrupteur dans E3, activé par défaut — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
-| 10 | Police | Police du système conservée, pas de Roboto embarquée — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
+| 10 | Police | Police du système conservée pour les textes courants, pas de Roboto embarquée — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) ; **les titres passent en Fraunces 600 embarquée** — [ADR 0018](adr/0018-nouveau-design-visuel.md) |
 | 15 | Échec natif à la fermeture d'un document | Intercepté (décision du 2026-11-04) : chaque étape de libération s'exécute même si la précédente échoue ; l'échec est signalé à `ReleaseFailureReporter`, qui écrit seulement le type d'exception dans le journal (`AGENTS.md` §1.8), au lieu de faire planter l'application |
 | 12 | Benchmark et Baseline Profile | Module `:benchmark` (Macrobenchmark 1.5.0) et plugin `androidx.baselineprofile` ; ouverture du gros PDF de test par une activité présente dans les seuls builds de benchmark ; pas de benchmark en CI ; profil généré sur appareil par le mainteneur — [ADR 0012](adr/0012-benchmark-et-baseline-profile.md) |
 | 7 | Schéma de couleurs sombre | Schéma M3 complet généré depuis `#2A5B8C`, dans `design-tokens.json` et `core:ui` |

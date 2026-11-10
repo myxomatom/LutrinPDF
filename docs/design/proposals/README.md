@@ -1,13 +1,16 @@
-# Propositions de design — avant / après
+# Design adopté — E1, E2 et E9 (avant / après)
 
-> **Statut : propositions, non adoptées.** Les maquettes de référence restent celles de
-> `docs/design/screens/` et `docs/design/png/` (`AGENTS.md` §11). Rien ici ne doit être
-> implémenté tant qu'un ADR n'a pas acté l'écart avec les maquettes actuelles.
+> **Statut : adopté le 2026-11-10 ([ADR 0018](../../adr/0018-nouveau-design-visuel.md)).**
+> Pour **E1 (bibliothèque), E2 (lecteur) et E9 (progression et résultat d'un outil)**, les
+> maquettes de ce dossier sont la référence visuelle et **priment** sur `docs/design/screens/E1*`,
+> `E2*` et `E9*` (et leurs captures de `docs/design/png/`). Les autres écrans gardent leurs
+> maquettes d'origine. `SPEC.md` fait toujours foi (`AGENTS.md` §11) ; tout écart avec ces
+> maquettes est documenté dans un ADR. E9 n'est pas encore implémenté (jalon M6).
 > Comme le reste de `docs/design/`, ces fichiers ne sont jamais embarqués dans l'APK.
 
-Pistes pour donner plus de caractère à trois écrans : E1 (bibliothèque), E2 (lecteur) et
-E9 (progression et résultat d'un outil). Ouvrir `index.html` dans un navigateur pour la
-comparaison complète.
+Les trois écrans, avant et après. Les planches « Avant » montrent les anciennes maquettes, qui
+restent dans `docs/design/screens/` à titre d'historique. Ouvrir `index.html` dans un navigateur
+pour la comparaison complète.
 
 ## Contenu
 
@@ -46,10 +49,9 @@ docs/design/proposals/
 - `E2-Lecteur-Curseur` : pendant le glissement, aperçu de la page visée avec son numéro, et
   le titre de section si le PDF a une table des matières. Le document ne change de page
   qu'au relâchement.
-- **Décision du mainteneur (2026-11-10)** : l'aperçu est une option, activable ou non.
-  Désactivée, le curseur garde le comportement actuel (le document suit le curseur en
-  continu). Restent à fixer dans l'ADR : la valeur par défaut, le libellé, et la place du
-  réglage (feuille « Affichage » V6 ou Paramètres E3).
+- **Décision du mainteneur (2026-11-10, ADR 0018)** : l'aperçu est une option, **activée par
+  défaut**, dans la feuille « Affichage » (V6) du lecteur. Désactivée, le curseur garde le
+  comportement actuel (le document suit le curseur en continu, sans aperçu).
 - La bulle de défilement rapide à droite disparaît, l'aperçu la remplace.
 
 ## E9 · Progression et résultat
@@ -72,28 +74,28 @@ l'application ne change pas le rendu du document, qui dépend du réglage « Cou
 document » (F13). La barre flottante et l'aperçu utilisent `surfaceContainerHigh` pour se
 détacher du fond du lecteur.
 
-## Changements de jetons que l'adoption impliquerait
+## Changements de jetons (appliqués, ADR 0018)
 
-| Jeton | Actuel | Proposé |
-|-------|--------|---------|
-| Police des titres (`titleLarge`, `headlineSmall`, titre de la carte) | Roboto 400 | Fraunces 600, embarquée dans `core:ui` |
+| Jeton | Avant | Maintenant (`design-tokens.json`, `core:ui`) |
+|-------|-------|----------------------------------------------|
+| Police des titres (`titleLarge`, `headlineSmall`, `headlineLarge`, `displayLarge`) | Roboto 400 | Fraunces 600, embarquée dans `core:ui` |
 | `tertiary` / `tertiaryContainer` / `onTertiaryContainer` (clair) | `#6B5778` / `#F3DAFF` / `#523F5F` | `#7C5800` / `#FFDEA6` / `#271900` |
+| `tertiary` / `tertiaryContainer` / `onTertiaryContainer` (sombre) | `#D7BEE4` / `#523F5F` / `#F3DAFF` | `#F5BF48` / `#5D4200` / `#FFDEA6` |
 | Vignette de liste | 44 × 58 dp | 52 × 68 dp |
 
-## Points à vérifier avant adoption
+## Points relevés à l'adoption
 
 - **Couleurs dynamiques** : sur Android 12+, la palette vient du fond d'écran. L'accent
   chaud n'existe donc que dans le schéma de repli ; l'identité repose surtout sur la
   typographie et les transitions.
-- **Schéma sombre** : voir ci-dessous ; l'accent chaud sombre (`tertiary` `#F5BF48`,
-  `tertiaryContainer` `#5D4200`) est choisi à la main, à régénérer avec Material Color
-  Utilities comme le reste du schéma.
-- **Fraunces** : seul le sous-ensemble latin est copié ici ; vérifier la couverture
-  nécessaire (`latin-ext`) et le poids ajouté à l'APK, puis l'inscrire dans
-  `docs/dependencies.md`.
-- **Animations** : prévoir l'état fixe quand les animations système sont réduites.
-- **Contraste** : les couleurs de texte reprennent les rôles existants ; le blanc sur
-  `#7C5800` et `#271900` sur `#FFDEA6` sont à mesurer avec l'outil du projet.
+- **Schéma sombre** : l'accent chaud sombre (`tertiary` `#F5BF48`, `tertiaryContainer`
+  `#5D4200`) est choisi à la main (il correspond aux tons d'une palette ambre de teinte ≈ 82°,
+  voir `design-tokens.json`), pas généré avec la graine du reste du schéma.
+- **Fraunces** : `fonts/` ne contient que le sous-ensemble latin en WOFF2, pour les maquettes.
+  L'application embarque un TTF statique 600 couvrant latin et latin étendu
+  (`docs/dependencies.md`).
+- **Animations** : l'état fixe s'affiche quand les animations du système sont réduites.
+- **Contraste** : mesuré, toutes les paires ambre dépassent 4,5 (ADR 0018).
 
 ## Régénérer les captures
 
