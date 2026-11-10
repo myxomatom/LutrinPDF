@@ -5,6 +5,9 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -13,9 +16,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -31,6 +37,11 @@ import androidx.navigation.compose.rememberNavController
 import io.github.myxomatom.lutrin.R
 import io.github.myxomatom.lutrin.core.domain.document.IncomingDocumentResult
 import io.github.myxomatom.lutrin.core.domain.document.IncomingRejection
+import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
+import io.github.myxomatom.lutrin.core.ui.theme.LutrinMotion
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionDestination
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionLayout
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionPolicy
 import io.github.myxomatom.lutrin.feature.library.LibraryScreen
 import io.github.myxomatom.lutrin.feature.library.LibraryUiState
 import io.github.myxomatom.lutrin.feature.library.PendingRemoval
@@ -59,6 +70,11 @@ private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null
  * leaves the activity and returns to that app. A refused request brings back the library, with
  * a message saying why. A document picked in the system file picker or tapped in the recent list
  * opens in the reader at the page where the user stopped reading (ADR 0015).
+ *
+ * Screens fade into each other. The thumbnail of a document tapped in the library grows into the
+ * reader's page, and the page shrinks back into it on return, back gesture included (ADR 0019);
+ * only that document is linked, and only while the system plays animations. The other ways into
+ * the reader (file picker, other apps) keep the fade.
  *
  * @param libraryState the recent documents, collected while the library is shown.
  * @param modifier modifier applied to the screen.
@@ -90,34 +106,125 @@ fun LutrinApp(
 ) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
+    // The document last opened by a tap on its thumbnail; kept across a rotation or the death of
+    // the process, so that back from its reader still shrinks the page into the thumbnail.
+    var tappedDocumentId by rememberSaveable { mutableStateOf<String?>(null) }
+    val linkedDocumentId = DocumentTransitionPolicy.linkedDocument(tappedDocumentId, rememberAnimationsEnabled())
     Box(modifier.fillMaxSize()) {
-        NavHost(navController, startDestination = LIBRARY_ROUTE, modifier = Modifier.fillMaxSize()) {
-            composable(LIBRARY_ROUTE) {
-                val state by libraryState.collectAsStateWithLifecycle()
-                val removal by pendingRemoval.collectAsStateWithLifecycle()
-                val picker =
-                    rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-                        uri?.let { navController.navigateToReader(it) }
-                    }
-                LibraryScreen(
-                    state = state,
-                    onOpenFile = { picker.launch(arrayOf(PDF_MIME_TYPE)) },
-                    onOpenSettings = navController::navigateToSettings,
-                    onOpenDocument = { navController.navigateToReader(it.toUri()) },
+        DocumentTransitionLayout(linkedDocumentId, Modifier.fillMaxSize()) {
+            LutrinNavHost(
+                navController = navController,
+                onLinkDocument = { tappedDocumentId = it },
+                libraryState = libraryState,
+                loadThumbnail = loadThumbnail,
+                onRefreshThumbnail = onRefreshThumbnail,
+                pendingRemoval = pendingRemoval,
+                onRemoveRecent = onRemoveRecent,
+                onUndoRemoval = onUndoRemoval,
+                onConfirmRemoval = onConfirmRemoval,
+                onExit = onExit,
+            )
+        }
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+    }
+    IncomingRequestEffect(incomingRequest, navController, snackbarHostState) { request ->
+        // Opened by another app: no thumbnail of the library takes part.
+        tappedDocumentId = null
+        onConsumeIncomingRequest(request)
+    }
+}
+
+/**
+ * The navigation graph: library (E1), reader (E2) and settings (E3), fading into each other.
+ *
+ * @param onLinkDocument called with the document whose thumbnail grows into the reader, or
+ *   `null` when the reader opens another way.
+ */
+@Suppress("LongParameterList") // Plain wiring of the parameters of LutrinApp.
+@Composable
+private fun LutrinNavHost(
+    navController: NavHostController,
+    onLinkDocument: (String?) -> Unit,
+    libraryState: StateFlow<LibraryUiState>,
+    loadThumbnail: suspend (String, IntSize) -> ImageBitmap?,
+    onRefreshThumbnail: (String) -> Unit,
+    pendingRemoval: StateFlow<PendingRemoval?>,
+    onRemoveRecent: (String) -> Unit,
+    onUndoRemoval: (PendingRemoval) -> Unit,
+    onConfirmRemoval: (PendingRemoval) -> Unit,
+    onExit: () -> Unit,
+) {
+    NavHost(
+        navController,
+        startDestination = LIBRARY_ROUTE,
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { fadeIn(tween(LutrinMotion.SCREEN_FADE_MILLIS)) },
+        exitTransition = { fadeOut(tween(LutrinMotion.SCREEN_FADE_MILLIS)) },
+    ) {
+        composable(LIBRARY_ROUTE) {
+            DocumentTransitionDestination {
+                LibraryRoute(
+                    libraryState = libraryState,
+                    pendingRemoval = pendingRemoval,
+                    navController = navController,
+                    onLinkDocument = onLinkDocument,
                     loadThumbnail = loadThumbnail,
                     onRefreshThumbnail = onRefreshThumbnail,
-                    pendingRemoval = removal,
-                    onRemove = onRemoveRecent,
+                    onRemoveRecent = onRemoveRecent,
                     onUndoRemoval = onUndoRemoval,
                     onConfirmRemoval = onConfirmRemoval,
                 )
             }
-            readerScreen(onBack = { navController.goBack(onExit) })
-            settingsScreen(onBack = navController::popBackStack)
         }
-        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        readerScreen(onBack = { navController.goBack(onExit) })
+        settingsScreen(onBack = navController::popBackStack)
     }
-    IncomingRequestEffect(incomingRequest, navController, snackbarHostState, onConsumeIncomingRequest)
+}
+
+/**
+ * The library destination (E1), with its file picker. A recent document tapped is linked to the
+ * reader, so that its thumbnail grows into the page; a document from the picker is not (ADR 0019).
+ *
+ * @param onLinkDocument called with the identifier of the document opened by a tap, or `null`
+ *   for a document opened from the file picker, just before the reader opens.
+ */
+@Suppress("LongParameterList") // Plain wiring of the parameters of LutrinApp.
+@Composable
+private fun LibraryRoute(
+    libraryState: StateFlow<LibraryUiState>,
+    pendingRemoval: StateFlow<PendingRemoval?>,
+    navController: NavController,
+    onLinkDocument: (String?) -> Unit,
+    loadThumbnail: suspend (String, IntSize) -> ImageBitmap?,
+    onRefreshThumbnail: (String) -> Unit,
+    onRemoveRecent: (String) -> Unit,
+    onUndoRemoval: (PendingRemoval) -> Unit,
+    onConfirmRemoval: (PendingRemoval) -> Unit,
+) {
+    val state by libraryState.collectAsStateWithLifecycle()
+    val removal by pendingRemoval.collectAsStateWithLifecycle()
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                onLinkDocument(null)
+                navController.navigateToReader(it)
+            }
+        }
+    LibraryScreen(
+        state = state,
+        onOpenFile = { picker.launch(arrayOf(PDF_MIME_TYPE)) },
+        onOpenSettings = navController::navigateToSettings,
+        onOpenDocument = { uri ->
+            onLinkDocument(documentIdFor(uri))
+            navController.navigateToReader(uri.toUri())
+        },
+        loadThumbnail = loadThumbnail,
+        onRefreshThumbnail = onRefreshThumbnail,
+        pendingRemoval = removal,
+        onRemove = onRemoveRecent,
+        onUndoRemoval = onUndoRemoval,
+        onConfirmRemoval = onConfirmRemoval,
+    )
 }
 
 /**
