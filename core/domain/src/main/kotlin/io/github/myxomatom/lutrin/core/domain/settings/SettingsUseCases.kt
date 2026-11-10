@@ -37,3 +37,17 @@ class SetScrollModeUseCase @Inject constructor(private val repository: SettingsR
         repository.setScrollMode(mode)
     }
 }
+
+/**
+ * Turns the page preview of the reader's slider on or off (F05, ADR 0018): on, dragging the
+ * slider shows the page aimed at and the document moves there on release; off, the document
+ * follows the slider.
+ *
+ * @param repository where the settings are stored.
+ */
+class SetPagePreviewUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param enabled whether the slider previews the page, for every document from now on. */
+    suspend operator fun invoke(enabled: Boolean) {
+        repository.setPagePreview(enabled)
+    }
+}

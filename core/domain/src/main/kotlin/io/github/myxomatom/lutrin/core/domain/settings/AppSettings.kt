@@ -9,10 +9,14 @@ package io.github.myxomatom.lutrin.core.domain.settings
  *   instead of the Lutrin palette (F13, ADR 0010). On by default.
  * @property scrollMode how the reader lays out the pages (F03, ADR 0011): the same for every
  *   document. Continuous by default.
+ * @property pagePreview whether dragging the page slider of the reader previews the page aimed
+ *   at and moves the document only when the slider is released (F05, ADR 0018); otherwise the
+ *   document follows the slider as it moves. On by default.
  */
 data class AppSettings(
     val dynamicColor: Boolean = DEFAULT_DYNAMIC_COLOR,
     val scrollMode: ScrollMode = DEFAULT_SCROLL_MODE,
+    val pagePreview: Boolean = DEFAULT_PAGE_PREVIEW,
 ) {
     /** Default values. */
     companion object {
@@ -21,5 +25,8 @@ data class AppSettings(
 
         /** Pages scroll continuously until the user picks "page by page" (F03, ADR 0011). */
         val DEFAULT_SCROLL_MODE: ScrollMode = ScrollMode.CONTINUOUS
+
+        /** The page slider previews the page until the user turns it off (ADR 0018). */
+        const val DEFAULT_PAGE_PREVIEW: Boolean = true
     }
 }

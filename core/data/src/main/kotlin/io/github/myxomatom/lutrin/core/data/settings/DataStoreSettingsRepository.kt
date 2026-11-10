@@ -28,6 +28,7 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
                 AppSettings(
                     dynamicColor = preferences[DYNAMIC_COLOR] ?: AppSettings.DEFAULT_DYNAMIC_COLOR,
                     scrollMode = scrollModeOf(preferences[SCROLL_MODE]),
+                    pagePreview = preferences[PAGE_PREVIEW] ?: AppSettings.DEFAULT_PAGE_PREVIEW,
                 )
             }.distinctUntilChanged()
 
@@ -39,12 +40,19 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
         dataStore.edit { it[SCROLL_MODE] = mode.storedValue }
     }
 
+    override suspend fun setPagePreview(enabled: Boolean) {
+        dataStore.edit { it[PAGE_PREVIEW] = enabled }
+    }
+
     private companion object {
         /** Key names are stored on the device: never rename them without a migration. */
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
 
         /** Holds [storedValue] of the chosen [ScrollMode]. */
         val SCROLL_MODE = stringPreferencesKey("scroll_mode")
+
+        /** Whether the reader's slider previews the page (ADR 0018). */
+        val PAGE_PREVIEW = booleanPreferencesKey("page_preview")
     }
 }
 

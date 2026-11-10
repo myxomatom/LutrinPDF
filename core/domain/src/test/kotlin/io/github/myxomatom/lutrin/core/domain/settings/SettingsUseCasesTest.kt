@@ -19,6 +19,10 @@ class SettingsUseCasesTest {
         override suspend fun setScrollMode(mode: ScrollMode) {
             (settings as MutableStateFlow).value = settings.value.copy(scrollMode = mode)
         }
+
+        override suspend fun setPagePreview(enabled: Boolean) {
+            (settings as MutableStateFlow).value = settings.value.copy(pagePreview = enabled)
+        }
     }
 
     private val repository = InMemorySettings()
@@ -60,5 +64,25 @@ class SettingsUseCasesTest {
 
         setScrollMode(ScrollMode.CONTINUOUS)
         assertThat(repository.settings.value.scrollMode).isEqualTo(ScrollMode.CONTINUOUS)
+    }
+
+    @Test
+    fun `the page preview of the slider is on by default`() {
+        assertThat(AppSettings().pagePreview).isTrue()
+        assertThat(AppSettings.DEFAULT_PAGE_PREVIEW).isTrue()
+    }
+
+    @Test
+    fun `the page preview can be turned off and on again without touching the other settings`() = runTest {
+        val setPagePreview = SetPagePreviewUseCase(repository)
+        SetScrollModeUseCase(repository)(ScrollMode.PAGED)
+
+        setPagePreview(false)
+        assertThat(repository.settings.value)
+            .isEqualTo(AppSettings(dynamicColor = true, scrollMode = ScrollMode.PAGED, pagePreview = false))
+
+        setPagePreview(true)
+        assertThat(repository.settings.value.pagePreview).isTrue()
+        assertThat(repository.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
     }
 }

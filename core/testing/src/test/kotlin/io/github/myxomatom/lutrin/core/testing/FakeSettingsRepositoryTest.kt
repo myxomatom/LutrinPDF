@@ -28,4 +28,14 @@ class FakeSettingsRepositoryTest {
             repository.settings.value,
         ).isEqualTo(AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED))
     }
+
+    @Test
+    fun `the page preview setter changes only the page preview`() = runTest {
+        val repository = FakeSettingsRepository(AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED))
+
+        repository.setPagePreview(false)
+
+        assertThat(repository.settings.value)
+            .isEqualTo(AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED, pagePreview = false))
+    }
 }

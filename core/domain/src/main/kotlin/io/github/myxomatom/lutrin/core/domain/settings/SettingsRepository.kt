@@ -21,4 +21,11 @@ interface SettingsRepository {
      * @param mode continuous vertical scroll or one page per screen.
      */
     suspend fun setScrollMode(mode: ScrollMode)
+
+    /**
+     * Turns the page preview of the reader's slider on or off, for every document.
+     *
+     * @param enabled whether dragging the slider previews the page and moves only on release.
+     */
+    suspend fun setPagePreview(enabled: Boolean)
 }
