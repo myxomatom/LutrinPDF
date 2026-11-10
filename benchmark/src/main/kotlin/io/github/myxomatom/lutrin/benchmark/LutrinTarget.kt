@@ -28,6 +28,12 @@ private const val GESTURES = 8
 /** Share of the screen width left untouched on each side of a gesture (navigation gestures). */
 private const val GESTURE_MARGIN_DIVISOR = 5
 
+/**
+ * Share of the screen height left untouched at the bottom of a gesture: the floating bar of the
+ * reader (ADR 0018) lies over the pages there, and a fling started on it would move the slider.
+ */
+private const val BOTTOM_MARGIN_DIVISOR = 4
+
 /** Share of the page width covered by a page-by-page swipe. */
 private const val SWIPE_PERCENT = 0.8f
 
@@ -67,21 +73,27 @@ fun MacrobenchmarkScope.waitForPages(): UiObject2 =
         "The document did not open: is the benchmark build of the app installed?"
     }
 
-/** Flings the pages of the continuous mode down, several times. */
+/** Flings the pages of the continuous mode down, several times, above the floating bar. */
 fun MacrobenchmarkScope.flingPages(pages: UiObject2) {
-    pages.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
+    setReadingGestureMargins(pages)
     repeat(GESTURES) {
         pages.fling(Direction.DOWN)
         device.waitForIdle()
     }
 }
 
-/** Swipes to the following pages in page-by-page mode, several times. */
+/** Swipes to the following pages in page-by-page mode, several times, above the floating bar. */
 fun MacrobenchmarkScope.swipePages(pages: UiObject2) {
-    pages.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
+    setReadingGestureMargins(pages)
     repeat(GESTURES) {
         // Pages always run left to right (ADR 0011): swiping left shows the next one.
         pages.swipe(Direction.LEFT, SWIPE_PERCENT)
         device.waitForIdle()
     }
+}
+
+/** Keeps gestures off the screen edges (system gestures) and off the floating bar at the bottom. */
+private fun MacrobenchmarkScope.setReadingGestureMargins(pages: UiObject2) {
+    val margin = device.displayWidth / GESTURE_MARGIN_DIVISOR
+    pages.setGestureMargins(margin, margin, margin, device.displayHeight / BOTTOM_MARGIN_DIVISOR)
 }
