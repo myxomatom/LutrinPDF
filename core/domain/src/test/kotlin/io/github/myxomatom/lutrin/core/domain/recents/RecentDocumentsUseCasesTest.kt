@@ -154,6 +154,25 @@ class RecentDocumentsUseCasesTest {
         assertThat(drawn.copy(thumbnailPath = null).isThumbnailOutdated).isTrue()
     }
 
+    @Test
+    fun `reading is in progress before the last page of a document of several pages`() {
+        val document = entry(URI, lastPage = 0).copy(pageCount = 8)
+
+        assertThat(document.isReadingInProgress).isTrue()
+        assertThat(document.copy(lastPage = 2).isReadingInProgress).isTrue()
+        assertThat(document.copy(lastPage = 6).isReadingInProgress).isTrue()
+    }
+
+    @Test
+    fun `reading is not in progress on the last page nor in a single page`() {
+        val document = entry(URI, lastPage = 7).copy(pageCount = 8)
+
+        assertThat(document.isReadingInProgress).isFalse()
+        assertThat(document.copy(pageCount = 1, lastPage = 0).isReadingInProgress).isFalse()
+        // A document that shrank since: its saved page is beyond the end.
+        assertThat(document.copy(pageCount = 4).isReadingInProgress).isFalse()
+    }
+
     /** Provider names of a few URIs. */
     private fun providerNames(vararg names: Pair<String, String>) = object : DocumentNameResolver {
         override suspend fun nameOf(uri: String): String? = names.toMap()[uri]

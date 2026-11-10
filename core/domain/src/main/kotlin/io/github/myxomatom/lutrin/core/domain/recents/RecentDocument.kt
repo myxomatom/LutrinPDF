@@ -42,6 +42,15 @@ data class RecentDocument(
     val isThumbnailOutdated: Boolean
         get() = !isProtected && (thumbnailPath == null || thumbnailDrawnAt?.isBefore(lastOpenedAt) != false)
 
+    /**
+     * Whether the user stopped somewhere before the last page (ADR 0018): the library then shows
+     * the page reached and a progress bar. A document of a single page, or read up to its last
+     * page, is not in progress: the library shows its number of pages instead, with neither an
+     * empty nor a full bar.
+     */
+    val isReadingInProgress: Boolean
+        get() = lastPage < pageCount - 1
+
     /** Limits of the recent list. */
     companion object {
         /**
