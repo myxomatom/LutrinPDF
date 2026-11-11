@@ -146,8 +146,9 @@ private fun ReaderContent(
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var optionsVisible by rememberSaveable { mutableStateOf(false) }
+    var goToPageVisible by rememberSaveable { mutableStateOf(false) }
     // A new navigator per mode, starting on the page the previous one last reported.
-    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, state.pageSizes.size)
+    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, state.pageSizes)
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
     ReportCurrentPage(navigator, onPageChange)
     ImmersiveMode(enabled = !controlsVisible)
@@ -169,10 +170,12 @@ private fun ReaderContent(
             onZoomChange = { zoom = it },
             controlsVisible = controlsVisible,
             onTap = { controlsVisible = !controlsVisible },
+            onIndicatorClick = { goToPageVisible = true },
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,
         )
     }
+    GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
     if (optionsVisible) {
         ReaderOptionsSheet(
             scrollMode = state.scrollMode,
@@ -180,6 +183,26 @@ private fun ReaderContent(
             onDismiss = { optionsVisible = false },
         )
     }
+}
+
+/**
+ * « Aller à la page » (V3) over the reader, when [visible]: shows the page asked for, then closes. The jump runs
+ * in a scope that outlives the dialog.
+ */
+@Composable
+private fun GoToPage(visible: Boolean, navigator: PageNavigator, pageCount: Int, onDismiss: () -> Unit) {
+    // Outside the condition: the jump goes on after the dialog has closed.
+    val scope = rememberCoroutineScope()
+    if (!visible) return
+    GoToPageDialog(
+        currentPage = navigator.currentPage,
+        pageCount = pageCount,
+        onGoTo = { page ->
+            onDismiss()
+            scope.launch { navigator.goTo(page) }
+        },
+        onDismiss = onDismiss,
+    )
 }
 
 /** The insets the reading area keeps clear of; the bottom ones are left to the floating bar. */

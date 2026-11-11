@@ -33,4 +33,11 @@
     <string name="reader_password_hide">Hide password</string>
     <string name="reader_password_open">Open</string>
     <string name="reader_password_cancel">Cancel</string>
+    <string name="reader_page_indicator_action">Go to a page</string>
+    <string name="reader_goto_title">Go to page</string>
+    <string name="reader_goto_label">Page number</string>
+    <string name="reader_goto_range">Between 1 and %1$d</string>
+    <string name="reader_goto_empty">Enter a page number</string>
+    <string name="reader_goto_confirm">Go</string>
+    <string name="reader_goto_cancel">Cancel</string>
 </resources>
