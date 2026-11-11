@@ -10,6 +10,20 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **API texte et destinations du moteur PDF** (M4, lot 1, ADR 0020), sans écran pour l'instant :
+  les liens internes et les entrées du sommaire donnent la **position** visée dans la page
+  (`PdfDestination(pageIndex, x, y)`, destinations nommées comprises) ; **sélection de texte**
+  entre deux points (`selectText`, modes caractères, mot pour l'appui long, ligne), avec une
+  zone par ligne et le texte en ordre de lecture, juste en arabe ; **recherche page par page**
+  (`SearchPageResult`, une émission par page, même sans résultat, pour suivre la progression),
+  insensible à la casse et aux accents par défaut, arrêtée à **1 000 résultats**, chaque
+  résultat avec un **extrait** (« …la bibliothèque municipale… ») et un mot coupé en fin de ligne
+  trouvé ; **permission de copie** du PDF exposée (`canCopyText`, rapportée sans être
+  appliquée). Les liens externes gardent leur URI brute : le lecteur filtrera les schémas.
+  `FakePdfDocument` (`core:testing`) se règle : sommaire, liens, résultats, sélections,
+  permission de copie. Jeu de test enrichi : `text_selection.pdf` (mot coupé, phrase arabe),
+  liens vers le milieu d'une page, destination nommée, liens `mailto:`, `javascript:`, `file:`
+  et relatif, entrée de sommaire externe, sommaire du PDF de 600 pages.
 - **Transition lecteur → vignette** (ADR 0018 §7, ADR 0019 amendé) : en touchant la carte
   « Reprendre la lecture » ou une ligne des récents, le lecteur apparaît par un simple fondu (la
   vignette qui s'agrandissait, essayée d'abord, était buggée sur appareil ; le rond de
@@ -215,6 +229,11 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- Moteur PDF (ADR 0020) : `OutlineItem.pageIndex` et `PdfLink.Internal.pageIndex` deviennent
+  `destination: PdfDestination` ; `PdfDocument.search` émet des `SearchPageResult` (une par page)
+  au lieu de `SearchHit` ; `textAt(index, PdfRect)`, qui lisait en fait le texte entre deux
+  points et non celui d'un rectangle, est remplacé par `selectText`. Le PDF de 600 pages du jeu
+  de test (aussi utilisé par `:benchmark`) a désormais un sommaire.
 - `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
   désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
 - L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
