@@ -3,11 +3,13 @@ package io.github.myxomatom.lutrin.core.pdf.mupdf
 
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Link
+import com.artifex.mupdf.fitz.LinkDestination
 import com.artifex.mupdf.fitz.Outline
 import com.artifex.mupdf.fitz.Quad
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.StructuredText
 import io.github.myxomatom.lutrin.core.domain.pdf.OutlineItem
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
@@ -50,13 +52,15 @@ internal fun Document.readMetadata(pageCount: Int): PdfMetadata {
     )
 }
 
-/** Zero-based page targeted by an internal [uri], or `null` if it does not resolve. */
-internal fun Document.pageIndexOf(uri: String?): Int? =
-    if (uri == null || Link.isExternal(uri)) null else resolvedPageOrNull(uri)?.takeIf { it >= 0 }
+/** Destination of an internal [uri], or `null` if it is external or does not resolve. */
+internal fun Document.destinationOf(uri: String?): PdfDestination? =
+    if (uri == null || Link.isExternal(uri)) null else resolvedDestinationOrNull(uri)
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
-private fun Document.resolvedPageOrNull(uri: String): Int? = try {
-    pageNumberFromLocation(resolveLink(uri))
+private fun Document.resolvedDestinationOrNull(uri: String): PdfDestination? = try {
+    val destination = resolveLinkDestination(uri)
+    val pageIndex = pageNumberFromLocation(destination)
+    if (pageIndex < 0) null else destination.toPdfDestination(pageIndex)
 } catch (error: RuntimeException) {
     // MuPDF reports a malformed or dangling destination as a plain RuntimeException
     // (see translatingMuPdfErrors). A broken link must not make the whole outline or
@@ -64,23 +68,45 @@ private fun Document.resolvedPageOrNull(uri: String): Int? = try {
     null
 }
 
+/**
+ * Keeps the coordinates that the kind of destination sets: MuPDF has already turned them into
+ * page coordinates (top-left origin, rotation applied); a coordinate left unset is NaN.
+ */
+private fun LinkDestination.toPdfDestination(pageIndex: Int): PdfDestination {
+    val (keepsX, keepsY) = when (type) {
+        LinkDestination.LINK_DEST_XYZ, LinkDestination.LINK_DEST_FIT_R -> true to true
+        LinkDestination.LINK_DEST_FIT_H, LinkDestination.LINK_DEST_FIT_BH -> false to true
+        LinkDestination.LINK_DEST_FIT_V, LinkDestination.LINK_DEST_FIT_BV -> true to false
+        else -> false to false // Fit the whole page.
+    }
+    return PdfDestination(
+        pageIndex = pageIndex,
+        x = x.takeIf { keepsX && it.isFinite() },
+        y = y.takeIf { keepsY && it.isFinite() },
+    )
+}
+
 /** Converts MuPDF outline entries, recursively. */
 internal fun Document.toOutlineItems(entries: Array<Outline>?): List<OutlineItem> = entries.orEmpty().map { entry ->
     OutlineItem(
         title = entry.title.orEmpty(),
-        pageIndex = pageIndexOf(entry.uri),
+        destination = destinationOf(entry.uri),
         uri = entry.uri?.takeIf(Link::isExternal),
         children = toOutlineItems(entry.down),
     )
 }
 
-/** Converts a MuPDF link; `null` for an internal link whose destination does not resolve. */
+/**
+ * Converts a MuPDF link; `null` for an internal link whose destination does not resolve. An
+ * external link keeps its URI as MuPDF reads it, whatever the scheme: MuPDF turns a relative URI
+ * into a `file://` one (ADR 0020).
+ */
 internal fun Document.toPdfLink(link: Link): PdfLink? {
     val uri = link.uri ?: return null
     val bounds = link.bounds.toPdfRect()
     return if (link.isExternal) {
         PdfLink.External(bounds, uri)
     } else {
-        pageIndexOf(uri)?.let { PdfLink.Internal(bounds, it) }
+        destinationOf(uri)?.let { PdfLink.Internal(bounds, it) }
     }
 }

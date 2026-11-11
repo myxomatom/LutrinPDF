@@ -7,8 +7,13 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
+import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
+import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
@@ -22,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -32,6 +38,13 @@ import org.junit.Test
 
 /** Whole A4 page, used to select or render everything. */
 internal val wholePage = PdfRect(0f, 0f, 595f, 842f)
+
+/** The whole text of a page, selected from corner to corner. */
+internal suspend fun PdfDocument.allText(index: Int = 0): String =
+    selectText(index, PdfPoint(0f, 0f), PdfPoint(wholePage.right, wholePage.bottom)).text
+
+/** Every result of a search, in order. */
+internal suspend fun Flow<SearchPageResult>.hits(): List<SearchHit> = toList().flatMap { it.hits }
 
 class MuPdfDocumentTest {
     @Before
@@ -83,9 +96,9 @@ class MuPdfDocumentTest {
             val outline = document.outline()
 
             assertThat(outline.map { it.title }).containsExactly("Chapitre 1", "Chapitre 2", "Chapitre 3").inOrder()
-            assertThat(outline.map { it.pageIndex }).containsExactly(0, 2, 4).inOrder()
+            assertThat(outline.map { it.destination?.pageIndex }).containsExactly(0, 2, 4).inOrder()
             assertThat(outline[1].children.map { it.title }).containsExactly("Section 2.1", "Section 2.2").inOrder()
-            assertThat(outline[1].children[1].pageIndex).isEqualTo(3)
+            assertThat(outline[1].children[1].destination?.pageIndex).isEqualTo(3)
             assertThat(outline[2].children[0].children.single().title).isEqualTo("Sous-section 3.1.1")
         }
     }
@@ -96,21 +109,76 @@ class MuPdfDocumentTest {
     }
 
     @Test
+    fun `reads an outline entry pointing inside a page and an external one`() = runTest {
+        openTestPdf("pdfs/links_internal_external.pdf").use { document ->
+            val (middle, external) = document.outline()
+
+            assertThat(middle.title).isEqualTo("Milieu de la page 4")
+            assertThat(middle.destination?.pageIndex).isEqualTo(3)
+            assertThat(middle.destination?.y).isWithin(1f).of(MIDDLE_OF_PAGE)
+            assertThat(middle.uri).isNull()
+            assertThat(external.destination).isNull()
+            assertThat(external.uri).isEqualTo("https://example.org/sommaire")
+        }
+    }
+
+    @Test
+    fun `reads the outline of a long document`() = runTest {
+        openTestPdf("pdfs/large_600pages.pdf").use { document ->
+            val outline = document.outline()
+
+            assertThat(outline).hasSize(12)
+            assertThat(outline.last().title).isEqualTo("Partie 12")
+            assertThat(outline.last().destination?.pageIndex).isEqualTo(550)
+            assertThat(outline.last().children.last().destination?.pageIndex).isEqualTo(590)
+        }
+    }
+
+    @Test
     fun `reads internal and external links`() = runTest {
         openTestPdf("pdfs/links_internal_external.pdf").use { document ->
             val links = document.links(0)
 
-            assertThat(links.filterIsInstance<PdfLink.Internal>().single().pageIndex).isEqualTo(2)
+            assertThat(links.filterIsInstance<PdfLink.Internal>().single().destination.pageIndex).isEqualTo(2)
             assertThat(links.filterIsInstance<PdfLink.External>().single().uri).isEqualTo("https://example.org/")
             assertThat(links.all { it.bounds.width > 0f }).isTrue()
-            assertThat(document.links(1)).isEmpty()
+            assertThat(document.links(2)).isEmpty()
+        }
+    }
+
+    @Test
+    fun `resolves a link to the middle of a page and a named destination`() = runTest {
+        openTestPdf("pdfs/links_internal_external.pdf").use { document ->
+            val (middle, named) = document.links(1).filterIsInstance<PdfLink.Internal>().map { it.destination }
+
+            assertThat(middle.pageIndex).isEqualTo(3)
+            assertThat(middle.y).isWithin(1f).of(MIDDLE_OF_PAGE)
+            assertThat(named.pageIndex).isEqualTo(2)
+            assertThat(named.y).isWithin(1f).of(NAMED_DESTINATION_Y)
+        }
+    }
+
+    @Test
+    fun `keeps the raw URI of every external link, whatever its scheme`() = runTest {
+        openTestPdf("pdfs/links_internal_external.pdf").use { document ->
+            val uris = document.links(1).filterIsInstance<PdfLink.External>().map { it.uri }
+
+            // Filtering the schemes is the reader's decision (ADR 0020); MuPDF turns the
+            // relative URI into a file:// one.
+            assertThat(uris)
+                .containsExactly(
+                    "mailto:lutrin@example.org",
+                    "javascript:alert(1)",
+                    "file:///sdcard/secret.pdf",
+                    "file://annexe.html",
+                ).inOrder()
         }
     }
 
     @Test
     fun `finds text on every page of a large document`() = runTest {
         openTestPdf("pdfs/large_600pages.pdf").use { document ->
-            val hits = document.search("Contenu de la page 600").toList()
+            val hits = document.search("Contenu de la page 600").hits()
 
             // The generator repeats the page body three times.
             assertThat(hits.map { it.pageIndex }).containsExactly(599, 599, 599)
@@ -119,38 +187,134 @@ class MuPdfDocumentTest {
     }
 
     @Test
+    fun `reports every page searched, with or without results`() = runTest {
+        openTestPdf("pdfs/nested_outline.pdf").use { document ->
+            val pages = document.search("section 2.2").toList()
+
+            assertThat(pages.map { it.pageIndex }).containsExactly(0, 1, 2, 3, 4, 5).inOrder()
+            assertThat(pages.filter { it.hits.isNotEmpty() }.map { it.pageIndex }).containsExactly(3)
+            assertThat(pages.none { it.isLimitReached }).isTrue()
+        }
+    }
+
+    @Test
+    fun `stops at the maximum number of results`() = runTest {
+        openTestPdf("pdfs/large_600pages.pdf").use { document ->
+            // "lutrin" appears several times on every page.
+            val pages = document.search("lutrin", SearchOptions(maxHits = 10)).toList()
+
+            assertThat(pages.sumOf { it.hits.size }).isEqualTo(10)
+            assertThat(pages.last().isLimitReached).isTrue()
+            assertThat(pages.size).isLessThan(600)
+        }
+    }
+
+    @Test
+    fun `gives each result an excerpt in context`() = runTest {
+        openTestPdf("pdfs/simple_1page.pdf").use { document ->
+            val excerpt = document.search("PUPITRE").hits().first().excerpt
+
+            assertThat(excerpt?.match).isEqualTo("pupitre")
+            assertThat(excerpt?.before).endsWith("un ")
+            assertThat(excerpt?.after).startsWith(" sur lequel")
+        }
+    }
+
+    @Test
+    fun `finds a word cut by a hyphen at the end of a line`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            val hit = document.search("bibliothèque").hits().single()
+
+            assertThat(hit.areas).hasSize(2)
+            assertThat(hit.excerpt?.match).isEqualTo("bibliothèque")
+            assertThat(hit.excerpt?.after).startsWith(" municipale")
+        }
+    }
+
+    @Test
     fun `search ignores case unless asked`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            assertThat(document.search("DOCUMENT SIMPLE").toList()).hasSize(1)
-            assertThat(document.search("DOCUMENT SIMPLE", SearchOptions(matchCase = true)).toList()).isEmpty()
+            assertThat(document.search("DOCUMENT SIMPLE").hits()).hasSize(1)
+            assertThat(document.search("DOCUMENT SIMPLE", SearchOptions(matchCase = true)).hits()).isEmpty()
         }
     }
 
     @Test
     fun `search ignores accents unless asked`() = runTest {
         openTestPdf("pdfs/non_latin_text.pdf").use { document ->
-            assertThat(document.search("l'ete").toList()).isNotEmpty()
-            assertThat(document.search("l'ete", SearchOptions(matchAccents = true)).toList()).isEmpty()
-            assertThat(document.search("l'été", SearchOptions(matchAccents = true)).toList()).isNotEmpty()
+            assertThat(document.search("l'ete").hits()).isNotEmpty()
+            assertThat(document.search("l'ete", SearchOptions(matchAccents = true)).hits()).isEmpty()
+            assertThat(document.search("l'été", SearchOptions(matchAccents = true)).hits()).isNotEmpty()
         }
     }
 
     @Test
     fun `search finds Chinese text`() = runTest {
-        openTestPdf("pdfs/non_latin_text.pdf").use { assertThat(it.search("中文").toList()).hasSize(1) }
+        openTestPdf("pdfs/non_latin_text.pdf").use { assertThat(it.search("中文").hits()).hasSize(1) }
+    }
+
+    @Test
+    fun `search finds Arabic text`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            val hit = document.search("مكتبة").hits().single()
+
+            assertThat(hit.excerpt?.match).isEqualTo("مكتبة")
+        }
     }
 
     @Test
     fun `search yields nothing for a blank query or a scanned document`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { assertThat(it.search("   ").toList()).isEmpty() }
-        openTestPdf("pdfs/scanned_images_only.pdf").use { assertThat(it.search("page").toList()).isEmpty() }
+        openTestPdf("pdfs/scanned_images_only.pdf").use { document ->
+            val pages = document.search("page").toList()
+
+            assertThat(pages.map { it.pageIndex }).containsExactly(0, 1).inOrder()
+            assertThat(pages.flatMap { it.hits }).isEmpty()
+        }
     }
 
     @Test
-    fun `copies the text of a selection`() = runTest {
+    fun `selects the whole text of a page`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            assertThat(document.textAt(0, wholePage)).contains("Document simple")
-            assertThat(document.textAt(0, PdfRect(0f, 0f, 1f, 1f))).isEmpty()
+            val selection = document.selectText(0, PdfPoint(0f, 0f), PdfPoint(595f, 842f))
+
+            assertThat(selection.text).startsWith("Document simple")
+            assertThat(selection.quads).isNotEmpty()
+        }
+    }
+
+    @Test
+    fun `a long press selects a word and lines mode its line`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            // Inside "mot" on the first line of the body (core/testing/scripts/generate_test_files.py).
+            val press = PdfPoint(98f, 136f)
+
+            assertThat(document.selectText(0, press, press, SelectionMode.Words).text).isEqualTo("mot")
+            assertThat(document.selectText(0, press, press, SelectionMode.Lines).text)
+                .isEqualTo("Le mot suivant est coupé en fin de ligne : la biblio-")
+            assertThat(document.selectText(0, press, press, SelectionMode.Characters).isEmpty).isTrue()
+        }
+    }
+
+    @Test
+    fun `selects a whole Arabic word in reading order`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            val areas = document.search("مكتبة").hits().single().areas
+            val word = PdfRect.enclosing(areas.flatMap { listOf(it.left to it.top, it.right to it.bottom) })
+            val press = PdfPoint((word.left + word.right) / 2, (word.top + word.bottom) / 2)
+
+            val selection = document.selectText(0, press, press, SelectionMode.Words)
+
+            assertThat(selection.text).isEqualTo("مكتبة")
+            assertThat(selection.quads.single().bounds.width).isWithin(1f).of(word.width)
+        }
+    }
+
+    @Test
+    fun `selects nothing on a scanned page`() = runTest {
+        openTestPdf("pdfs/scanned_images_only.pdf").use { document ->
+            assertThat(document.selectText(0, PdfPoint(0f, 0f), PdfPoint(595f, 842f), SelectionMode.Lines).isEmpty)
+                .isTrue()
         }
     }
 
@@ -246,7 +410,7 @@ class MuPdfDocumentTest {
 
         assertThat(runCatching { document.outline() }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
         assertThat(
-            runCatching { document.textAt(0, wholePage) }.exceptionOrNull(),
+            runCatching { document.selectText(0, PdfPoint(0f, 0f), PdfPoint(10f, 10f)) }.exceptionOrNull(),
         ).isInstanceOf(PdfError.Closed::class.java)
         assertThat(runCatching { document.links(0) }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
         assertThat(
@@ -255,11 +419,14 @@ class MuPdfDocumentTest {
     }
 
     @Test
-    fun `textAt rejects a page index out of range`() = runTest {
+    fun `selectText rejects a page index out of range`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            val error = runCatching { document.textAt(1, wholePage) }.exceptionOrNull()
+            val origin = PdfPoint(0f, 0f)
 
-            assertThat(error).isInstanceOf(PdfError.PageOutOfRange::class.java)
+            assertThat(runCatching { document.selectText(1, origin, origin) }.exceptionOrNull())
+                .isInstanceOf(PdfError.PageOutOfRange::class.java)
+            assertThat(runCatching { document.selectText(-1, origin, origin) }.exceptionOrNull())
+                .isInstanceOf(PdfError.PageOutOfRange::class.java)
         }
     }
 
@@ -379,5 +546,9 @@ class MuPdfDocumentTest {
         const val BYTE = 0xFF
         const val OPAQUE = 0xFF
         const val DARK_SUM = 3 * 0x60
+
+        // Targets of the links of links_internal_external.pdf, in points from the top of the page.
+        const val MIDDLE_OF_PAGE = 421f
+        const val NAMED_DESTINATION_Y = 100f
     }
 }

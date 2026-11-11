@@ -10,15 +10,19 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
+import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
+import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 
 /** Grey drawn by [FakePdfDocument.renderPage], so that tests and screenshots see the rendering. */
 const val FAKE_PAGE_COLOR: Int = 0xFFB0B4BA.toInt()
@@ -27,7 +31,18 @@ const val FAKE_PAGE_COLOR: Int = 0xFFB0B4BA.toInt()
 val A4: PageSize = PageSize(595f, 842f)
 
 /**
- * In-memory [PdfDocument] for tests: pages of the given sizes, rendered as a flat grey.
+ * In-memory [PdfDocument] for tests: pages of the given sizes, rendered as a flat grey. Its
+ * outline, links, search results and text are empty until a test sets them, for example:
+ *
+ * ```
+ * val document = FakePdfDocument().apply {
+ *     outline = listOf(OutlineItem("Chapitre 1", PdfDestination(pageIndex = 2)))
+ *     searchHits = { query -> if (query == "lutrin") listOf(SearchHit(1, listOf(area))) else emptyList() }
+ * }
+ * ```
+ *
+ * Like the real engine, the functions taking a page index throw [PdfError.PageOutOfRange]
+ * outside the document, and the text functions throw [PdfError.Closed] once [close] is called.
  *
  * @property pageSizes size of each page.
  */
@@ -36,8 +51,59 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     val renders: MutableList<Render> = CopyOnWriteArrayList()
 
     /** Whether [close] was called. */
+    @Volatile
     var isClosed: Boolean = false
         private set
+
+    /** What [outline] returns. */
+    @Volatile
+    var outline: List<OutlineItem> = emptyList()
+
+    /** Links of each page, by zero-based page index; pages missing from the map have none. */
+    @Volatile
+    var links: Map<Int, List<PdfLink>> = emptyMap()
+
+    /**
+     * Occurrences of a query, in any page order: [search] sorts them by page, applies
+     * [SearchOptions.maxHits] and reports every page. Ignores the search options otherwise.
+     */
+    @Volatile
+    var searchHits: (query: String) -> List<SearchHit> = { emptyList() }
+
+    /**
+     * Selection returned for each page, whatever the points and mode; pages missing from the map
+     * have no text (empty selection).
+     */
+    @Volatile
+    var selections: Map<Int, TextSelection> = emptyMap()
+
+    /** What [canCopyText] returns. */
+    @Volatile
+    override var canCopyText: Boolean = true
+
+    /** Every call to [search], in order. */
+    val searches: MutableList<Search> = CopyOnWriteArrayList()
+
+    /** Every call to [selectText], in order. */
+    val selectionRequests: MutableList<SelectionRequest> = CopyOnWriteArrayList()
+
+    /**
+     * One call to [search].
+     *
+     * @property query searched text.
+     * @property options search options.
+     */
+    data class Search(val query: String, val options: SearchOptions)
+
+    /**
+     * One call to [selectText].
+     *
+     * @property pageIndex requested page.
+     * @property start first point.
+     * @property end second point.
+     * @property mode requested mode.
+     */
+    data class SelectionRequest(val pageIndex: Int, val start: PdfPoint, val end: PdfPoint, val mode: SelectionMode)
 
     /**
      * One call to [renderPage].
@@ -65,21 +131,58 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
         target.eraseColor(FAKE_PAGE_COLOR)
     }
 
-    /** No outline. */
-    override suspend fun outline(): List<OutlineItem> = emptyList()
+    /** Returns the [outline] set by the test. */
+    override suspend fun outline(): List<OutlineItem> {
+        ensureOpen()
+        return outline
+    }
 
-    /** No result. */
-    override fun search(query: String, options: SearchOptions): Flow<SearchHit> = emptyFlow()
+    /**
+     * Records the call in [searches], then emits a result for each page, in order, with the
+     * [searchHits] of [query] on that page, until [SearchOptions.maxHits]; nothing for a blank
+     * query.
+     */
+    override fun search(query: String, options: SearchOptions): Flow<SearchPageResult> = flow {
+        ensureOpen()
+        searches += Search(query, options)
+        if (query.isBlank()) return@flow
+        val byPage = searchHits(query).groupBy { it.pageIndex }
+        var found = 0
+        for (index in 0 until pageCount) {
+            val hits = byPage[index].orEmpty()
+            val remaining = options.maxHits - found
+            val isLimitReached = hits.size >= remaining
+            emit(SearchPageResult(index, hits.take(remaining), isLimitReached))
+            if (isLimitReached) return@flow
+            found += hits.size
+        }
+    }
 
-    /** No text. */
-    override suspend fun textAt(index: Int, selection: PdfRect): String = ""
+    /** Records the call in [selectionRequests] and returns the [selections] entry of the page. */
+    override suspend fun selectText(index: Int, start: PdfPoint, end: PdfPoint, mode: SelectionMode): TextSelection {
+        checkPage(index)
+        selectionRequests += SelectionRequest(index, start, end, mode)
+        return selections[index] ?: TextSelection.empty(index)
+    }
 
-    /** No link. */
-    override suspend fun links(index: Int): List<PdfLink> = emptyList()
+    /** Returns the [links] set by the test for the page. */
+    override suspend fun links(index: Int): List<PdfLink> {
+        checkPage(index)
+        return links[index].orEmpty()
+    }
 
     /** Marks the document as closed ([isClosed]). */
     override fun close() {
         isClosed = true
+    }
+
+    private fun ensureOpen() {
+        if (isClosed) throw PdfError.Closed()
+    }
+
+    private fun checkPage(index: Int) {
+        ensureOpen()
+        if (index !in 0 until pageCount) throw PdfError.PageOutOfRange(index, pageCount)
     }
 }
 

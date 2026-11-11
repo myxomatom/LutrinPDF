@@ -9,8 +9,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
+import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.TestFiles
 import java.io.File
 import java.io.FileNotFoundException
@@ -54,6 +59,7 @@ class MuPdfEngineInstrumentedTest {
                 TestFiles.Pdf.SCANNED to 2,
                 TestFiles.Pdf.MIXED_PAGE_SIZES to 5,
                 TestFiles.Pdf.NON_LATIN to 1,
+                TestFiles.Pdf.TEXT_SELECTION to 1,
                 TestFiles.Pdf.CORRUPTED_TRUNCATED to 1,
             )
         expected.forEach { (path, pages) ->
@@ -125,7 +131,7 @@ class MuPdfEngineInstrumentedTest {
 
             engine.open(DocumentSource.FromUri(uri), password).getOrThrow().use { document ->
                 assertThat(document.metadata.isEncrypted).isTrue()
-                assertThat(document.textAt(0, PdfRect(0f, 0f, 595f, 842f))).contains(password)
+                assertThat(document.allText()).contains(password)
             }
         }
     }
@@ -137,8 +143,129 @@ class MuPdfEngineInstrumentedTest {
         engine.open(DocumentSource.FromUri(uri)).getOrThrow().use { document ->
             assertThat(document.metadata.isEncrypted).isTrue()
             assertThat(document.pageCount).isEqualTo(1)
+            // Its author restricted copying (ADR 0020): reported, not enforced, by the engine.
+            assertThat(document.canCopyText).isFalse()
+            assertThat(document.allText()).contains("Document restreint")
         }
     }
+
+    @Test
+    fun allowsCopyingTheTextOfAnUnrestrictedDocument() = runTest {
+        open(TestFiles.Pdf.SIMPLE).use { assertThat(it.canCopyText).isTrue() }
+    }
+
+    @Test
+    fun readsOutlineDestinationsWithTheirPosition() = runTest {
+        open(TestFiles.Pdf.LINKS).use { document ->
+            val (middle, external) = document.outline()
+
+            assertThat(middle.destination?.pageIndex).isEqualTo(3)
+            assertThat(middle.destination?.y).isWithin(1f).of(MIDDLE_OF_PAGE)
+            assertThat(external.destination).isNull()
+            assertThat(external.uri).isEqualTo("https://example.org/sommaire")
+        }
+        open(TestFiles.Pdf.LARGE).use { document ->
+            val outline = document.outline()
+
+            assertThat(outline).hasSize(12)
+            assertThat(outline.last().children.last().destination?.pageIndex).isEqualTo(590)
+        }
+    }
+
+    @Test
+    fun readsLinksWithTheirPositionAndRawUris() = runTest {
+        open(TestFiles.Pdf.LINKS).use { document ->
+            val links = document.links(1)
+            val (middle, named) = links.filterIsInstance<PdfLink.Internal>().map { it.destination }
+
+            assertThat(middle.pageIndex).isEqualTo(3)
+            assertThat(middle.y).isWithin(1f).of(MIDDLE_OF_PAGE)
+            assertThat(named.pageIndex).isEqualTo(2)
+            assertThat(named.y).isWithin(1f).of(NAMED_DESTINATION_Y)
+            assertThat(links.filterIsInstance<PdfLink.External>().map { it.uri })
+                .containsExactly(
+                    "mailto:lutrin@example.org",
+                    "javascript:alert(1)",
+                    "file:///sdcard/secret.pdf",
+                    "file://annexe.html",
+                ).inOrder()
+        }
+    }
+
+    @Test
+    fun searchReportsEveryPageAndFindsAHyphenatedWord() = runTest {
+        open(TestFiles.Pdf.NESTED_OUTLINE).use { document ->
+            val pages = document.search("section 2.2").toList()
+
+            assertThat(pages.map { it.pageIndex }).containsExactly(0, 1, 2, 3, 4, 5).inOrder()
+            assertThat(pages.flatMap { it.hits }.map { it.pageIndex }).containsExactly(3)
+        }
+        open(TestFiles.Pdf.TEXT_SELECTION).use { document ->
+            val hit = document.search("bibliothèque").toList().flatMap { it.hits }.single()
+
+            assertThat(hit.areas).hasSize(2)
+            assertThat(hit.excerpt?.match).isEqualTo("bibliothèque")
+        }
+    }
+
+    @Test
+    fun searchStopsAtTheLimit() = runTest {
+        open(TestFiles.Pdf.LARGE).use { document ->
+            val pages = document.search("lutrin", SearchOptions(maxHits = 10)).toList()
+
+            assertThat(pages.sumOf { it.hits.size }).isEqualTo(10)
+            assertThat(pages.last().isLimitReached).isTrue()
+        }
+    }
+
+    @Test
+    fun searchesAndSelectsArabicText() = runTest {
+        open(TestFiles.Pdf.TEXT_SELECTION).use { document ->
+            val areas = document.search("مكتبة").toList().flatMap { it.hits }.single().areas
+            val word = PdfRect.enclosing(areas.flatMap { listOf(it.left to it.top, it.right to it.bottom) })
+            val press = PdfPoint((word.left + word.right) / 2, (word.top + word.bottom) / 2)
+
+            val selection = document.selectText(0, press, press, SelectionMode.Words)
+
+            assertThat(selection.text).isEqualTo("مكتبة")
+            assertThat(selection.quads).hasSize(1)
+        }
+    }
+
+    @Test
+    fun selectsAWordAndALine() = runTest {
+        open(TestFiles.Pdf.TEXT_SELECTION).use { document ->
+            // Inside "mot" on the first line of the body.
+            val press = PdfPoint(98f, 136f)
+
+            assertThat(document.selectText(0, press, press, SelectionMode.Words).text).isEqualTo("mot")
+            assertThat(document.selectText(0, press, press, SelectionMode.Lines).text)
+                .isEqualTo("Le mot suivant est coupé en fin de ligne : la biblio-")
+        }
+    }
+
+    @Test
+    fun textFunctionsHandleEdgeCases() = runTest {
+        val origin = PdfPoint(0f, 0f)
+        open(TestFiles.Pdf.SCANNED).use { document ->
+            assertThat(document.selectText(0, origin, PdfPoint(595f, 842f), SelectionMode.Lines).isEmpty).isTrue()
+            assertThat(document.search("page").toList().flatMap { it.hits }).isEmpty()
+            assertThat(document.search("   ").toList()).isEmpty()
+            assertThat(runCatching { document.selectText(2, origin, origin) }.exceptionOrNull())
+                .isInstanceOf(PdfError.PageOutOfRange::class.java)
+        }
+        val closed = open(TestFiles.Pdf.LINKS).apply { close() }
+        assertThat(runCatching { closed.outline() }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
+        assertThat(runCatching { closed.selectText(0, origin, origin) }.exceptionOrNull())
+            .isInstanceOf(PdfError.Closed::class.java)
+    }
+
+    private suspend fun open(path: String): PdfDocument =
+        engine.open(DocumentSource.FromFile(copyAsset(path))).getOrThrow()
+
+    /** The whole text of the first page. */
+    private suspend fun PdfDocument.allText(): String =
+        selectText(0, PdfPoint(0f, 0f), PdfPoint(PAGE_WIDTH, PAGE_HEIGHT)).text
 
     @Test
     fun reportsAMissingUriAsNotAccessible() = runTest {
@@ -166,5 +293,11 @@ class MuPdfEngineInstrumentedTest {
 
     private companion object {
         const val DARK = 0x60
+        const val PAGE_WIDTH = 595f
+        const val PAGE_HEIGHT = 842f
+
+        // Targets of the links of TestFiles.Pdf.LINKS, in points from the top of the page.
+        const val MIDDLE_OF_PAGE = 421f
+        const val NAMED_DESTINATION_Y = 100f
     }
 }

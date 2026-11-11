@@ -34,17 +34,34 @@ data class PdfMetadata(
 )
 
 /**
+ * Where a link or an outline entry leads inside the document (F06, F09).
+ *
+ * @property pageIndex zero-based target page.
+ * @property x left edge of the target area, in page coordinates; `null` when the destination
+ *   does not set it (keep the current horizontal position).
+ * @property y top edge of the target area, in page coordinates; `null` when the destination
+ *   does not set it (show the top of the page).
+ * @throws IllegalArgumentException if [pageIndex] is negative.
+ */
+data class PdfDestination(val pageIndex: Int, val x: Float? = null, val y: Float? = null) {
+    init {
+        require(pageIndex >= 0) { "Negative page index $pageIndex" }
+    }
+}
+
+/**
  * Entry of the document outline (table of contents, F06).
  *
  * @property title label shown to the user.
- * @property pageIndex zero-based target page, or `null` when the entry points nowhere in the
- *   document (external link or broken destination).
- * @property uri external target, if any (never opened without confirmation, F09).
+ * @property destination where the entry leads in the document, or `null` when it points
+ *   nowhere in it (external link or broken destination).
+ * @property uri external target, if any, exactly as written in the document: never opened
+ *   without confirmation (F09), and filtered by the reader (ADR 0020).
  * @property children nested entries, in document order.
  */
 data class OutlineItem(
     val title: String,
-    val pageIndex: Int?,
+    val destination: PdfDestination?,
     val uri: String? = null,
     val children: List<OutlineItem> = emptyList(),
 )
@@ -55,32 +72,17 @@ sealed interface PdfLink {
     val bounds: PdfRect
 
     /**
-     * Link to a page of the same document.
+     * Link to a position in the same document.
      *
-     * @property pageIndex zero-based target page.
+     * @property destination where the link leads.
      */
-    data class Internal(override val bounds: PdfRect, val pageIndex: Int) : PdfLink
+    data class Internal(override val bounds: PdfRect, val destination: PdfDestination) : PdfLink
 
     /**
      * Link to an external resource, opened by another app after confirmation.
      *
-     * @property uri target of the link, as written in the document.
+     * @property uri target of the link, as the engine reads it, whatever its scheme (`https:`,
+     *   `mailto:`, `javascript:`, `file:`…): the reader decides which ones it opens (ADR 0020).
      */
     data class External(override val bounds: PdfRect, val uri: String) : PdfLink
 }
-
-/**
- * Options of a text search (F07).
- *
- * @property matchCase when `false`, "Lutrin" also matches "lutrin".
- * @property matchAccents when `false`, "ete" also matches "été".
- */
-data class SearchOptions(val matchCase: Boolean = false, val matchAccents: Boolean = false)
-
-/**
- * One occurrence of the searched text.
- *
- * @property pageIndex zero-based page of the occurrence.
- * @property areas highlighted areas, in page coordinates; several when the match spans lines.
- */
-data class SearchHit(val pageIndex: Int, val areas: List<PdfRect>)
