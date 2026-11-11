@@ -74,14 +74,15 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
         onBack = onBack,
         modifier = modifier,
         onClearRecents = viewModel::onClearRecents,
+        onPagePreviewChange = viewModel::onPagePreviewChange,
     )
 }
 
 /**
  * Settings screen (E3, `docs/design/png/E3-Parametres.png`). For now the « Appearance » section
- * with dynamic colours (ADR 0010), and « Vider les récents » in « Data and privacy », confirmed
- * by a dialog and disabled while the list is empty (ADR 0016); the other settings come with
- * milestone M5.
+ * with dynamic colours (ADR 0010), the « Reading » section with the page preview of the reader's
+ * slider (ADR 0018), and « Vider les récents » in « Data and privacy », confirmed by a dialog and
+ * disabled while the list is empty (ADR 0016); the other settings come with milestone M5.
  *
  * @param state what to show.
  * @param dynamicColorSupported whether the device can use dynamic colours (Android 12+);
@@ -90,6 +91,7 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
  * @param onBack called when the user leaves the settings.
  * @param modifier modifier applied to the screen.
  * @param onClearRecents called once the user confirmed « Vider les récents ».
+ * @param onPagePreviewChange called with the new value of the page preview switch.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +102,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onClearRecents: () -> Unit = {},
+    onPagePreviewChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -123,11 +126,12 @@ fun SettingsScreen(
             }
         } else {
             SettingsContent(
-                state,
-                dynamicColorSupported,
-                onDynamicColorChange,
-                onClearRecents,
-                Modifier.fillMaxSize().padding(innerPadding),
+                state = state,
+                dynamicColorSupported = dynamicColorSupported,
+                onDynamicColorChange = onDynamicColorChange,
+                onPagePreviewChange = onPagePreviewChange,
+                onClearRecents = onClearRecents,
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         }
     }
@@ -138,15 +142,33 @@ private fun SettingsContent(
     state: SettingsUiState,
     dynamicColorSupported: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
+    onPagePreviewChange: (Boolean) -> Unit,
     onClearRecents: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.verticalScroll(rememberScrollState())) {
         SectionTitle(stringResource(R.string.settings_section_appearance))
-        DynamicColorItem(
+        SwitchItem(
+            title = stringResource(R.string.settings_dynamic_color),
+            summary =
+                stringResource(
+                    if (dynamicColorSupported) {
+                        R.string.settings_dynamic_color_summary
+                    } else {
+                        R.string.settings_dynamic_color_unavailable
+                    },
+                ),
             checked = state.dynamicColor && dynamicColorSupported,
             enabled = dynamicColorSupported,
             onCheckedChange = onDynamicColorChange,
+        )
+        HorizontalDivider()
+        SectionTitle(stringResource(R.string.settings_section_reading))
+        SwitchItem(
+            title = stringResource(R.string.settings_page_preview),
+            summary = stringResource(R.string.settings_page_preview_summary),
+            checked = state.pagePreview,
+            onCheckedChange = onPagePreviewChange,
         )
         HorizontalDivider()
         SectionTitle(stringResource(R.string.settings_section_data))
@@ -222,18 +244,19 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** A switch row; the whole row toggles it, as one accessible element. */
+/** A switch row with its description; the whole row toggles it, as one accessible element. */
 @Composable
-private fun DynamicColorItem(
+private fun SwitchItem(
+    title: String,
+    summary: String,
     checked: Boolean,
-    enabled: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
-    val summary = if (enabled) R.string.settings_dynamic_color_summary else R.string.settings_dynamic_color_unavailable
     ListItem(
-        headlineContent = { Text(stringResource(R.string.settings_dynamic_color)) },
-        supportingContent = { Text(stringResource(summary)) },
+        headlineContent = { Text(title) },
+        supportingContent = { Text(summary) },
         trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
         modifier =
             modifier

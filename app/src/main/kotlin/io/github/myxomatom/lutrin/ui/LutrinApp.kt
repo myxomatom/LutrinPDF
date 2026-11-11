@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.IntSize
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -39,6 +40,7 @@ import io.github.myxomatom.lutrin.core.domain.document.IncomingDocumentResult
 import io.github.myxomatom.lutrin.core.domain.document.IncomingRejection
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinMotion
+import io.github.myxomatom.lutrin.core.ui.transition.DocumentLink
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionDestination
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionLayout
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionPolicy
@@ -51,6 +53,8 @@ import io.github.myxomatom.lutrin.feature.settings.navigateToSettings
 import io.github.myxomatom.lutrin.feature.settings.settingsScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Route of the library (E1), the start destination. */
@@ -71,10 +75,11 @@ private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null
  * a message saying why. A document picked in the system file picker or tapped in the recent list
  * opens in the reader at the page where the user stopped reading (ADR 0015).
  *
- * Screens fade into each other. The thumbnail of a document tapped in the library grows into the
- * reader's page, and the page shrinks back into it on return, back gesture included (ADR 0019);
- * only that document is linked, and only while the system plays animations. The other ways into
- * the reader (file picker, other apps) keep the fade.
+ * Screens fade into each other. Once the reader of a document tapped in the library is settled,
+ * its page is linked to the thumbnail and shrinks back into it on return, back gesture included
+ * (ADR 0019, [DocumentLink]); only that document is linked, and only while the system plays
+ * animations. Going to the reader is always a plain fade, as are the other ways into it (file
+ * picker, other apps).
  *
  * @param libraryState the recent documents, collected while the library is shown.
  * @param modifier modifier applied to the screen.
@@ -108,13 +113,16 @@ fun LutrinApp(
     val snackbarHostState = remember { SnackbarHostState() }
     // The document last opened by a tap on its thumbnail; kept across a rotation or the death of
     // the process, so that back from its reader still shrinks the page into the thumbnail.
-    var tappedDocumentId by rememberSaveable { mutableStateOf<String?>(null) }
-    val linkedDocumentId = DocumentTransitionPolicy.linkedDocument(tappedDocumentId, rememberAnimationsEnabled())
+    var link by rememberSaveable(stateSaver = DocumentLink.Saver) { mutableStateOf(DocumentLink()) }
+    val linkedDocumentId = DocumentTransitionPolicy.linkedDocument(link.linked, rememberAnimationsEnabled())
+    LinkOnceSettled(navController) { onLibrary -> link = link.settled(onLibrary) }
     Box(modifier.fillMaxSize()) {
         DocumentTransitionLayout(linkedDocumentId, Modifier.fillMaxSize()) {
             LutrinNavHost(
                 navController = navController,
-                onLinkDocument = { tappedDocumentId = it },
+                onLinkDocument = { documentId ->
+                    link = if (documentId == null) link.openedElsewhere() else link.tapped(documentId)
+                },
                 libraryState = libraryState,
                 loadThumbnail = loadThumbnail,
                 onRefreshThumbnail = onRefreshThumbnail,
@@ -129,8 +137,25 @@ fun LutrinApp(
     }
     IncomingRequestEffect(incomingRequest, navController, snackbarHostState) { request ->
         // Opened by another app: no thumbnail of the library takes part.
-        tappedDocumentId = null
+        link = link.openedElsewhere()
         onConsumeIncomingRequest(request)
+    }
+}
+
+/**
+ * Calls [onSettle] each time the current screen is settled: its navigation entry resumed, which
+ * Navigation Compose does only once the transition into it has ended. Tells whether it is the
+ * library, so that [DocumentLink.settled] links the tapped document only when its reader is on
+ * screen, never while it comes in.
+ */
+@Composable
+private fun LinkOnceSettled(navController: NavHostController, onSettle: (onLibrary: Boolean) -> Unit) {
+    val currentOnSettle by rememberUpdatedState(onSettle)
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { entry ->
+            entry.lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.RESUMED) }
+            currentOnSettle(entry.destination.route == LIBRARY_ROUTE)
+        }
     }
 }
 
@@ -182,8 +207,9 @@ private fun LutrinNavHost(
 }
 
 /**
- * The library destination (E1), with its file picker. A recent document tapped is linked to the
- * reader, so that its thumbnail grows into the page; a document from the picker is not (ADR 0019).
+ * The library destination (E1), with its file picker. A recent document tapped is linked to its
+ * reader once that one is settled, so that the page shrinks back into the thumbnail; a document
+ * from the picker is not (ADR 0019).
  *
  * @param onLinkDocument called with the identifier of the document opened by a tap, or `null`
  *   for a document opened from the file picker, just before the reader opens.

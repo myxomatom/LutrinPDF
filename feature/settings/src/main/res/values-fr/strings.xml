@@ -7,6 +7,10 @@
     <string name="settings_dynamic_color">Couleurs dynamiques</string>
     <string name="settings_dynamic_color_summary">Reprendre les couleurs de votre fond d’écran</string>
     <string name="settings_dynamic_color_unavailable">Disponible à partir d’Android 12</string>
+    <string name="settings_section_reading">Lecture</string>
+    <!-- Preview while dragging the page slider of the reader (ADR 0018). -->
+    <string name="settings_page_preview">Aperçu de la page</string>
+    <string name="settings_page_preview_summary">Montre la page pendant que vous faites glisser le curseur du lecteur ; le document s’y rend quand vous relâchez.</string>
     <string name="settings_section_data">Données et confidentialité</string>
     <string name="settings_clear_recents">Vider les récents</string>
     <string name="settings_clear_recents_empty">Aucun document récent</string>

@@ -10,12 +10,13 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
-- **Transition vignette → lecteur** (ADR 0018 §7, ADR 0019) : en touchant la carte « Reprendre
-  la lecture » ou une ligne des récents, la vignette du document s'agrandit jusqu'à la page du
-  lecteur, en se redressant pour la carte ; une page blanche tient sa place tant que le document
-  s'ouvre, puis s'efface sur le document, le dialogue de mot de passe ou l'écran d'erreur. Au
-  retour (bouton, flèche ou geste de retour, qui pilote l'animation sous Android 14 et plus), la
-  page se replie vers la vignette si elle est visible, sinon simple fondu. Un document protégé,
+- **Transition lecteur → vignette** (ADR 0018 §7, ADR 0019 amendé) : en touchant la carte
+  « Reprendre la lecture » ou une ligne des récents, le lecteur apparaît par un simple fondu (la
+  vignette qui s'agrandissait, essayée d'abord, était buggée sur appareil ; le rond de
+  chargement n'est plus recouvert). Une fois le lecteur posé, le document est lié à sa
+  vignette : au retour (bouton, flèche ou geste de retour, qui pilote l'animation sous
+  Android 14 et plus), la page se replie vers la vignette si elle est visible, en se penchant
+  pour la carte, sinon simple fondu. Un document protégé,
   une page zoomée, le sélecteur de fichier, « Ouvrir avec » et le partage gardent un simple
   fondu ; avec « Supprimer les animations », l'écran change aussitôt. Les écrans passent de
   l'un à l'autre par un fondu de 300 ms (700 ms avant). Le manifeste active le retour
@@ -32,9 +33,10 @@ changement y est signalé.
   par le moteur, page blanche le temps du rendu) et « Page 6 », l'indicateur passe à « 6 / 8 » en
   couleur primaire ; le document y va au relâchement. Un appui sur la piste, le clavier (non essayé sur appareil) et
   TalkBack vont directement à la page ; un geste annulé reste sur la page de départ. Fonctionne
-  en défilement continu comme en page par page. Interrupteur « Aperçu de la page » dans la
-  feuille « Affichage » (section « Défilement »), enregistré avec DataStore ; désactivé, le
-  document suit le curseur comme avant.
+  en défilement continu comme en page par page. Interrupteur « Aperçu de la page » dans les
+  **Paramètres, section « Lecture »**, à côté des couleurs dynamiques (d'abord placé dans la
+  feuille « Affichage » du lecteur), enregistré avec DataStore ; désactivé, le document suit le
+  curseur comme avant.
 - Bibliothèque (E1) au nouveau design (ADR 0018) : titre « Lutrin » en grand (Fraunces, 32 sp) ;
   carte **« Reprendre la lecture »** pour le dernier document ouvert, avec sa première page en
   grand, légèrement inclinée, son titre, « Page 3 sur 8 · aujourd'hui, 20:41 », une barre de

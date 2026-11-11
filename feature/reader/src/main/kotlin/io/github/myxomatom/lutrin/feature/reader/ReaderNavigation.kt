@@ -39,9 +39,9 @@ fun NavController.navigateToReader(uri: Uri, page: Int? = null, builder: NavOpti
 }
 
 /**
- * Adds the reader destination (E2) to a navigation graph. Inside the app's
- * `DocumentTransitionLayout` (`core:ui`), the page of a document opened from its thumbnail grows
- * out of it and shrinks back into it (ADR 0019); elsewhere the reader only fades.
+ * Adds the reader destination (E2) to a navigation graph. The reader fades in; inside the app's
+ * `DocumentTransitionLayout` (`core:ui`), the page of a document opened from its thumbnail
+ * shrinks back into it on return (ADR 0019); elsewhere the reader only fades.
  *
  * @param onBack called when the user leaves the reader.
  */

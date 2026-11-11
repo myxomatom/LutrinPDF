@@ -63,7 +63,6 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onBack = onBack,
         onPageChange = viewModel::onPageChange,
         onScrollModeChange = viewModel::onScrollModeChange,
-        onPagePreviewChange = viewModel::onPagePreviewChange,
         onRemoveFromRecents = {
             viewModel.onRemoveFromRecents()
             onBack()
@@ -83,14 +82,13 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param modifier modifier applied to the screen.
  * @param onPageChange called with the zero-based page shown, whenever it changes.
  * @param onScrollModeChange called with the scroll mode chosen in the options (V6).
- * @param onPagePreviewChange called with the page preview choice made in the options (V6).
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
  *   calls [onBack].
- * @param documentId identifier of the document in the recent list, linking its thumbnail in the
- *   library to the page of the reader (ADR 0019); without it, or outside of the app's navigation,
- *   the reader has no shared element and only fades in and out.
+ * @param documentId identifier of the document in the recent list: once the app links it, the
+ *   page shown shrinks back into its thumbnail in the library (ADR 0019); without it, or outside
+ *   of the app's navigation, the reader has no shared element and only fades in and out.
  */
 @Composable
 fun ReaderScreen(
@@ -99,15 +97,13 @@ fun ReaderScreen(
     modifier: Modifier = Modifier,
     onPageChange: (Int) -> Unit = {},
     onScrollModeChange: (ScrollMode) -> Unit = {},
-    onPagePreviewChange: (Boolean) -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
 ) {
-    // The opening page and the reader's page each hold their own shared element; never both at once.
-    val openingTransition = rememberDocumentTransition(documentId)
-    val openingPhase = rememberOpeningPagePhase(openingTransition, documentLoading = state == ReaderUiState.Loading)
-    val pageTransition = rememberDocumentTransition(documentId.takeIf { openingPhase == OpeningPagePhase.Gone })
+    // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
+    // while coming in is a plain fade (ADR 0019).
+    val pageTransition = rememberDocumentTransition(documentId)
     Box(modifier.fillMaxSize()) {
         when (state) {
             ReaderUiState.Loading -> LoadingContent()
@@ -122,11 +118,9 @@ fun ReaderScreen(
                     onBack = onBack,
                     onPageChange = onPageChange,
                     onScrollModeChange = onScrollModeChange,
-                    onPagePreviewChange = onPagePreviewChange,
                     pageTransition = pageTransition,
                 )
         }
-        OpeningPage(openingTransition, openingPhase)
     }
 }
 
@@ -145,7 +139,6 @@ private fun ReaderContent(
     onBack: () -> Unit,
     onPageChange: (Int) -> Unit,
     onScrollModeChange: (ScrollMode) -> Unit,
-    onPagePreviewChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
 ) {
@@ -184,8 +177,6 @@ private fun ReaderContent(
         ReaderOptionsSheet(
             scrollMode = state.scrollMode,
             onScrollModeChange = onScrollModeChange,
-            pagePreview = state.pagePreview,
-            onPagePreviewChange = onPagePreviewChange,
             onDismiss = { optionsVisible = false },
         )
     }

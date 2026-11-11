@@ -13,7 +13,6 @@ import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
-import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
@@ -49,7 +48,6 @@ import kotlinx.coroutines.launch
  * @param observeSettings reads the scroll mode and the page preview setting, shared by every
  *   document (ADR 0011, ADR 0018).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
- * @param setPagePreview stores the page preview choice made in the reader options.
  * @param history the recent list and the reading position of this document.
  */
 @Suppress("LongParameterList") // Dependencies injected by Hilt.
@@ -62,7 +60,6 @@ constructor(
     @param:DefaultDispatcher private val renderDispatcher: CoroutineDispatcher,
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
-    private val setPagePreview: SetPagePreviewUseCase,
     private val history: ReadingHistory,
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
@@ -109,16 +106,6 @@ constructor(
      */
     fun onScrollModeChange(mode: ScrollMode) {
         viewModelScope.launch { setScrollMode(mode) }
-    }
-
-    /**
-     * Stores whether dragging the page slider previews the page and moves the document only on
-     * release (ADR 0018); it applies to every document.
-     *
-     * @param enabled whether the slider previews the page.
-     */
-    fun onPagePreviewChange(enabled: Boolean) {
-        viewModelScope.launch { setPagePreview(enabled) }
     }
 
     /**

@@ -116,36 +116,32 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
 
-**Nouveau design visuel (2026-11-10, ADR 0018 et 0019, branche `ccr-d7c547a8-psu5t2`)** : adopté
-pour E1, E2 et E9 ; les maquettes de référence de ces écrans sont dans `docs/design/proposals/`.
-Implémenté et vert sous Robolectric, **jamais essayé sur appareil** :
+**Nouveau design visuel (ADR 0018 et 0019), fusionné dans `main` le 2026-11-10 (PR #24)** et
+essayé sur appareil par le mainteneur : globalement validé. Deux retours corrigés ensuite sur la
+branche `ccr-d7c547a8-psu5t2` (pas encore sur appareil) :
 
-- titres en Fraunces (police embarquée) et accent chaud dans le schéma de repli ;
-- E1 : carte « Reprendre la lecture », vignettes de 416 × 552 px au plus (les anciennes sont
-  redessinées à l'affichage), barre de progression seulement pour une lecture en cours ;
-- E2 : barre flottante, curseur fin, aperçu de page pendant le glissement (réglage « Aperçu de la
-  page » de la feuille « Affichage », activé par défaut) ;
-- transition vignette → lecteur par élément partagé, retour prédictif activé dans le manifeste ;
-- E9 : maquettes seulement, à implémenter avec M6.
+- l'animation « aller » (la vignette qui grandissait jusqu'au lecteur) était buggée : l'aller est
+  maintenant un simple fondu ; seul le retour replie la page vers sa vignette, le document
+  n'étant lié qu'une fois le lecteur posé (`DocumentLink`, ADR 0019 amendé). La page d'attente a
+  disparu, donc le rond de chargement reste visible pendant une ouverture lente ;
+- le réglage « Aperçu de la page » a quitté la feuille « Affichage » du lecteur pour l'écran
+  Paramètres, nouvelle section « Lecture », à côté des couleurs dynamiques (ADR 0018 §6 amendé).
 
-**À faire sur appareil avant de fusionner** (liste complète dans l'ADR 0019) :
+**À essayer sur appareil** :
 
-1. refaire les Macrobenchmarks de l'ADR 0012 (référence : P90 4,0 ms en défilement continu) et
-   régénérer le Baseline Profile : `SharedTransitionLayout` enveloppe toute la navigation et son
-   coût n'est pas mesuré ; en cas de dégradation, ne poser l'élément partagé que pendant la
-   transition ;
-2. la transition : carte, ligne, retour par la flèche, le bouton et le geste (lent, puis annulé),
-   PDF de 600 pages, PDF chiffré, fichier supprimé, rotation en cours de route, mode page par
-   page, « Supprimer les animations » ;
-3. le curseur : fluidité des aperçus sur un gros PDF, geste annulé (tirer le volet de
-   notifications pendant le glissement), TalkBack, **clavier physique** (non couvert par un test :
-   sous Robolectric le curseur ne réagit pas aux flèches, avec ou sans aperçu) ;
-4. le retour depuis « Ouvrir avec », la feuille « Affichage », le dialogue de mot de passe ;
-5. paysage, navigation à trois boutons, grande police, couleurs dynamiques claires et sombres.
+1. ouvrir depuis la carte et depuis une ligne : simple fondu ; revenir par la flèche, le bouton
+   et le geste (lent, puis annulé) : la page se replie vers la carte ; revenir aussitôt après le
+   toucher : simple fondu ; un PDF lent : le rond de chargement reste visible ;
+2. Paramètres › Lecture › « Aperçu de la page » : couper, revenir dans un document ouvert, le
+   curseur suit le document en continu ; rallumer ;
+3. toujours dus depuis la PR #24 : Macrobenchmarks de l'ADR 0012 et Baseline Profile à refaire
+   (`SharedTransitionLayout` enveloppe toujours toute la navigation) ; clavier physique sur le
+   curseur (non couvert par un test) ; retour depuis « Ouvrir avec ».
 
-**À trancher par le mainteneur** : pendant une ouverture lente, la page blanche d'attente de la
-transition recouvre le rond de chargement (ADR 0019) ; le laisser ainsi ou dessiner l'indicateur
-sur la page.
+**Fuite signalée par LeakCanary** (une fois, non reproduite) : un `PopupLayout` de Compose
+retenu par la passe *lookahead* de `SharedTransitionLayout`, probablement le menu « ⋮ » des
+récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
+`docs/open-questions.md`.
 
 ## 3. Décisions à connaître
 

@@ -23,6 +23,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.semantics
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinMotion
 
 /**
@@ -34,6 +36,14 @@ import io.github.myxomatom.lutrin.core.ui.theme.LutrinMotion
  */
 @Immutable
 data class DocumentPageKey(val documentId: String)
+
+/**
+ * Semantics of an element that carries the shared element of [documentId][DocumentPageKey]: set
+ * by [sharedDocumentPage], so that tests can tell when the thumbnail and the page are linked
+ * (only the page going back to the library since the amended ADR 0019). Not read by
+ * accessibility services.
+ */
+val SharedDocumentPage = SemanticsPropertyKey<String>("SharedDocumentPage")
 
 /**
  * What [DocumentTransitionLayout] gives to the destinations below it.
@@ -103,7 +113,9 @@ fun rememberDocumentTransition(documentId: String?): DocumentTransition? {
     if (host == null || visibilityScope == null || key == null) return null
     val scope = host.sharedTransitionScope
     val contentState = with(scope) { rememberSharedContentState(key) }
-    return remember(scope, visibilityScope, contentState) { DocumentTransition(scope, visibilityScope, contentState) }
+    return remember(scope, visibilityScope, contentState) {
+        DocumentTransition(key.documentId, scope, visibilityScope, contentState)
+    }
 }
 
 /**
@@ -112,6 +124,7 @@ fun rememberDocumentTransition(documentId: String?): DocumentTransition? {
  */
 @Stable
 class DocumentTransition internal constructor(
+    internal val documentId: String,
     internal val sharedTransitionScope: SharedTransitionScope,
     internal val visibilityScope: AnimatedVisibilityScope,
     internal val contentState: SharedTransitionScope.SharedContentState,
@@ -156,7 +169,7 @@ class DocumentTransition internal constructor(
  */
 fun Modifier.sharedDocumentPage(transition: DocumentTransition?): Modifier {
     if (transition == null) return this
-    val modifier = this
+    val modifier = this.semantics { this[SharedDocumentPage] = transition.documentId }
     return with(transition.sharedTransitionScope) {
         modifier.sharedBounds(
             sharedContentState = transition.contentState,

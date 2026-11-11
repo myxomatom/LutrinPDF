@@ -7,12 +7,12 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -27,6 +27,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
+import io.github.myxomatom.lutrin.core.ui.transition.SharedDocumentPage
 import java.io.File
 import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
@@ -43,11 +44,12 @@ import org.robolectric.annotation.Config
 import org.w3c.dom.Element
 
 /**
- * The thumbnail → reader transition (ADR 0019) through the real activity and navigation, with a
- * fake engine: which ways into the reader grow the thumbnail (the opening page shows during the
- * transition), which only fade, and that going back, rotating or failing in the middle never
- * breaks the navigation. The animation itself cannot be seen here: the tests stop the clock a
- * few frames into it and look at what is composed.
+ * The thumbnail ↔ reader transition (amended ADR 0019) through the real activity and navigation,
+ * with a fake engine: going to the reader is always a plain fade, with no shared element; once
+ * the reader of a tapped document is settled, its page is linked and shrinks back into the
+ * thumbnail; the other ways into the reader stay unlinked; going back, rotating or failing in the
+ * middle never breaks the navigation. The animation itself cannot be seen here: the tests stop
+ * the clock a few frames into it and look at which elements carry the shared element.
  */
 @HiltAndroidTest
 @Config(application = HiltTestApplication::class)
@@ -127,7 +129,21 @@ class DocumentTransitionTest {
         composeRule.waitForIdle()
     }
 
-    private fun openingPage() = composeRule.onNodeWithTag(OPENING_PAGE_TAG)
+    /** The elements carrying the shared element: thumbnails and reader pages. */
+    private fun sharedElements() =
+        composeRule.onAllNodes(SemanticsMatcher.keyIsDefined(SharedDocumentPage), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+
+    private fun assertNoSharedElement() {
+        assertThat(sharedElements()).isEmpty()
+    }
+
+    /** Opens the card's document and waits until its reader is settled. */
+    private fun openFromCard() {
+        tapCard()
+        waitForDescription(READER_PAGE_1)
+        composeRule.waitForIdle()
+    }
 
     private fun tapCard() =
         composeRule.onNodeWithContentDescription("Resume reading Contrat de location, page 1 of 6").performClick()
@@ -141,37 +157,52 @@ class DocumentTransitionTest {
     }
 
     @Test
-    fun `tapping the resume card grows its page into the reader, and back returns to the library`() {
+    fun `tapping the resume card fades into the reader, with no shared element on the way`() {
         launchLibrary()
         stopClock()
 
         tapCard()
         advanceFrames()
 
-        openingPage().assertExists()
+        assertNoSharedElement()
         finishTransitions()
         waitForDescription(READER_PAGE_1)
-        openingPage().assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Back").performClick()
         composeRule.waitForIdle()
         assertLibraryShown()
     }
 
     @Test
-    fun `tapping a row of the recent list grows its thumbnail too`() {
+    fun `tapping a row of the recent list only fades too`() {
         launchLibrary()
         stopClock()
 
         composeRule.onNodeWithText("Facture").performClick()
         advanceFrames()
 
-        openingPage().assertExists()
+        assertNoSharedElement()
         finishTransitions()
         waitForDescription(READER_PAGE_1)
     }
 
     @Test
-    fun `going back at once returns to the library`() {
+    fun `once the reader is settled, its page shrinks back into the card on return`() {
+        launchLibrary()
+        openFromCard()
+        composeRule.waitUntil(TIMEOUT_MS) { sharedElements().size == 1 }
+        stopClock()
+
+        composeRule.onNodeWithContentDescription("Back").performClick()
+        advanceFrames()
+
+        // The page of the reader and the thumbnail of the card, paired while the screens change.
+        assertThat(sharedElements()).hasSize(2)
+        finishTransitions()
+        assertLibraryShown()
+    }
+
+    @Test
+    fun `going back at once returns to the library, with nothing linked`() {
         val controller = launchLibrary()
         stopClock()
         tapCard()
@@ -182,7 +213,7 @@ class DocumentTransitionTest {
         finishTransitions()
 
         assertLibraryShown()
-        openingPage().assertDoesNotExist()
+        assertNoSharedElement()
     }
 
     @Test
@@ -197,7 +228,6 @@ class DocumentTransitionTest {
         composeRule.waitForIdle()
 
         waitForDescription(READER_PAGE_1)
-        openingPage().assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Back").performClick()
         composeRule.waitForIdle()
         assertLibraryShown()
@@ -211,34 +241,29 @@ class DocumentTransitionTest {
 
         tapCard()
         advanceFrames()
+        assertNoSharedElement()
         finishTransitions()
 
         waitForText("This document cannot be opened")
-        openingPage().assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Back").performClick()
         composeRule.waitForIdle()
         assertLibraryShown()
     }
 
     @Test
-    fun `with animations removed, the reader opens without the opening page`() {
+    fun `with animations removed, nothing is linked`() {
         Settings.Global.putFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
         launchLibrary()
-        stopClock()
 
-        tapCard()
-        advanceFrames()
+        openFromCard()
 
-        openingPage().assertDoesNotExist()
-        finishTransitions()
-        waitForDescription(READER_PAGE_1)
+        assertNoSharedElement()
     }
 
     @Test
-    fun `a document picked in the file picker opens without the opening page, even after a tap`() {
+    fun `a document picked in the file picker is not linked, even after a tap`() {
         val controller = launchLibrary()
-        tapCard()
-        waitForDescription(READER_PAGE_1)
+        openFromCard()
         composeRule.onNodeWithContentDescription("Back").performClick()
         assertLibraryShown()
 
@@ -246,26 +271,22 @@ class DocumentTransitionTest {
         composeRule.waitForIdle()
         val activity = shadowOf(controller.get())
         val picker = activity.nextStartedActivityForResult
-        stopClock()
         activity.receiveResult(picker.intent, Activity.RESULT_OK, Intent().setData(Uri.parse(DOCUMENT)))
-        advanceFrames()
-
-        openingPage().assertDoesNotExist()
-        finishTransitions()
         waitForDescription(READER_PAGE_1)
+        composeRule.waitForIdle()
+
+        assertNoSharedElement()
     }
 
     @Test
-    fun `a document sent by another app opens without the opening page`() {
+    fun `a document sent by another app is not linked`() {
         record(DOCUMENT, "Contrat de location")
-        stopClock()
 
         Robolectric.buildActivity(MainActivity::class.java, view()).setup().also { controllers += it }
-        advanceFrames()
-
-        openingPage().assertDoesNotExist()
-        finishTransitions()
         waitForDescription(READER_PAGE_1)
+        composeRule.waitForIdle()
+
+        assertNoSharedElement()
     }
 
     @Test
@@ -295,9 +316,6 @@ class DocumentTransitionTest {
         const val READER_PAGE_1 = "Document, page 1 of $PAGE_COUNT"
         const val DOCUMENT = "content://com.example.files/document/1"
         const val OTHER_DOCUMENT = "content://com.example.files/document/2"
-
-        /** `OPENING_PAGE_TAG` of `feature:reader`, internal to that module. */
-        const val OPENING_PAGE_TAG = "openingPage"
 
         const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
     }
