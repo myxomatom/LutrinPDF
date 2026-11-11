@@ -13,14 +13,25 @@ object TestFiles {
         /** One page, text only. */
         const val SIMPLE = "pdfs/simple_1page.pdf"
 
-        /** 600 text pages. */
+        /** 600 text pages, with a two-level outline (12 parts of 5 chapters). */
         const val LARGE = "pdfs/large_600pages.pdf"
 
         /** Three-level outline with 15 entries over 6 pages. */
         const val NESTED_OUTLINE = "pdfs/nested_outline.pdf"
 
-        /** Page 1 links to page 3 and to `https://example.org/`. */
+        /**
+         * Page 1 links to page 3 and to `https://example.org/`; page 2 links to the middle of
+         * page 4, to a named destination at the top of page 3, and to `mailto:`, `javascript:`,
+         * `file:` and relative URIs. Its outline has an entry to the middle of page 4 and an
+         * external one.
+         */
         const val LINKS = "pdfs/links_internal_external.pdf"
+
+        /**
+         * One page for search and selection: a word cut by a hyphen at the end of a line
+         * ("biblio-" / "thèque") and an Arabic sentence.
+         */
+        const val TEXT_SELECTION = "pdfs/text_selection.pdf"
 
         /** AES-256 encrypted; the user password is [ENCRYPTED_PASSWORD]. */
         const val ENCRYPTED = "pdfs/encrypted_password_lutrin.pdf"

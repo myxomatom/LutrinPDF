@@ -35,6 +35,9 @@ RC4_PASSWORD = "lutrin-rc4"
 AES_128_PASSWORD = "lutrin-aes128"
 OWNER_ONLY_PASSWORD = "lutrin-owner"
 FIXED_DATE = "D:20260101000000Z"
+# Positions of the link targets of links_internal_external.pdf, in points from the top of the page.
+MIDDLE_Y = 421
+NAMED_Y = 100
 A4 = pymupdf.paper_rect("a4")
 LOREM = (
     "Le lutrin est un pupitre sur lequel on pose un livre ouvert pour le lire. "
@@ -66,6 +69,13 @@ def large() -> None:
     doc = pymupdf.open()
     for i in range(1, 601):
         text_page(doc, f"Page {i}", f"Contenu de la page {i}. " + LOREM)
+    # Outline of a long document (F06): 12 parts of 50 pages, each with 5 chapters of 10 pages.
+    toc = []
+    for part in range(12):
+        toc.append([1, f"Partie {part + 1}", part * 50 + 1])
+        for chapter in range(5):
+            toc.append([2, f"Chapitre {part * 5 + chapter + 1}", part * 50 + chapter * 10 + 1])
+    doc.set_toc(toc)
     save(doc, "large_600pages.pdf")
 
 
@@ -96,7 +106,52 @@ def links() -> None:
     external = pymupdf.Rect(72, 340, 300, 360)
     first.insert_text(external.bl - (0, 4), "https://example.org/", fontsize=12, color=(0, 0, 1))
     first.insert_link({"kind": pymupdf.LINK_URI, "from": external, "uri": "https://example.org/"})
+    link_targets(doc)
+    # Outline (F06): an entry pointing to the middle of page 4 and an external one.
+    doc.set_toc([
+        [1, "Milieu de la page 4", 4, {"kind": pymupdf.LINK_GOTO, "page": 3, "to": pymupdf.Point(0, MIDDLE_Y), "zoom": 0}],
+        [1, "Site externe", -1, {"kind": pymupdf.LINK_URI, "uri": "https://example.org/sommaire"}],
+    ])
     save(doc, "links_internal_external.pdf")
+
+
+def link_targets(doc: pymupdf.Document) -> None:
+    """Page 2: a link to a position, a named destination and links the reader must refuse (F09, ADR 0020)."""
+    page = doc[1]
+    targets = [
+        ("Milieu de la page 4", {"kind": pymupdf.LINK_GOTO, "page": 3, "to": pymupdf.Point(0, MIDDLE_Y), "zoom": 0}),
+        ("Destination nommée", None),
+        ("mailto:lutrin@example.org", {"kind": pymupdf.LINK_URI, "uri": "mailto:lutrin@example.org"}),
+        ("javascript:", {"kind": pymupdf.LINK_URI, "uri": "javascript:alert(1)"}),
+        ("file:", {"kind": pymupdf.LINK_URI, "uri": "file:///sdcard/secret.pdf"}),
+        ("URI relative", {"kind": pymupdf.LINK_URI, "uri": "annexe.html"}),
+    ]
+    for row, (label, link) in enumerate(targets):
+        area = pymupdf.Rect(72, 300 + row * 40, 300, 320 + row * 40)
+        page.insert_text(area.bl - (0, 4), label, fontsize=12, color=(0, 0, 1))
+        if link is not None:
+            page.insert_link(dict(link, **{"from": area}))
+        else:
+            named_destination(doc, page, area)
+
+
+def named_destination(doc: pymupdf.Document, page: pymupdf.Page, area: pymupdf.Rect) -> None:
+    """Link to the named destination "chapitre-3", the top of page 3 (/XYZ in PDF coordinates)."""
+    target = doc[2]
+    pdf_y = target.rect.height - NAMED_Y
+    names = doc.get_new_xref()
+    doc.update_object(names, f"<< /Names [(chapitre-3) [{target.xref} 0 R /XYZ 0 {pdf_y:g} 0]] >>")
+    doc.xref_set_key(doc.pdf_catalog(), "Names", f"<< /Dests {names} 0 R >>")
+    annotation = doc.get_new_xref()
+    r = area * page.transformation_matrix
+    doc.update_object(
+        annotation,
+        f"<< /Type /Annot /Subtype /Link /Rect [{r.x0:g} {r.y0:g} {r.x1:g} {r.y1:g}] /Border [0 0 0] "
+        f"/A << /S /GoTo /D (chapitre-3) >> >>",
+    )
+    annots = doc.xref_get_key(page.xref, "Annots")
+    existing = annots[1][1:-1] if annots[0] == "array" else ""
+    doc.xref_set_key(page.xref, "Annots", f"[{existing} {annotation} 0 R]")
 
 
 def encrypted() -> None:
@@ -191,6 +246,24 @@ def non_latin() -> None:
     save(doc, "non_latin_text.pdf")
 
 
+def text_selection() -> None:
+    """Search and selection (F07, F08, ADR 0020): a word cut at the end of a line and an Arabic sentence."""
+    doc = pymupdf.open()
+    page = doc.new_page(width=A4.width, height=A4.height)
+    page.insert_text((72, 90), "Recherche et sélection", fontsize=20)
+    # Explicit lines, so that "bibliothèque" is cut by a hyphen at the end of the first one.
+    lines = [
+        "Le mot suivant est coupé en fin de ligne : la biblio-",
+        "thèque municipale ouvre à neuf heures.",
+        "Une ligne entière à sélectionner.",
+    ]
+    for row, line in enumerate(lines):
+        page.insert_text((72, 140 + row * 20), line, fontsize=12)
+    html = '<p dir="rtl" lang="ar" style="font-size: 14pt">مرحبا بكم في مكتبة كبيرة.</p>'
+    page.insert_htmlbox(pymupdf.Rect(72, 220, A4.width - 72, 300), html)
+    save(doc, "text_selection.pdf")
+
+
 def corrupted() -> None:
     # Cut in the middle: MuPDF can usually repair it, the app must at least never crash.
     buffer = io.BytesIO()
@@ -264,7 +337,7 @@ def texts() -> None:
 
 
 GENERATORS = (simple, large, nested_outline, links, encrypted, encrypted_variants, form, scanned, mixed_sizes,
-              non_latin, corrupted, garbage, not_a_pdf, images, texts)
+              non_latin, text_selection, corrupted, garbage, not_a_pdf, images, texts)
 
 
 def main(names: list[str]) -> None:

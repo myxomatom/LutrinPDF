@@ -17,9 +17,10 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | Fichier | Contenu | Attendu |
 |---------|---------|---------|
 | `simple_1page.pdf` | 1 page, texte seul | Ouverture, texte extractible |
-| `large_600pages.pdf` | 600 pages de texte | Pas d'`OutOfMemoryError`, défilement fluide ; document des benchmarks de `:benchmark`, copié dans les builds de mesure de l'application (ADR 0012) |
+| `large_600pages.pdf` | 600 pages de texte ; table des matières à 2 niveaux (12 parties de 50 pages, 5 chapitres de 10 pages chacune) | Pas d'`OutOfMemoryError`, défilement fluide, long sommaire F06 ; document des benchmarks de `:benchmark`, copié dans les builds de mesure de l'application (ADR 0012) |
 | `nested_outline.pdf` | 6 pages, table des matières à 3 niveaux (15 entrées) | Arborescence F06 |
-| `links_internal_external.pdf` | 4 pages ; page 1 : lien vers la page 3 et vers `https://example.org/` | F09 (confirmation avant le lien externe) |
+| `links_internal_external.pdf` | 4 pages ; page 1 : lien vers la page 3 et vers `https://example.org/` ; page 2 : lien vers le milieu de la page 4 (y = 421 pt depuis le haut), lien vers la destination nommée `chapitre-3` (haut de la page 3, y = 100 pt), liens `mailto:lutrin@example.org`, `javascript:alert(1)`, `file:///sdcard/secret.pdf` et URI relative `annexe.html` ; sommaire : une entrée vers le milieu de la page 4 et une entrée externe `https://example.org/sommaire` | F06, F09 : position de la destination ; seuls `http`, `https` et `mailto` s'ouvrent, après confirmation (ADR 0020) |
+| `text_selection.pdf` | 1 page : « biblio- » en fin de ligne et « thèque » au début de la suivante ; une ligne à sélectionner ; une phrase arabe « مرحبا بكم في مكتبة كبيرة. » | F07 (mot coupé trouvé, résultat sur deux lignes, recherche en arabe) et F08 (sélection d'un mot, d'une ligne, de texte arabe) |
 | `encrypted_password_lutrin.pdf` | AES-256 (révision 6), mot de passe utilisateur **`lutrin`** | F10 ; un autre mot de passe est refusé |
 | `encrypted_rc4_128.pdf` | RC4 128 bits (révision 3), mot de passe utilisateur **`lutrin-rc4`** | F10 (ADR 0017) |
 | `encrypted_aes_128.pdf` | AES-128 (révision 4), mot de passe utilisateur **`lutrin-aes128`** | F10 (ADR 0017) |
