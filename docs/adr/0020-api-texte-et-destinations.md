@@ -89,9 +89,11 @@ En essayant MuPDF 1.28.6 (le même que l'application, via PyMuPDF), deux pièges
    résultat ; une requête vide n'émet rien. **Insensible à la casse et aux accents par défaut**
    (`SearchOptions`), **plafond de 1 000 résultats** (`SearchOptions.maxHits`, constante
    `MAX_SEARCH_HITS`) : la dernière émission porte `isLimitReached = true` et les pages
-   suivantes ne sont pas parcourues. Le texte structuré est extrait avec l'option `dehyphenate`,
-   comme la recherche de MuPDF, pour trouver un mot coupé en fin de ligne ; le résultat a alors
-   une zone par ligne.
+   suivantes ne sont pas parcourues. La recherche passe par `Page.search`, qui extrait le texte
+   avec l'option `dehyphenate` et trouve un mot coupé en fin de ligne (le résultat a alors une
+   zone par ligne) ; `StructuredText.search` n'est pas utilisable dans MuPDF 1.28.6 (son JNI
+   échoue toujours). Les caractères de la page ne sont extraits, pour les extraits, que si elle
+   a un résultat.
 5. **Extrait de contexte** : `SearchHit.excerpt: SearchExcerpt(before, match, after)`, lu sur
    une ligne (lignes jointes par une espace, ou sans rien après un trait d'union, qui disparaît),
    au plus 40 caractères de chaque côté, coupés sur un mot entier quand c'est possible. Les
@@ -116,8 +118,8 @@ En essayant MuPDF 1.28.6 (le même que l'application, via PyMuPDF), deux pièges
     arabe et latin peut être surlignée un peu au-delà du texte choisi ;
   - le plafond est atteint aussi quand il tombe pile sur le dernier résultat du document : le
     lecteur affichera « 1 000 résultats ou plus » ;
-  - la recherche extrait le texte de chaque page (et ses caractères quand elle y trouve un
-    résultat) : un peu plus de travail qu'avant, sur le thread du document.
+  - une page qui a un résultat est extraite deux fois (par `Page.search`, puis pour les
+    extraits) : un peu plus de travail qu'avant, sur le thread du document.
 - Actions de suivi :
   - lot 2 (lecteur, « aller à la page ») et lot 4 (liens) : utiliser `PdfDestination`, filtrer
     les schémas ;

@@ -56,11 +56,15 @@ internal fun StructuredText.toPageText(): PageText {
  * @param pageIndex page reported in the results.
  * @param flags MuPDF search flags (see [toMuPdfFlags]).
  */
-internal fun Page.searchHits(pageIndex: Int, query: String, flags: Int): List<SearchHit> = withStructuredText { text ->
-    val matches = text.search(query, flags).orEmpty()
+internal fun Page.searchHits(pageIndex: Int, query: String, flags: Int): List<SearchHit> {
+    // Page.search, not StructuredText.search: in MuPDF 1.28.6 the JNI of the latter calls
+    // ArrayList.toArray(T[]) without its argument and always fails (NullPointerException).
+    // Page.search extracts the text with the same "dehyphenate" option.
+    val matches = search(query, flags).orEmpty()
+    if (matches.isEmpty()) return emptyList()
     // The characters are only read when the page has a result: most pages have none.
-    val pageText by lazy(LazyThreadSafetyMode.NONE) { text.toPageText() }
-    matches.map { quads ->
+    val pageText = withStructuredText { it.toPageText() }
+    return matches.map { quads ->
         val areas = quads.map { it.toPdfRect() }
         SearchHit(pageIndex, areas, pageText.excerpt(areas))
     }

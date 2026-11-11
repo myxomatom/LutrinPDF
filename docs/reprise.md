@@ -316,6 +316,10 @@ récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
     Windows) ;
   - le marcheur de `StructuredText` (et `getBlocks()`) crée un `Font` Java par caractère et un
     `Image` par bloc : `GlyphCollector` les détruit aussitôt, sur le thread du document ;
+  - `StructuredText.search` de MuPDF 1.28.6 échoue toujours (`NullPointerException` dans
+    `ArrayList.toArray` : son JNI appelle `toArray(T[])` sans argument) : utiliser
+    `Page.search`, qui extrait le texte avec la même option `dehyphenate` ; à revoir à chaque
+    mise à jour de MuPDF ;
   - `search_for` de PyMuPDF ne trouve pas un mot coupé en fin de ligne, alors que la recherche
     Java de MuPDF (texte extrait avec `dehyphenate`) le trouve : ne pas vérifier le jeu de test
     avec `search_for` ;
