@@ -41,6 +41,7 @@ private val FullscreenIndicatorPadding = 16.dp
  * @param onZoomChange called with the new zoom.
  * @param controlsVisible whether the bars are shown (false in full screen, F14).
  * @param onTap called on a single tap on the pages.
+ * @param onIndicatorClick called by a tap on the page indicator of the floating bar (V3).
  * @param modifier modifier applied to the area; it keeps clear of the top bar and the sides.
  * @param pageTransition the transition of the page shown, back to its thumbnail in the library
  *   (ADR 0019); `null` when the reader has none.
@@ -55,6 +56,7 @@ internal fun ReaderDocumentArea(
     onZoomChange: (Float) -> Unit,
     controlsVisible: Boolean,
     onTap: () -> Unit,
+    onIndicatorClick: () -> Unit,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
 ) {
@@ -76,7 +78,15 @@ internal fun ReaderDocumentArea(
         )
         if (scrubber.isPreviewing) PreviewScrim()
         if (controlsVisible) {
-            ReaderPageBar(state, page, navigator, scrubber, onFit = { onZoomChange(1f) }, previewMaxHeight = maxHeight)
+            ReaderPageBar(
+                state = state,
+                page = page,
+                navigator = navigator,
+                scrubber = scrubber,
+                onIndicatorClick = onIndicatorClick,
+                onFit = { onZoomChange(1f) },
+                previewMaxHeight = maxHeight,
+            )
         } else {
             FullscreenPageIndicator(page, pageCount, Modifier.align(Alignment.BottomCenter))
         }
@@ -136,6 +146,7 @@ private fun BoxScope.ReaderPageBar(
     page: Int,
     navigator: PageNavigator,
     scrubber: PageScrubber,
+    onIndicatorClick: () -> Unit,
     onFit: () -> Unit,
     previewMaxHeight: Dp,
 ) {
@@ -155,6 +166,7 @@ private fun BoxScope.ReaderPageBar(
                 }
             }
         },
+        onIndicatorClick = onIndicatorClick,
         fitLabel = stringResource(fitLabel),
         onFit = onFit,
         previewMaxHeight = previewMaxHeight,

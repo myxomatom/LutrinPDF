@@ -18,6 +18,18 @@ changement y est signalé.
   appareil (`CjkFallbackFontCheck`). `generateMupdfResources` n'écrit plus que les ressources
   compilées (≈ 200 Mo de sources C en moins) ; la bibliothèque des tests JVM a les mêmes
   polices que l'application.
+- **Aller à la page** (F05, V3) : un appui sur l'indicateur « 5 / 8 » de la barre flottante (une
+  cible de 48 dp au moins, lue par TalkBack « Page 5 sur 8, bouton » avec l'action « Aller à une
+  page ») ouvre un dialogue avec un champ numérique rempli de la page affichée, sélectionnée,
+  clavier ouvert. « Aller » et l'action du clavier ne s'activent que pour une page du document ;
+  sinon le champ explique pourquoi (« Saisissez un numéro de page », « Entre 1 et 8 » pour 0 ou
+  une page trop grande), message annoncé par les lecteurs d'écran. Seuls les chiffres sont
+  acceptés ; la saisie survit à la rotation. Fonctionne en défilement continu et en page par
+  page. Le curseur fin reste la « barre de défilement rapide » de F05. Pas d'entrée de menu en
+  plus. Pas encore essayé sur appareil.
+- `PageNavigator.goTo(page, yOffset)` : en défilement continu, amène un point de la page (distance
+  depuis le haut, en points PDF) en haut de l'écran ; en page par page, montre la page entière.
+  Servira à la table des matières et aux liens (F06, F09).
 - **Transition lecteur → vignette** (ADR 0018 §7, ADR 0019 amendé) : en touchant la carte
   « Reprendre la lecture » ou une ligne des récents, le lecteur apparaît par un simple fondu (la
   vignette qui s'agrandissait, essayée d'abord, était buggée sur appareil ; le rond de

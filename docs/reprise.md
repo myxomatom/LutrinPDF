@@ -143,6 +143,15 @@ retenu par la passe *lookahead* de `SharedTransitionLayout`, probablement le men
 récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
 `docs/open-questions.md`.
 
+**M4, lot 2 : « Aller à la page »** (F05, V3, branche `feat/reader-go-to-page`, pas encore sur
+appareil). Un appui sur l'indicateur « 5 / 8 » de la barre flottante ouvre le dialogue
+(`GoToPageDialog`, validation dans `PageNumberInput.kt`) ; le curseur fin reste la barre de
+défilement rapide. `PageNavigator.goTo(page, yOffset)` accepte un décalage en points PDF depuis
+le haut de la page (appliqué en défilement continu seulement ; page par page, la page est
+montrée entière) pour la table des matières et les liens. **À essayer sur appareil** : le clavier
+numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
+rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
+
 ## 3. Décisions à connaître
 
 - Toutes les décisions sont dans `docs/adr/` (0001 à 0017) et dans les points tranchés de
@@ -301,6 +310,13 @@ récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
   - ne jamais utiliser `rememberTextFieldState` pour un mot de passe : il est sauvegardable ;
   - `FakePdfEngine(password = …)` simule un document chiffré ; il enregistre les mots de passe
     reçus (`givenPasswords`) pour les tests seulement.
+- **Plusieurs sessions Gradle en parallèle sous Windows** (constaté le 2026-11-11) : le démon
+  Kotlin/Gradle est partagé entre les arbres de travail, et celui d'une autre session garde son
+  propre `TMP` (`NoSuchFileException: W:uild	est-tmp\kotlin-compiler-in-utrin….alive`).
+  Lancer Gradle avec `--no-daemon` pour isoler la session.
+- **Tests Compose** : avec un champ de texte en focus, le premier « retour » (`Espresso.pressBack`)
+  ferme le clavier, le second ferme le dialogue ; `StateRestorationTester` (API v2) se construit
+  avec `runComposeUiTest` de `androidx.compose.ui.test.v2` et `emulateSaveAndRestore()`.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 
