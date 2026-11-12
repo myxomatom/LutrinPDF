@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » en parallèle ; lots 3 (recherche, sélection) et 4 (sommaire, liens) à faire |
+| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lots 3 (recherche, sélection) et 4 (sommaire, liens) à faire |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -148,6 +148,15 @@ branche `ccr-d7c547a8-psu5t2` (pas encore sur appareil) :
 retenu par la passe *lookahead* de `SharedTransitionLayout`, probablement le menu « ⋮ » des
 récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
 `docs/open-questions.md`.
+
+**M4, lot 2 : « Aller à la page »** (F05, V3, branche `feat/reader-go-to-page`, pas encore sur
+appareil). Un appui sur l'indicateur « 5 / 8 » de la barre flottante ouvre le dialogue
+(`GoToPageDialog`, validation dans `PageNumberInput.kt`) ; le curseur fin reste la barre de
+défilement rapide. `PageNavigator.goTo(page, yOffset)` accepte un décalage en points PDF depuis
+le haut de la page (appliqué en défilement continu seulement ; page par page, la page est
+montrée entière) pour la table des matières et les liens. **À essayer sur appareil** : le clavier
+numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
+rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
 
 ## 3. Décisions à connaître
 
@@ -307,6 +316,13 @@ récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
   - ne jamais utiliser `rememberTextFieldState` pour un mot de passe : il est sauvegardable ;
   - `FakePdfEngine(password = …)` simule un document chiffré ; il enregistre les mots de passe
     reçus (`givenPasswords`) pour les tests seulement.
+- **Plusieurs sessions Gradle en parallèle sous Windows** (constaté le 2026-11-11) : le démon
+  Kotlin/Gradle est partagé entre les arbres de travail, et celui d'une autre session garde son
+  propre `TMP` (`NoSuchFileException: W:uild	est-tmp\kotlin-compiler-in-utrin….alive`).
+  Lancer Gradle avec `--no-daemon` pour isoler la session.
+- **Tests Compose** : avec un champ de texte en focus, le premier « retour » (`Espresso.pressBack`)
+  ferme le clavier, le second ferme le dialogue ; `StateRestorationTester` (API v2) se construit
+  avec `runComposeUiTest` de `androidx.compose.ui.test.v2` et `emulateSaveAndRestore()`.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
 - **API texte du moteur** (ADR 0020, constaté le 2026-11-11) :

@@ -25,11 +25,12 @@
 |-----|------|-----------|
 | E1 Bibliothèque | 🟡 Partielle | Liste des récents de la maquette (vignette, nom, page, date, progression ; ADR 0015), état vide, chargement et erreur, « Ouvrir un fichier » (sélecteur système, bouton flottant au-dessus de la liste), accès aux paramètres, message quand un document reçu d'une autre application est refusé (ADR 0014), menu « ⋮ » avec « Retirer des récents » et « Annuler » (ADR 0016), pastille de cadenas des documents protégés (ADR 0017) ; nouveau design (ADR 0018) : carte « Reprendre la lecture » du dernier document, « N autres documents », barre seulement pour une lecture en cours ; grille (V10) en v1.x, outils en M6 |
 | E2 Lecteur | 🟡 Partielle | Défilement continu ou page par page, zoom 25–800 % net, plein écran, curseur et indicateur de page, « Plus d'options » ; recherche, table des matières en M4 |
+| V3 Aller à la page | ✅ Faite | Dialogue ouvert par un appui sur l'indicateur de page de la barre flottante ; saisie numérique validée, erreurs annoncées, survit à la rotation ; essais sur appareil à faire |
 | V6 Options d'affichage | 🟡 Partielle | Section « Défilement » seulement (ADR 0011) ; ajustement, couleurs, plein écran, orientation en M5 |
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible ; « Retirer des récents » pour un document de la liste (ADR 0016) ; un document protégé ouvre V4 (ADR 0017) |
 | V4 Mot de passe | ✅ Faite | Dialogue au-dessus du lecteur, champ masqué avec œil, erreur annoncée, essais illimités, mot de passe jamais gardé (ADR 0017) ; essais sur appareil à faire |
 | E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; « Données et confidentialité » : « Vider les récents » avec confirmation (ADR 0016) ; thème, rendu, lecture en M5 |
-| Autres (E4–E10, V1–V3, V5, V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| Autres (E4–E10, V1–V2, V5, V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -11,13 +12,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -46,6 +48,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -129,6 +132,7 @@ internal fun floatingPageBarClearance(): Dp =
  * @param renderer draws the preview of the page aimed at.
  * @param scrubber state of the slider gesture, shared with the screen that dims the document.
  * @param onGoTo shows a zero-based page in the document, without animation.
+ * @param onIndicatorClick called by a tap on the page indicator, which opens « Aller à la page » (V3).
  * @param fitLabel description of the fit button: « fit to width » or « fit page ».
  * @param onFit brings the zoom back to 1.
  * @param previewMaxHeight tallest page in the preview card, so that it fits above the bar.
@@ -144,6 +148,7 @@ internal fun FloatingPageBar(
     renderer: PageRenderer,
     scrubber: PageScrubber,
     onGoTo: (Int) -> Unit,
+    onIndicatorClick: () -> Unit,
     fitLabel: String,
     onFit: () -> Unit,
     previewMaxHeight: Dp,
@@ -171,7 +176,7 @@ internal fun FloatingPageBar(
             )
             Spacer(Modifier.height(PreviewGap))
         }
-        Bar(page, pageSizes.size, scrubber, onGoTo, fitLabel, onFit, thumbAnchor)
+        Bar(page, pageSizes.size, scrubber, onGoTo, onIndicatorClick, fitLabel, onFit, thumbAnchor)
     }
 }
 
@@ -183,6 +188,7 @@ private fun Bar(
     pageCount: Int,
     scrubber: PageScrubber,
     onGoTo: (Int) -> Unit,
+    onIndicatorClick: () -> Unit,
     fitLabel: String,
     onFit: () -> Unit,
     thumbAnchor: ThumbAnchor,
@@ -198,13 +204,7 @@ private fun Bar(
             horizontalArrangement = Arrangement.spacedBy(BarSpacing),
         ) {
             val shown = scrubber.aimedPage ?: page
-            val colors = MaterialTheme.colorScheme
-            Text(
-                stringResource(R.string.reader_page_indicator, shown + 1, pageCount),
-                style = MaterialTheme.typography.titleSmall,
-                color = if (scrubber.isPreviewing) colors.primary else colors.onSurface,
-                modifier = Modifier.widthIn(min = IndicatorMinWidth),
-            )
+            PageIndicator(shown, pageCount, scrubber.isPreviewing, onIndicatorClick)
             if (pageCount > 1) {
                 PageSlider(shown, pageCount, scrubber, onGoTo, thumbAnchor, Modifier.weight(1f))
             } else {
@@ -217,6 +217,35 @@ private fun Bar(
                 Icon(painterResource(R.drawable.ic_fit_width), contentDescription = fitLabel)
             }
         }
+    }
+}
+
+/**
+ * « page / count », a button that opens « Aller à la page » (V3): at least 48 dp high and
+ * [IndicatorMinWidth] wide, so that it can be hit easily and the slider does not jump between
+ * « 9 / 12 » and « 10 / 12 ». TalkBack reads « Page x of n, button » and the action « Go to a page ».
+ */
+@Composable
+private fun PageIndicator(shown: Int, pageCount: Int, isPreviewing: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val description = stringResource(R.string.reader_page_slider_value, shown + 1, pageCount)
+    Box(
+        Modifier
+            .defaultMinSize(minWidth = IndicatorMinWidth, minHeight = LutrinDimens.TouchTargetMin)
+            .clip(CircleShape)
+            .clickable(
+                onClickLabel = stringResource(R.string.reader_page_indicator_action),
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            stringResource(R.string.reader_page_indicator, shown + 1, pageCount),
+            style = MaterialTheme.typography.titleSmall,
+            color = if (isPreviewing) colors.primary else colors.onSurface,
+        )
     }
 }
 
