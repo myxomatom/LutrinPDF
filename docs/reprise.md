@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-10.**
+> session de travail. **Dernière mise à jour : 2026-11-12.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -152,6 +152,17 @@ montrée entière) pour la table des matières et les liens. **À essayer sur ap
 numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
 rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
 
+**M4, lot des polices CJK** (ADR 0025, branche `feat/cjk-fonts`, pas encore sur appareil) :
+DroidSansFallback (Apache-2.0, 3,4 Mio) compilée dans `libmupdf_java.so` par
+`MUPDF_EXTRA_CFLAGS=-UTOFU_CJK -DTOFU_CJK_EXT` et `ADD_SOURCE_FILES` (sans toucher à
+`Android.mk`) ; APK release de 13,1 à 16,8 Mo par ABI (avant : 9,5 à 13,3), limite de `SPEC.md`
+§3 relevée à 18 Mo. MuPDF cherche d'abord les polices CJK du système (`/system/fonts`) : la
+police embarquée ne sert que sur un appareil qui n'en a pas. **À essayer sur appareil** : ouvrir
+`cjk_not_embedded.pdf` (jeu de test) ; lancer `:core:pdf:connectedDebugAndroidTest`
+(`CjkFallbackFontInstrumentedTest`). **L'écran des licences (M5) doit citer DroidSansFallback et
+les polices URW** (`docs/dependencies.md`). Pas encore de vérification automatique de la taille
+des APK (proposition dans l'ADR 0025).
+
 ## 3. Décisions à connaître
 
 - Toutes les décisions sont dans `docs/adr/` (0001 à 0017) et dans les points tranchés de
@@ -185,7 +196,7 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
-- Points encore ouverts : 1, 2, 3, 6, 8, 11, 13, 14 et 16 (`docs/open-questions.md`).
+- Points encore ouverts : 1, 2, 3, 6, 11, 13, 14 et 16 (`docs/open-questions.md`).
 
 ## 4. Pièges déjà rencontrés
 
@@ -231,7 +242,16 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
   - `make` n'est plus nécessaire : `generateMupdfResources` est une tâche Kotlin de
     `build-logic` qui reproduit `scripts/hexdump.sh` octet pour octet ; à chaque mise à jour de
     MuPDF, revoir sa liste (`MUPDF_EMBEDDED_RESOURCES`) face à `FONT_BIN` / `HYPH_BIN` du
-    `Makefile` ;
+    `Makefile` **avec les drapeaux de polices du build Android** (ADR 0025 ; les mêmes sont
+    dans `third-party/mupdf/build.gradle.kts` et `build-host-jni.sh`) ;
+  - changer `MUPDF_EXTRA_CFLAGS` recompile toute la bibliothèque native (≈ 8 min pour les trois
+    ABI sous Windows) ;
+  - `git submodule update --reference` refuse un dépôt de référence superficiel (« reference
+    repository … is shallow ») : dans un nouveau worktree, récupérer les bibliothèques de
+    `libmupdf/thirdparty` avec `--depth 1`, comme `scripts/init-mupdf.sh` ;
+  - `./gradlew --stop` lancé depuis un autre checkout arrête aussi les démons des autres
+    worktrees (même version de Gradle) : leur build échoue avec « Gradle build daemon has been
+    stopped » ; relancer ;
   - avec `core.autocrlf=true`, Git réécrit en CRLF les fichiers de `libmupdf/generated/`
     versionnés par MuPDF, puis la tâche les réécrit en LF : le sous-module apparaît modifié
     (`git status`) sans différence de contenu (`git diff` vide). C'est sans conséquence ;
