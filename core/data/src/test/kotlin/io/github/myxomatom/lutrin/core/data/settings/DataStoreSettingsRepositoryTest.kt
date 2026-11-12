@@ -186,4 +186,55 @@ class DataStoreSettingsRepositoryTest {
 
         assertThat(DataStoreSettingsRepository(dataStore).settings.first().pagePreview).isFalse()
     }
+
+    @Test
+    fun `stores the copy restriction choice and emits every change`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.settings.test {
+            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+            repository.setIgnoreCopyRestriction(true)
+            assertThat(awaitItem()).isEqualTo(AppSettings(ignoreCopyRestriction = true))
+            repository.setIgnoreCopyRestriction(false)
+            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+        }
+    }
+
+    @Test
+    fun `a file written before the copy restriction setting reads it as respected`() =
+        runTest(UnconfinedTestDispatcher()) {
+            // No migration: a file of an older version has every other key, but not this one.
+            val file = File(folder.root, "older.preferences_pb")
+            val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+            dataStore.edit {
+                it[booleanPreferencesKey("dynamic_color")] = false
+                it[booleanPreferencesKey("page_preview")] = false
+            }
+
+            val settings = DataStoreSettingsRepository(dataStore).settings.first()
+
+            assertThat(settings).isEqualTo(AppSettings(dynamicColor = false, pagePreview = false))
+            assertThat(settings.ignoreCopyRestriction).isFalse()
+        }
+
+    @Test
+    fun `the copy restriction choice is stored under a stable key`() = runTest(UnconfinedTestDispatcher()) {
+        // Written on the users' devices: renaming the key would silently respect the restriction again.
+        val file = File(folder.root, "copy.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit { it[booleanPreferencesKey("ignore_copy_restriction")] = true }
+
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first().ignoreCopyRestriction).isTrue()
+    }
+
+    @Test
+    fun `changing the copy restriction keeps the other settings`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.setScrollMode(ScrollMode.PAGED)
+        repository.setIgnoreCopyRestriction(true)
+
+        val expected = AppSettings(scrollMode = ScrollMode.PAGED, ignoreCopyRestriction = true)
+        assertThat(repository.settings.first()).isEqualTo(expected)
+    }
 }

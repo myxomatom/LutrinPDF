@@ -34,6 +34,7 @@ class SettingsScreenTest {
 
     private val changes = mutableListOf<Boolean>()
     private val previewChanges = mutableListOf<Boolean>()
+    private val copyChanges = mutableListOf<Boolean>()
     private var backClicks = 0
     private var clearRequests = 0
 
@@ -47,6 +48,7 @@ class SettingsScreenTest {
                     onBack = { backClicks++ },
                     onClearRecents = { clearRequests++ },
                     onPagePreviewChange = { previewChanges += it },
+                    onIgnoreCopyRestrictionChange = { copyChanges += it },
                 )
             }
         }
@@ -137,6 +139,57 @@ class SettingsScreenTest {
         composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsEnabled().performClick()
 
         assertThat(previewChanges).containsExactly(false)
+    }
+
+    @Test
+    fun `offers to ignore the copy restriction in the reading section, off by default`() {
+        show(SettingsUiState(loading = false))
+
+        val summary =
+            "Lets you copy the text of documents whose author forbids it. Respect the rights of the author."
+        composeRule.onNodeWithText(summary).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNode(isToggleable() and hasText("Ignore copy restriction"))
+            .assertIsOff()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+    }
+
+    @Test
+    fun `tapping the row ignores the copy restriction, without touching the other settings`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNode(isToggleable() and hasText("Ignore copy restriction")).performScrollTo().performClick()
+
+        assertThat(copyChanges).containsExactly(true)
+        assertThat(previewChanges).isEmpty()
+        assertThat(changes).isEmpty()
+    }
+
+    @Test
+    fun `tapping the row again respects the copy restriction`() {
+        show(SettingsUiState(loading = false, ignoreCopyRestriction = true))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Ignore copy restriction"))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+
+        assertThat(copyChanges).containsExactly(false)
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the copy restriction switch is translated in French`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Ignorer l’interdiction de copie"))
+            .performScrollTo()
+            .assertIsOff()
+        val summary =
+            "Permet de copier le texte des documents dont l’auteur l’interdit. Respectez les droits de l’auteur."
+        composeRule.onNodeWithText(summary).assertIsDisplayed()
     }
 
     @Test

@@ -65,8 +65,10 @@ private val FullscreenIndicatorPadding = 16.dp
  *   (ADR 0019); `null` when the reader has none.
  * @param search the search in the document (F07): its occurrences are highlighted on the pages
  *   and, while it is open, the excerpt of the current one replaces the floating bar (V1).
+ * @param selection the text selection (F08, ADR 0024): a long press on a word selects it, a tap
+ *   closes it; TalkBack copies the text of the page with an action of the document area.
  */
-@Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
 internal fun ReaderDocumentArea(
     state: ReaderUiState.Ready,
@@ -81,11 +83,14 @@ internal fun ReaderDocumentArea(
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
     search: SearchState = SearchState(),
+    selection: ReaderSelection = ReaderSelection(),
 ) {
     val page = navigator.currentPage
-    val onPageTap = rememberPageTap(state.links, navigator, onTap, links.onLinkClick)
-    val linkActions = rememberLinkActions(state.links, page, links.onLinkClick)
+    val onPageTap = rememberSelectionTap(selection, rememberPageTap(state.links, navigator, onTap, links.onLinkClick))
+    val onPageLongPress = rememberPageLongPress(selection, onPageTap)
+    val pageActions = rememberLinkActions(state.links, page, links.onLinkClick) + copyPageAction(selection, page)
     val snackbar = rememberLinkHandling(links, navigator)
+    SelectionHandling(selection, navigator, search.isOpen, snackbar)
     val sharedPage = sharedPage(page, zoom, pageTransition)
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
@@ -97,8 +102,10 @@ internal fun ReaderDocumentArea(
             contentDescription = stringResource(R.string.reader_document, page + 1, state.pageSizes.size),
             bottomClearance = if (controlsVisible) floatingPageBarClearance() else 0.dp,
             sharedPage = sharedPage,
-            linkActions = linkActions,
+            linkActions = pageActions,
             highlights = rememberSearchHighlights(search),
+            onLongPress = onPageLongPress,
+            selection = selection,
         )
         if (scrubber.isPreviewing) PreviewScrim()
         if (search.isOpen) {
@@ -141,6 +148,8 @@ private fun DocumentPages(
     sharedPage: SharedPage?,
     linkActions: List<CustomAccessibilityAction>,
     highlights: SearchHighlights,
+    onLongPress: (PageHit?) -> Unit,
+    selection: ReaderSelection,
 ) {
     when (navigator) {
         is ContinuousNavigator ->
@@ -156,6 +165,8 @@ private fun DocumentPages(
                 sharedPage = sharedPage,
                 linkActions = linkActions,
                 highlights = highlights,
+                onLongPress = onLongPress,
+                selection = selection,
             )
 
         is PagedNavigator ->
@@ -171,6 +182,8 @@ private fun DocumentPages(
                 sharedPage = sharedPage,
                 linkActions = linkActions,
                 highlights = highlights,
+                onLongPress = onLongPress,
+                selection = selection,
             )
     }
 }

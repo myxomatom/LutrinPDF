@@ -32,4 +32,9 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
     override suspend fun setPagePreview(enabled: Boolean) {
         state.value = state.value.copy(pagePreview = enabled)
     }
+
+    /** Changes the copy restriction setting in memory; [settings] emits the new value at once. */
+    override suspend fun setIgnoreCopyRestriction(enabled: Boolean) {
+        state.value = state.value.copy(ignoreCopyRestriction = enabled)
+    }
 }

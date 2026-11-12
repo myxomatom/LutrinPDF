@@ -23,6 +23,10 @@ class SettingsUseCasesTest {
         override suspend fun setPagePreview(enabled: Boolean) {
             (settings as MutableStateFlow).value = settings.value.copy(pagePreview = enabled)
         }
+
+        override suspend fun setIgnoreCopyRestriction(enabled: Boolean) {
+            (settings as MutableStateFlow).value = settings.value.copy(ignoreCopyRestriction = enabled)
+        }
     }
 
     private val repository = InMemorySettings()
@@ -84,5 +88,32 @@ class SettingsUseCasesTest {
         setPagePreview(true)
         assertThat(repository.settings.value.pagePreview).isTrue()
         assertThat(repository.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `the copy restriction of documents is respected by default`() {
+        assertThat(AppSettings().ignoreCopyRestriction).isFalse()
+    }
+
+    @Test
+    fun `the copy restriction can be ignored and respected again`() = runTest {
+        val setIgnoreCopyRestriction = SetIgnoreCopyRestrictionUseCase(repository)
+
+        setIgnoreCopyRestriction(true)
+        assertThat(repository.settings.value).isEqualTo(AppSettings(ignoreCopyRestriction = true))
+
+        setIgnoreCopyRestriction(false)
+        assertThat(repository.settings.value.ignoreCopyRestriction).isFalse()
+    }
+
+    @Test
+    fun `text copy is allowed by the document or by the setting`() {
+        val respecting = AppSettings(ignoreCopyRestriction = false)
+        val ignoring = AppSettings(ignoreCopyRestriction = true)
+
+        assertThat(respecting.allowsTextCopy(documentAllowsCopy = true)).isTrue()
+        assertThat(respecting.allowsTextCopy(documentAllowsCopy = false)).isFalse()
+        assertThat(ignoring.allowsTextCopy(documentAllowsCopy = true)).isTrue()
+        assertThat(ignoring.allowsTextCopy(documentAllowsCopy = false)).isTrue()
     }
 }

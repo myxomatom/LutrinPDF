@@ -12,6 +12,7 @@ import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
+import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
@@ -22,6 +23,7 @@ import io.github.myxomatom.lutrin.feature.reader.links.LinkController
 import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.search.SearchController
+import io.github.myxomatom.lutrin.feature.reader.selection.SelectionController
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +65,8 @@ import kotlinx.coroutines.withContext
  *
  * The links of the document (F09, ADR 0022) are followed by [linkController]; their effects
  * are handled by the screen, since the ViewModel never sees a `Context`. The search (F07, ADR
- * 0023) is run by [searchController].
+ * 0023) is run by [searchController], the text selection and its copy (F08, ADR 0024) by
+ * [selectionController].
  */
 @Suppress("LongParameterList", "TooManyFunctions") // Hilt dependencies; one short handler per user action.
 @HiltViewModel
@@ -85,6 +88,13 @@ constructor(
     private val outline = MutableStateFlow(ReaderOutline())
     private var document: PdfDocument? = null
 
+    /** Whether the document was opened with its password: its copied text is flagged sensitive. */
+    private var isProtected = false
+
+    /** The settings, followed as long as the ViewModel lives (scroll mode, preview, copy). */
+    private val settings: StateFlow<AppSettings> =
+        observeSettings().stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+
     /**
      * Links of the document (F09, ADR 0022): what a tap or a TalkBack action on a link does, and
      * the confirmation of external links (V7). Entries of the outline leading out of the
@@ -102,6 +112,20 @@ constructor(
         SearchController(viewModelScope, renderDispatcher, document = { document }, currentPage = { currentPage.value })
 
     /**
+     * Text selection and copy (F08, ADR 0024): a long press selects a word, handles extend it, and
+     * « Copier » obeys the permission of the document, or the setting that ignores it, read at
+     * each copy.
+     */
+    val selectionController: SelectionController =
+        SelectionController(
+            scope = viewModelScope,
+            dispatcher = renderDispatcher,
+            document = { document },
+            canCopy = { canCopyText() },
+            isProtected = { isProtected },
+        )
+
+    /**
      * Identifier of the document in the recent list (`documentIdFor`, ADR 0015), known before it
      * is opened: the key of the shared element linking its thumbnail in the library and its page
      * in the reader (ADR 0019).
@@ -110,13 +134,14 @@ constructor(
 
     /** State of the screen; [ReaderUiState.Ready] once the document and the settings are read. */
     val uiState: StateFlow<ReaderUiState> =
-        combine(documentState, observeSettings(), currentPage, outline) { state, settings, page, outline ->
+        combine(documentState, settings, currentPage, outline) { state, settings, page, outline ->
             if (state is ReaderUiState.Ready) {
                 state.copy(
                     scrollMode = settings.scrollMode,
                     pagePreview = settings.pagePreview,
                     currentPage = page,
                     outline = outline.withCurrentSection(page),
+                    canCopyText = settings.allowsTextCopy(document?.canCopyText ?: true),
                 )
             } else {
                 state
@@ -217,8 +242,12 @@ constructor(
             .onFailure { error -> documentState.value = failureState(error) }
     }
 
+    /** Whether selected text may be copied now (ADR 0024); `false` before the document is open. */
+    private fun canCopyText(): Boolean = document?.let { settings.value.allowsTextCopy(it.canCopyText) } ?: false
+
     private suspend fun show(opened: PdfDocument, isProtected: Boolean) {
         document = opened
+        this.isProtected = isProtected
         val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
         val title = opened.metadata.title ?: displayName(uri)
         // Before the Ready state: the screen starts on the page of its first Ready state.

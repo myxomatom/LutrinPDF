@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PixelRect
@@ -58,6 +59,8 @@ private val PAPER_NIGHT = Color(0xFF16181C)
  * @param pageModifier modifier applied to the page itself, first (the paper, not the margins
  *   around it): the shared element of the thumbnail transition ([SharedPage], ADR 0019).
  * @param highlights occurrences of the search drawn over the page (F07), `null` for none.
+ * @param selection the text selected on this page (F08), with its handles and action bar;
+ *   `null` for none.
  */
 @Composable
 internal fun PdfPage(
@@ -72,6 +75,7 @@ internal fun PdfPage(
     modifier: Modifier = Modifier,
     pageModifier: Modifier = Modifier,
     highlights: PageHighlights? = null,
+    selection: PageSelection? = null,
 ) {
     val displayedWidth = pageWidthPx(fitWidth, zoom)
     val baseWidth = baseRenderWidth(fitWidth, zoom)
@@ -96,22 +100,22 @@ internal fun PdfPage(
             coordinates = coordinates,
         )
     val density = LocalDensity.current
-    Box(modifier, contentAlignment = Alignment.TopCenter) {
+    val displayedHeight = pageHeightPx(page, displayedWidth)
+    // Above the next page while selected: the handles of its last line may hang over it.
+    Box(modifier.zIndex(if (selection != null) 1f else 0f), contentAlignment = Alignment.TopCenter) {
         Box(
             pageModifier
-                .size(
-                    with(density) {
-                        displayedWidth.toDp()
-                    },
-                    with(density) { pageHeightPx(page, displayedWidth).toDp() },
-                )
+                .size(with(density) { displayedWidth.toDp() }, with(density) { displayedHeight.toDp() })
                 .shadow(PAGE_ELEVATION)
                 .background(if (nightMode) PAPER_NIGHT else PAPER)
                 .onGloballyPositioned { coordinates = it },
         ) {
             PageImages(base, detail)
             SearchHighlightLayer(highlights, page)
+            SelectionHighlightLayer(selection?.selection, page)
         }
+        // Outside the page, which clips: a handle may hang below the last line of the page.
+        selection?.let { TextSelectionOverlay(it, page, displayedWidth, displayedHeight) }
     }
 }
 

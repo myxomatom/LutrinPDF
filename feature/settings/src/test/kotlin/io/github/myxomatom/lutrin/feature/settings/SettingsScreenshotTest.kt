@@ -29,11 +29,16 @@ class SettingsScreenshotTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun show(recentCount: Int, darkTheme: Boolean) {
+    private fun show(recentCount: Int, darkTheme: Boolean, ignoreCopyRestriction: Boolean = false) {
         composeRule.setContent {
             LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
                 SettingsScreen(
-                    state = SettingsUiState(loading = false, dynamicColor = true, recentCount = recentCount),
+                    state = SettingsUiState(
+                        loading = false,
+                        dynamicColor = true,
+                        ignoreCopyRestriction = ignoreCopyRestriction,
+                        recentCount = recentCount,
+                    ),
                     dynamicColorSupported = true,
                     onDynamicColorChange = {},
                     onBack = {},
@@ -66,6 +71,13 @@ class SettingsScreenshotTest {
     @Test
     @Config(qualifiers = "+fr")
     fun french() = capture("settings_light_fr")
+
+    /** « Ignorer l'interdiction de copie » turned on (ADR 0024). */
+    @Test
+    fun copyRestrictionIgnored() {
+        show(recentCount = 0, darkTheme = false, ignoreCopyRestriction = true)
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/settings_copy_restriction_ignored_light.png")
+    }
 
     @Test
     fun clearRecents() = captureClear("settings_clear_recents_light", CLEAR_EN)

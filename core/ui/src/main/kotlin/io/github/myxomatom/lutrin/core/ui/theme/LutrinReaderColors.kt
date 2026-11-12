@@ -19,4 +19,10 @@ object LutrinReaderColors {
 
     /** Outline of the current occurrence, so that it is told apart without relying on hue only. */
     val SearchHitCurrentOutline: Color = Color(0xFFB06A00)
+
+    /** Text selected on a page (F08, ADR 0024): translucent blue of the brand, the text stays legible. */
+    val Selection: Color = Color(red = 42, green = 91, blue = 140, alpha = 77)
+
+    /** Handles of a selection, opaque so that they stand out on any page. */
+    val SelectionHandle: Color = Color(0xFF2A5B8C)
 }

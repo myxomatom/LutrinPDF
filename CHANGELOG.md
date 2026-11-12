@@ -10,6 +10,20 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Sélection et copie du texte** (F08, M4 lot 6, ADR 0024) : un appui long sur un mot le
+  sélectionne et affiche deux poignées qui étendent la sélection caractère par caractère (texte
+  de droite à gauche compris) ; une barre au-dessus propose « Copier » et « Tout sélectionner »
+  (toute la page). Une page à la fois ; un toucher ailleurs, le retour, un changement de page ou
+  l'ouverture de la recherche ferment la sélection. Un appui long hors du texte, ou sur une page
+  numérisée, ne sélectionne rien. Le texte d'un document protégé par mot de passe est marqué
+  sensible dans le presse-papiers (Android 13+) ; « Texte copié » n'est affiché qu'avant
+  Android 13, le système confirmant lui-même ensuite. Si l'auteur interdit la copie, « Copier »
+  l'explique au lieu de copier. TalkBack : action « Copier le texte de la page » sur le
+  document, poignées nommées, cibles de 48 dp. Jetons `color.reader.selection` et
+  `selectionHandle`.
+- **Réglage « Ignorer l'interdiction de copie »** (E3, section « Lecture », ADR 0024) :
+  désactivé par défaut ; activé, le lecteur copie aussi le texte des documents dont l'auteur
+  l'interdit. Enregistré avec DataStore, suivi en direct par le lecteur.
 - **Recherche dans le document** (F07, V1, M4 lot 5, ADR 0023) : l'icône « Rechercher » de la
   barre du lecteur fait place à une barre de recherche ; la recherche part 400 ms après la
   dernière frappe ou à la validation du clavier, depuis la page affichée, avec bouclage, et

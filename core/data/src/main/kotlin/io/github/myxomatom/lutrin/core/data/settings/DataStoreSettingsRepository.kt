@@ -29,6 +29,8 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
                     dynamicColor = preferences[DYNAMIC_COLOR] ?: AppSettings.DEFAULT_DYNAMIC_COLOR,
                     scrollMode = scrollModeOf(preferences[SCROLL_MODE]),
                     pagePreview = preferences[PAGE_PREVIEW] ?: AppSettings.DEFAULT_PAGE_PREVIEW,
+                    ignoreCopyRestriction =
+                        preferences[IGNORE_COPY_RESTRICTION] ?: AppSettings.DEFAULT_IGNORE_COPY_RESTRICTION,
                 )
             }.distinctUntilChanged()
 
@@ -44,6 +46,10 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
         dataStore.edit { it[PAGE_PREVIEW] = enabled }
     }
 
+    override suspend fun setIgnoreCopyRestriction(enabled: Boolean) {
+        dataStore.edit { it[IGNORE_COPY_RESTRICTION] = enabled }
+    }
+
     private companion object {
         /** Key names are stored on the device: never rename them without a migration. */
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
@@ -53,6 +59,9 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
 
         /** Whether the reader's slider previews the page (ADR 0018). */
         val PAGE_PREVIEW = booleanPreferencesKey("page_preview")
+
+        /** Whether the copy restriction of documents is ignored (ADR 0024); absent before it existed. */
+        val IGNORE_COPY_RESTRICTION = booleanPreferencesKey("ignore_copy_restriction")
     }
 }
 

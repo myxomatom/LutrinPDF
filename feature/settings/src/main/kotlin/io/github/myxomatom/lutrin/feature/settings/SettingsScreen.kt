@@ -75,14 +75,16 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
         modifier = modifier,
         onClearRecents = viewModel::onClearRecents,
         onPagePreviewChange = viewModel::onPagePreviewChange,
+        onIgnoreCopyRestrictionChange = viewModel::onIgnoreCopyRestrictionChange,
     )
 }
 
 /**
  * Settings screen (E3, `docs/design/png/E3-Parametres.png`). For now the « Appearance » section
  * with dynamic colours (ADR 0010), the « Reading » section with the page preview of the reader's
- * slider (ADR 0018), and « Vider les récents » in « Data and privacy », confirmed by a dialog and
- * disabled while the list is empty (ADR 0016); the other settings come with milestone M5.
+ * slider (ADR 0018) and the switch that ignores the copy restriction of documents (ADR 0024),
+ * and « Vider les récents » in « Data and privacy », confirmed by a dialog and disabled while
+ * the list is empty (ADR 0016); the other settings come with milestone M5.
  *
  * @param state what to show.
  * @param dynamicColorSupported whether the device can use dynamic colours (Android 12+);
@@ -92,6 +94,8 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
  * @param modifier modifier applied to the screen.
  * @param onClearRecents called once the user confirmed « Vider les récents ».
  * @param onPagePreviewChange called with the new value of the page preview switch.
+ * @param onIgnoreCopyRestrictionChange called with the new value of « Ignorer l'interdiction de
+ *   copie ».
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +107,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onClearRecents: () -> Unit = {},
     onPagePreviewChange: (Boolean) -> Unit = {},
+    onIgnoreCopyRestrictionChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -130,6 +135,7 @@ fun SettingsScreen(
                 dynamicColorSupported = dynamicColorSupported,
                 onDynamicColorChange = onDynamicColorChange,
                 onPagePreviewChange = onPagePreviewChange,
+                onIgnoreCopyRestrictionChange = onIgnoreCopyRestrictionChange,
                 onClearRecents = onClearRecents,
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
@@ -137,12 +143,14 @@ fun SettingsScreen(
     }
 }
 
+@Suppress("LongParameterList") // One callback per setting of the screen.
 @Composable
 private fun SettingsContent(
     state: SettingsUiState,
     dynamicColorSupported: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
     onPagePreviewChange: (Boolean) -> Unit,
+    onIgnoreCopyRestrictionChange: (Boolean) -> Unit,
     onClearRecents: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -169,6 +177,12 @@ private fun SettingsContent(
             summary = stringResource(R.string.settings_page_preview_summary),
             checked = state.pagePreview,
             onCheckedChange = onPagePreviewChange,
+        )
+        SwitchItem(
+            title = stringResource(R.string.settings_ignore_copy_restriction),
+            summary = stringResource(R.string.settings_ignore_copy_restriction_summary),
+            checked = state.ignoreCopyRestriction,
+            onCheckedChange = onIgnoreCopyRestrictionChange,
         )
         HorizontalDivider()
         SectionTitle(stringResource(R.string.settings_section_data))
