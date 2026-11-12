@@ -76,4 +76,42 @@
     <string name="reader_outline_collapse">Replier</string>
     <string name="reader_outline_expanded">Déplié</string>
     <string name="reader_outline_collapsed">Replié</string>
+    <!-- Recherche dans le document (F07, V1) -->
+    <string name="reader_search_open">Rechercher</string>
+    <string name="reader_search_close">Fermer la recherche</string>
+    <string name="reader_search_field">Rechercher dans le document</string>
+    <string name="reader_search_previous">Résultat précédent</string>
+    <string name="reader_search_next">Résultat suivant</string>
+    <string name="reader_search_match_case">Respecter la casse</string>
+    <string name="reader_search_match_accents">Respecter les accents</string>
+    <string name="reader_search_progress">Progression de la recherche</string>
+    <!-- Compteur de la barre de recherche : résultat courant, puis nombre de résultats. -->
+    <string name="reader_search_counter">%1$,d / %2$,d</string>
+    <!-- Le même tant que des pages restent à parcourir. -->
+    <string name="reader_search_counter_running">%1$,d / %2$,d…</string>
+    <!-- Le même quand la recherche s’est arrêtée à sa limite : il peut y avoir d’autres résultats. -->
+    <string name="reader_search_counter_limit">%1$,d / %2$,d+</string>
+    <!-- Ce que TalkBack lit pour le compteur, et annonce après « suivant » ou « précédent ». -->
+    <string name="reader_search_position">Résultat %1$,d sur %2$,d</string>
+    <string name="reader_search_position_limit">Résultat %1$,d sur %2$,d ou plus</string>
+    <string name="reader_search_position_page">Résultat %1$,d sur %2$,d, page %3$d</string>
+    <string name="reader_search_searching">Recherche en cours…</string>
+    <plurals name="reader_search_result_count">
+        <item quantity="one">%1$,d résultat</item>
+        <item quantity="many">%1$,d résultats</item>
+        <item quantity="other">%1$,d résultats</item>
+    </plurals>
+    <plurals name="reader_search_limit">
+        <item quantity="one">%1$,d résultat ou plus</item>
+        <item quantity="many">%1$,d résultats ou plus</item>
+        <item quantity="other">%1$,d résultats ou plus</item>
+    </plurals>
+    <string name="reader_search_no_result">Aucun résultat</string>
+    <string name="reader_search_no_text_hint">Un document numérisé sans texte ne peut pas être recherché.</string>
+    <string name="reader_search_failed">La recherche a échoué.</string>
+    <!-- En-tête de la carte d’extrait : page du résultat courant, puis sa section. -->
+    <string name="reader_search_card_page">Page %1$d</string>
+    <string name="reader_search_card_page_section">Page %1$d · %2$s</string>
+    <!-- Points de suspension autour d’un extrait coupé de sa ligne. -->
+    <string name="reader_search_ellipsis">…</string>
 </resources>

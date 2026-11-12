@@ -29,6 +29,7 @@ import io.github.myxomatom.lutrin.core.ui.transition.sharedDocumentPage
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
+import io.github.myxomatom.lutrin.feature.reader.search.SearchState
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
@@ -62,6 +63,8 @@ private val FullscreenIndicatorPadding = 16.dp
  * @param modifier modifier applied to the area; it keeps clear of the top bar and the sides.
  * @param pageTransition the transition of the page shown, back to its thumbnail in the library
  *   (ADR 0019); `null` when the reader has none.
+ * @param search the search in the document (F07): its occurrences are highlighted on the pages
+ *   and, while it is open, the excerpt of the current one replaces the floating bar (V1).
  */
 @Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
@@ -77,15 +80,13 @@ internal fun ReaderDocumentArea(
     onIndicatorClick: () -> Unit,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
+    search: SearchState = SearchState(),
 ) {
     val page = navigator.currentPage
     val onPageTap = rememberPageTap(state.links, navigator, onTap, links.onLinkClick)
     val linkActions = rememberLinkActions(state.links, page, links.onLinkClick)
     val snackbar = rememberLinkHandling(links, navigator)
-    val pageCount = state.pageSizes.size
-    val sharedPage = sharedPageIndex(page, zoom, pageTransition != null)?.let {
-        SharedPage(it, Modifier.sharedDocumentPage(pageTransition))
-    }
+    val sharedPage = sharedPage(page, zoom, pageTransition)
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
             state = state,
@@ -93,13 +94,16 @@ internal fun ReaderDocumentArea(
             zoom = zoom,
             onZoomChange = onZoomChange,
             onTap = onPageTap,
-            contentDescription = stringResource(R.string.reader_document, page + 1, pageCount),
+            contentDescription = stringResource(R.string.reader_document, page + 1, state.pageSizes.size),
             bottomClearance = if (controlsVisible) floatingPageBarClearance() else 0.dp,
             sharedPage = sharedPage,
             linkActions = linkActions,
+            highlights = rememberSearchHighlights(search),
         )
         if (scrubber.isPreviewing) PreviewScrim()
-        if (controlsVisible) {
+        if (search.isOpen) {
+            SearchResultCard(search, state.outline::sectionTitleAt, Modifier.align(Alignment.BottomCenter))
+        } else if (controlsVisible) {
             ReaderPageBar(
                 state = state,
                 page = page,
@@ -110,11 +114,18 @@ internal fun ReaderDocumentArea(
                 previewMaxHeight = maxHeight,
             )
         } else {
-            FullscreenPageIndicator(page, pageCount, Modifier.align(Alignment.BottomCenter))
+            FullscreenPageIndicator(page, state.pageSizes.size, Modifier.align(Alignment.BottomCenter))
         }
         ReaderSnackbarHost(snackbar, controlsVisible, Modifier.align(Alignment.BottomCenter))
     }
 }
+
+/** The page shown as the shared element of the thumbnail transition, if any ([sharedPageIndex]). */
+@Composable
+private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransition?): SharedPage? =
+    sharedPageIndex(page, zoom, pageTransition != null)?.let {
+        SharedPage(it, Modifier.sharedDocumentPage(pageTransition))
+    }
 
 /** The pages, in the view of the current scroll mode (F03). */
 @Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
@@ -129,6 +140,7 @@ private fun DocumentPages(
     bottomClearance: Dp,
     sharedPage: SharedPage?,
     linkActions: List<CustomAccessibilityAction>,
+    highlights: SearchHighlights,
 ) {
     when (navigator) {
         is ContinuousNavigator ->
@@ -143,6 +155,7 @@ private fun DocumentPages(
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 linkActions = linkActions,
+                highlights = highlights,
             )
 
         is PagedNavigator ->
@@ -157,6 +170,7 @@ private fun DocumentPages(
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 linkActions = linkActions,
+                highlights = highlights,
             )
     }
 }

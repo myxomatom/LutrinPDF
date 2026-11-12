@@ -65,6 +65,7 @@ internal val PAGE_GUTTER = 16.dp
  *   floating bar laid over the bottom of the list (ADR 0018); not scaled by the zoom.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
+ * @param highlights occurrences of the search to highlight on the pages (F07).
  */
 @Composable
 internal fun PdfPagesView(
@@ -80,6 +81,7 @@ internal fun PdfPagesView(
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
+    highlights: SearchHighlights = SearchHighlights.None,
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -101,6 +103,7 @@ internal fun PdfPagesView(
             pinch = pinch,
             nightMode = nightMode,
             sharedPage = sharedPage,
+            highlights = highlights,
             modifier =
                 Modifier
                     .readerGestures(
@@ -198,6 +201,7 @@ private fun PagesList(
     pinch: PinchTransform?,
     nightMode: Boolean,
     sharedPage: SharedPage?,
+    highlights: SearchHighlights,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf<Viewport?>(null) }
@@ -229,6 +233,7 @@ private fun PagesList(
                 nightMode = nightMode,
                 modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
                 pageModifier = Modifier.sharedPage(sharedPage, index),
+                highlights = rememberPageHighlights(highlights, index),
             )
         }
     }

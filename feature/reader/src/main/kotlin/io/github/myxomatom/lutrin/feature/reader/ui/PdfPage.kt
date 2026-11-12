@@ -57,6 +57,7 @@ private val PAPER_NIGHT = Color(0xFF16181C)
  *
  * @param pageModifier modifier applied to the page itself, first (the paper, not the margins
  *   around it): the shared element of the thumbnail transition ([SharedPage], ADR 0019).
+ * @param highlights occurrences of the search drawn over the page (F07), `null` for none.
  */
 @Composable
 internal fun PdfPage(
@@ -70,6 +71,7 @@ internal fun PdfPage(
     nightMode: Boolean,
     modifier: Modifier = Modifier,
     pageModifier: Modifier = Modifier,
+    highlights: PageHighlights? = null,
 ) {
     val displayedWidth = pageWidthPx(fitWidth, zoom)
     val baseWidth = baseRenderWidth(fitWidth, zoom)
@@ -108,6 +110,7 @@ internal fun PdfPage(
                 .onGloballyPositioned { coordinates = it },
         ) {
             PageImages(base, detail)
+            SearchHighlightLayer(highlights, page)
         }
     }
 }
