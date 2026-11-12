@@ -10,6 +10,28 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **API texte et destinations du moteur PDF** (M4, lot 1, ADR 0020), sans écran pour l'instant :
+  les liens internes et les entrées du sommaire donnent la **position** visée dans la page
+  (`PdfDestination(pageIndex, x, y)`, destinations nommées comprises) ; **sélection de texte**
+  entre deux points (`selectText`, modes caractères, mot pour l'appui long, ligne), avec une
+  zone par ligne et le texte en ordre de lecture, juste en arabe ; **recherche page par page**
+  (`SearchPageResult`, une émission par page, même sans résultat, pour suivre la progression),
+  insensible à la casse et aux accents par défaut, arrêtée à **1 000 résultats**, chaque
+  résultat avec un **extrait** (« …la bibliothèque municipale… ») et un mot coupé en fin de ligne
+  trouvé ; **permission de copie** du PDF exposée (`canCopyText`, rapportée sans être
+  appliquée). Les liens externes gardent leur URI brute : le lecteur filtrera les schémas.
+  Après relecture : recherche à partir d'une page donnée, avec bouclage (`startPage`) ;
+  zones des résultats en `PdfQuad` ; poignées de sélection dans l'ordre de lecture
+  (`TextSelection.start` / `end`) ; `isOnText` pour ignorer un appui long hors du texte ;
+  taille de la zone des destinations `FitR` ; destinations à une coordonnée vers une page
+  tournée d'un quart de tour ramenées au haut de la page (MuPDF perd la valeur) ; la recherche
+  n'évince plus les pages affichées du cache de rendu et ne calcule plus d'extrait pour les
+  résultats au-delà du plafond. `FakePdfDocument` (`core:testing`) se règle : sommaire, liens,
+  résultats, sélections, zones de texte, permission de copie, délai entre les pages d'une
+  recherche ; il lève `PageOutOfRange` et `Closed` comme le moteur. Jeu de test enrichi :
+  `text_selection.pdf` (mot coupé, phrase arabe), `rotated_destinations.pdf`,
+  `search_many_hits.pdf`, liens vers le milieu d'une page, destination nommée, liens `mailto:`,
+  `javascript:`, `file:` et relatif, entrée de sommaire externe, sommaire du PDF de 600 pages.
 - **Aller à la page** (F05, V3) : un appui sur l'indicateur « 5 / 8 » de la barre flottante (une
   cible de 48 dp au moins, lue par TalkBack « Page 5 sur 8, bouton » avec l'action « Aller à une
   page ») ouvre un dialogue avec un champ numérique rempli de la page affichée, sélectionnée,
@@ -227,6 +249,11 @@ changement y est signalé.
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
 
 ### Modifié
+- Moteur PDF (ADR 0020) : `OutlineItem.pageIndex` et `PdfLink.Internal.pageIndex` deviennent
+  `destination: PdfDestination` ; `PdfDocument.search` émet des `SearchPageResult` (une par page)
+  au lieu de `SearchHit` ; `textAt(index, PdfRect)`, qui lisait en fait le texte entre deux
+  points et non celui d'un rectangle, est remplacé par `selectText`. Le PDF de 600 pages du jeu
+  de test (aussi utilisé par `:benchmark`) a désormais un sommaire.
 - `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
   désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
 - L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de

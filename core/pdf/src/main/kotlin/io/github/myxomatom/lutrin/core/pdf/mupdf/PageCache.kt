@@ -31,6 +31,24 @@ internal class PageCache(
         return pages.getOrPut(index) { document.loadPage(index) }
     }
 
+    /**
+     * Runs [block] on the page at [index] without changing the cache: a page already loaded is
+     * used without becoming the most recent, any other one is loaded for [block] only and then
+     * released. For walks over the whole document (search), which must not evict the pages the
+     * reader shows. Throws [PdfError.PageOutOfRange].
+     */
+    fun <T> withPageOutsideCache(index: Int, block: (Page) -> T): T {
+        if (index !in 0 until pageCount) throw PdfError.PageOutOfRange(index, pageCount)
+        // Iterating the entries, unlike get(), does not change the access order.
+        pages.entries.firstOrNull { it.key == index }?.let { return block(it.value) }
+        val page = document.loadPage(index)
+        try {
+            return block(page)
+        } finally {
+            page.destroy()
+        }
+    }
+
     /** Number of pages currently loaded. */
     val size: Int get() = pages.size
 

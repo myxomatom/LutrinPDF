@@ -17,6 +17,47 @@ data class PageSize(val width: Float, val height: Float) {
 }
 
 /**
+ * Point in page coordinates: points, origin at the top-left corner of the page, y growing
+ * downwards (the coordinates of [PdfRect]).
+ *
+ * @property x distance from the left edge of the page.
+ * @property y distance from the top edge of the page.
+ */
+data class PdfPoint(val x: Float, val y: Float)
+
+/**
+ * Four-cornered area in page coordinates, which follows the text it covers even when that text
+ * is rotated inside the page. "Upper" and "lower" are relative to the text: for horizontal text,
+ * [upperLeft] is the top-left corner.
+ *
+ * @property upperLeft start of the top edge, in the writing direction of the text.
+ * @property upperRight end of the top edge.
+ * @property lowerLeft start of the bottom edge.
+ * @property lowerRight end of the bottom edge.
+ */
+data class PdfQuad(
+    val upperLeft: PdfPoint,
+    val upperRight: PdfPoint,
+    val lowerLeft: PdfPoint,
+    val lowerRight: PdfPoint,
+) {
+    /** Smallest axis-aligned rectangle around the four corners. */
+    val bounds: PdfRect
+        get() = PdfRect.enclosing(listOf(upperLeft, upperRight, lowerLeft, lowerRight).map { it.x to it.y })
+
+    /** Factories of [PdfQuad]. */
+    companion object {
+        /** The quad covering exactly [rect]. */
+        fun of(rect: PdfRect): PdfQuad = PdfQuad(
+            upperLeft = PdfPoint(rect.left, rect.top),
+            upperRight = PdfPoint(rect.right, rect.top),
+            lowerLeft = PdfPoint(rect.left, rect.bottom),
+            lowerRight = PdfPoint(rect.right, rect.bottom),
+        )
+    }
+}
+
+/**
  * Axis-aligned rectangle in page coordinates: points, origin at the top-left corner of the
  * page, y growing downwards.
  *
