@@ -19,7 +19,18 @@ changement y est signalé.
   formés sont refusés avec un message bref (`CheckExternalLinkUseCase`, `core:domain`). Les liens
   fonctionnent au zoom et dans les deux modes ; un toucher ailleurs bascule toujours le plein
   écran. TalkBack : une action par lien de la page courante (« Lien : page 3 »). Liens lus à la
-  demande, gardés pour 64 pages.
+  demande, gardés pour 64 pages. Les entrées externes de la table des matières passent par le
+  même filtre et la même confirmation.
+- **Table des matières** (M4, lot 3, F06, V2, ADR 0021) : une icône « Table des matières » dans
+  la barre du lecteur (cachée pour un document sans sommaire) ouvre un **tiroir latéral**, de
+  droite pour une écriture de droite à gauche. Il s'ouvre sur la **section courante**, dépliée et
+  surlignée ; chaque entrée donne sa page, un chevron déplie ses sous-sections, un tap mène à la
+  page (à la position visée en défilement continu) et ferme le tiroir. La liste est paresseuse
+  (grands sommaires). Le titre de la section visée s'affiche sous « Page N » dans l'aperçu du
+  curseur. TalkBack annonce le niveau, l'état déplié et la page cible ; cibles de 48 dp. Les
+  entrées qui mènent hors du document portent une icône « lien externe » et appellent
+  `ReaderViewModel.onExternalOutlineEntry(uri)`, branchée par le lot 4 sur la confirmation V7 ;
+  le lecteur n'ouvre jamais d'URI seul.
 - **Texte CJK dont la police n'est pas incorporée** (ADR 0025) : dessiné avec les polices CJK du
   système, que MuPDF cherche dans `/system/fonts` ; aucune police CJK n'est embarquée (APK
   inchangés, limite de `SPEC.md` §3 gardée à 15 Mo ; DroidSansFallback, essayée, ajoutait 3,4 Mio

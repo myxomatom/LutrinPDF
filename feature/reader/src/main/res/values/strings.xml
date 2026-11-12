@@ -55,4 +55,26 @@
     <string name="reader_goto_empty">Enter a page number</string>
     <string name="reader_goto_confirm">Go</string>
     <string name="reader_goto_cancel">Cancel</string>
+    <!-- Table of contents (F06, V2) -->
+    <string name="reader_outline_title">Table of contents</string>
+    <string name="reader_outline_close">Close</string>
+    <!-- Under the title of the table of contents: document title, then its page count. -->
+    <string name="reader_outline_subtitle">%1$s · %2$s</string>
+    <plurals name="reader_outline_pages">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <!-- Page an entry leads to, shown at the end of its line. -->
+    <string name="reader_outline_page_label">p. %d</string>
+    <!-- What TalkBack reads for an entry: its title, then where it leads. -->
+    <string name="reader_outline_entry_page">%1$s, page %2$d</string>
+    <string name="reader_outline_entry_external">%1$s, external link</string>
+    <string name="reader_outline_level">Level %d</string>
+    <string name="reader_outline_untitled">Untitled section</string>
+    <!-- Button showing or hiding the sub-sections of an entry; %s is the entry title. -->
+    <string name="reader_outline_toggle">Sub-sections of %s</string>
+    <string name="reader_outline_expand">Expand</string>
+    <string name="reader_outline_collapse">Collapse</string>
+    <string name="reader_outline_expanded">Expanded</string>
+    <string name="reader_outline_collapsed">Collapsed</string>
 </resources>

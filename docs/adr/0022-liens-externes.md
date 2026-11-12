@@ -87,8 +87,10 @@ de défilement, au zoom ; et comment rendre les liens accessibles avec TalkBack.
    en cache.
 7. **TalkBack** : la zone du document porte une action personnalisée par lien de la page
    courante (« Lien : page 3 », « Lien : https://… »), qui suit le lien comme un toucher.
-8. **Sommaire** : une entrée externe du sommaire (lot 3) passe par le même chemin
-   (`ReaderViewModel.onExternalLink`), donc par le même filtre et la même confirmation.
+8. **Sommaire** : une entrée externe du sommaire (lot 3, ADR 0021) passe par le même chemin
+   (`ReaderViewModel.onExternalOutlineEntry`, puis `LinkController.onExternalLink`), donc par le
+   même filtre et la même confirmation ; le tiroir reste ouvert sous V7. Cela complète le point
+   laissé ouvert par l'ADR 0021.
 
 ## Conséquences
 

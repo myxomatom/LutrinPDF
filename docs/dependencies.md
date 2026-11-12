@@ -28,7 +28,7 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader` | Navigation entre écrans (`SPEC.md` §4.1) |
 | AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | ViewModels dans Compose |
 | AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` |
-| Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte) |
+| Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte, liste, chevrons, croix) ; le tracé « lien externe » de la table des matières (`OutlineIcons.kt`, Material Symbols, Apache-2.0) y est recopié plutôt que d'ajouter `material-icons-extended` (ADR 0021) |
 | AndroidX ProfileInstaller | 1.4.1 | Apache-2.0 | `app` | Installe le Baseline Profile sur les appareils sans Google Play (F-Droid, installation directe) ; aucune permission demandée (ADR 0012) |
 | AndroidX Activity Compose (`ReportDrawnWhen`) | 1.13.0 | Apache-2.0 | `feature:reader` | Signale la fin de l'ouverture d'un document (premières pages rendues), mesurée par `:benchmark` (ADR 0012) |
 

@@ -53,4 +53,27 @@
     <string name="reader_goto_empty">Saisissez un numéro de page</string>
     <string name="reader_goto_confirm">Aller</string>
     <string name="reader_goto_cancel">Annuler</string>
+    <!-- Table des matières (F06, V2) -->
+    <string name="reader_outline_title">Table des matières</string>
+    <string name="reader_outline_close">Fermer</string>
+    <!-- Sous le titre de la table des matières : titre du document, puis son nombre de pages. -->
+    <string name="reader_outline_subtitle">%1$s · %2$s</string>
+    <plurals name="reader_outline_pages">
+        <item quantity="one">%d page</item>
+        <item quantity="many">%d pages</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <!-- Page visée par une entrée, au bout de sa ligne. -->
+    <string name="reader_outline_page_label">p. %d</string>
+    <!-- Ce que lit TalkBack pour une entrée : son titre, puis où elle mène. -->
+    <string name="reader_outline_entry_page">%1$s, page %2$d</string>
+    <string name="reader_outline_entry_external">%1$s, lien externe</string>
+    <string name="reader_outline_level">Niveau %d</string>
+    <string name="reader_outline_untitled">Section sans titre</string>
+    <!-- Bouton qui montre ou masque les sous-sections d’une entrée ; %s est le titre de l’entrée. -->
+    <string name="reader_outline_toggle">Sous-sections de %s</string>
+    <string name="reader_outline_expand">Déplier</string>
+    <string name="reader_outline_collapse">Replier</string>
+    <string name="reader_outline_expanded">Déplié</string>
+    <string name="reader_outline_collapsed">Replié</string>
 </resources>

@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 4 « liens » fait (ADR 0022, branche `feat/reader-links`) ; table des matières (lot 3, en parallèle), recherche et sélection à faire |
+| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31) ; recherche et sélection à faire |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -99,8 +99,8 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **M4, lots 3 et 4**, sur l'API du lot 1 (ADR 0020) : `PdfDestination` pour le sommaire et
-   les liens (n'ouvrir que `http`, `https` et `mailto`, après confirmation) ; recherche avec
+0. **M4, lots suivants**, sur l'API du lot 1 (ADR 0020) (sommaire et liens faits, ADR 0021 et
+   0022, entrées externes du sommaire comprises) : recherche avec
    progression (`SearchPageResult`), extraits et « 1 000 résultats ou plus » ; sélection par
    appui long (`selectText`, `SelectionMode.Words`), copie refusée si `canCopyText` est faux.
    Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur appareil (CI seulement).
@@ -158,13 +158,26 @@ montrée entière) pour la table des matières et les liens. **À essayer sur ap
 numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
 rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
 
+**M4, lot 3 : table des matières** (F06, V2, ADR 0021, branche `feat/reader-outline`, pas encore
+sur appareil). Une icône de la barre du lecteur (cachée sans sommaire) ouvre le tiroir latéral
+(`OutlineDrawer`, de droite en droite à gauche) : section courante dépliée et surlignée, liste
+paresseuse, un tap mène à la page (position `y` appliquée en défilement continu seulement) et
+ferme le tiroir, le titre de la section s'affiche dans l'aperçu du curseur. Logique pure et
+testée dans `ReaderOutline.kt` ; sommaire lu par `ReaderViewModel` après l'affichage du
+document. Les entrées externes appellent `ReaderViewModel.onExternalOutlineEntry(uri)`, branchée par le
+lot 4 sur le filtre des schémas et V7. **À essayer sur appareil** : le PDF de 600 pages du jeu de test (ouverture du
+tiroir, défilement, aller à un chapitre lointain), TalkBack (niveau, déplié, page cible), langue
+de droite à gauche, grande police, mode page par page, un PDF dont le sommaire a des
+destinations avec position.
+
 **M4, lot 4 : liens** (F09, V7, ADR 0022, branche `feat/reader-links`, pas encore sur
 appareil). Un toucher sur un lien l'active (`PageHitTest.kt` : position → page et point, dans
 les deux modes, au zoom) ; ailleurs, plein écran comme avant. Lien interne : destination, puis
 « Vous étiez à la page N. » / « Revenir ». Lien externe : filtré par `CheckExternalLinkUseCase`
 (`core:domain`, `http`, `https`, `mailto` seulement), confirmé dans V7, ouvert par la route
 (`ACTION_VIEW`, `CATEGORY_BROWSABLE`). TalkBack : une action par lien de la page courante. Les
-entrées externes du sommaire passent par `ReaderViewModel.onExternalLink`. **À essayer sur
+entrées externes du sommaire passent par `onExternalOutlineEntry`, puis
+`LinkController.onExternalLink`. **À essayer sur
 appareil** : `links_internal_external.pdf` (jeu de test) au doigt, zoomé et page par page ; un
 lien `mailto` ; un téléphone sans navigateur (message) ; « Copier le lien » (confirmation du
 système dès Android 13) ; TalkBack (actions « Lien : … ») ; test instrumenté `LinksInstrumentedTest`.
@@ -398,6 +411,16 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     avec `search_for` ;
   - avec `python -I`, `PYTHONIOENCODING` est ignoré : utiliser `-X utf8` pour afficher de
     l'arabe dans une console Windows.
+- **Tests Compose du tiroir** (lot 3) : `@Config(qualifiers = "+fr")` (avec le `+`) ajoute la
+  langue à celle de la classe, sans `+` elle échoue (« unrecognized trailing qualifier ») ; pour
+  une capture à 200 %, `@Config(fontScale = 2f)` garde la taille des icônes, alors que
+  `LocalDensity provides Density(…, fontScale)` les rétrécit ; en droite à gauche, un titre latin
+  doit avoir `TextDirection.Content`, sinon son numéro passe à la fin ; après la fusion du lot 4,
+  deux modifications de `ReaderViewModel.uiState` et de `ReaderContent` sont à fusionner à la main.
+- **Sous-modules MuPDF d'un nouveau worktree** : `git submodule update --init --depth 1` ne prend
+  pas `libmupdf/thirdparty/*` ; lancer `git -C third-party/mupdf/libmupdf submodule update --init
+  --depth 1 thirdparty/brotli … ` (liste dans `scripts/init-mupdf.sh`), sinon ndk-build échoue
+  (« No rule to make target … freetype/src/base/ftbase.c »).
 - **Worktree au chemin long sous Windows** (constaté le 2026-11-11) : dans
   `.claude/worktrees/agent-…`, `configureNdkBuild*` de `:third-party:mupdf` échoue
   (`make.exe: Interrupt/Exception caught (code = 0xc0000005)`), les chemins d'objets devenant trop

@@ -249,6 +249,7 @@ private fun BoxScope.ReaderPageBar(
         onFit = onFit,
         previewMaxHeight = previewMaxHeight,
         modifier = Modifier.align(Alignment.BottomCenter),
+        sectionTitle = state.outline::sectionTitleAt,
     )
 }
 

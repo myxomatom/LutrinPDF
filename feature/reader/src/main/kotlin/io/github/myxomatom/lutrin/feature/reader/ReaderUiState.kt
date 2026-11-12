@@ -49,6 +49,8 @@ sealed interface ReaderUiState {
      * @property currentPage zero-based page last reported by the screen; where the reader
      *   starts again when the scroll mode changes.
      * @property links links of the pages (F09), read on demand; none by default.
+     * @property outline table of contents (F06, ADR 0021): empty while it is read and for a
+     *   document without one.
      */
     data class Ready(
         val title: String,
@@ -58,6 +60,7 @@ sealed interface ReaderUiState {
         val currentPage: Int = 0,
         val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
         val links: PageLinks = PageLinks(document = null, dispatcher = Dispatchers.Unconfined),
+        val outline: ReaderOutline = ReaderOutline(),
     ) : ReaderUiState
 }
 
