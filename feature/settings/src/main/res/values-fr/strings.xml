@@ -11,6 +11,9 @@
     <!-- Preview while dragging the page slider of the reader (ADR 0018). -->
     <string name="settings_page_preview">Aperçu de la page</string>
     <string name="settings_page_preview_summary">Montre la page pendant que vous faites glisser le curseur du lecteur ; le document s’y rend quand vous relâchez.</string>
+    <!-- Lets the reader copy the text of a PDF whose author forbids it (F08, ADR 0024). -->
+    <string name="settings_ignore_copy_restriction">Ignorer l’interdiction de copie</string>
+    <string name="settings_ignore_copy_restriction_summary">Permet de copier le texte des documents dont l’auteur l’interdit. Respectez les droits de l’auteur.</string>
     <string name="settings_section_data">Données et confidentialité</string>
     <string name="settings_clear_recents">Vider les récents</string>
     <string name="settings_clear_recents_empty">Aucun document récent</string>

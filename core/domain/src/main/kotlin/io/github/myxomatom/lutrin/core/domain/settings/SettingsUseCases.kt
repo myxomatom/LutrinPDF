@@ -51,3 +51,16 @@ class SetPagePreviewUseCase @Inject constructor(private val repository: Settings
         repository.setPagePreview(enabled)
     }
 }
+
+/**
+ * Chooses whether the reader may copy the text of a document whose author forbids it (F08,
+ * ADR 0024). Off by default; the reader follows the change at once.
+ *
+ * @param repository where the settings are stored.
+ */
+class SetIgnoreCopyRestrictionUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param enabled whether the copy restriction of documents is ignored from now on. */
+    suspend operator fun invoke(enabled: Boolean) {
+        repository.setIgnoreCopyRestriction(enabled)
+    }
+}

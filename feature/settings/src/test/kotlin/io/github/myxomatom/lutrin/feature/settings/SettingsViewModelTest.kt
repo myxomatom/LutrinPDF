@@ -11,6 +11,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreCopyRestrictionUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
@@ -52,6 +53,7 @@ class SettingsViewModelTest {
         ObserveRecentDocumentsUseCase(recents),
         ClearRecentDocumentsUseCase(recents),
         applicationScope,
+        SetIgnoreCopyRestrictionUseCase(repository),
     )
 
     private suspend fun FakeRecentDocumentsRepository.open(vararg ids: Int) = apply {
@@ -113,6 +115,30 @@ class SettingsViewModelTest {
         }
         assertThat(repository.settings.value.pagePreview).isTrue()
         assertThat(repository.settings.value.dynamicColor).isTrue()
+    }
+
+    @Test
+    fun `the copy restriction of documents is respected by default`() = runTest {
+        viewModel(FakeSettingsRepository()).uiState.test {
+            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+        }
+    }
+
+    @Test
+    fun `ignoring the copy restriction and respecting it again stores the choice`() = runTest {
+        val repository = FakeSettingsRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+            viewModel.onIgnoreCopyRestrictionChange(true)
+            assertThat(awaitItem().ignoreCopyRestriction).isTrue()
+            assertThat(repository.settings.value.ignoreCopyRestriction).isTrue()
+
+            viewModel.onIgnoreCopyRestrictionChange(false)
+            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+        }
+        assertThat(repository.settings.value.pagePreview).isTrue()
     }
 
     @Test
