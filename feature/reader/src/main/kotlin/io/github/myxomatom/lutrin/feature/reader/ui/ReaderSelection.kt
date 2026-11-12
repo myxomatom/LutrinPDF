@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 import android.content.ClipData
 import android.content.ClipDescription
 import android.os.Build
+import android.annotation.SuppressLint
 import android.os.PersistableBundle
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.SnackbarHostState
@@ -84,12 +85,19 @@ internal fun readerSelection(controller: SelectionController, selection: TextSel
  *
  * @param text the copied text.
  * @param isSensitive whether the document is protected by a password.
+ * @param sdkInt version of the system, given by tests.
  */
-internal fun selectionClip(text: String, isSensitive: Boolean): ClipData = ClipData.newPlainText(null, text).apply {
-    if (isSensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
+// The constant is inlined at compile time; it is only written for Android 13 and later.
+@SuppressLint("InlinedApi")
+internal fun selectionClip(text: String, isSensitive: Boolean, sdkInt: Int = Build.VERSION.SDK_INT): ClipData =
+    ClipData.newPlainText(null, text).apply {
+        if (isSensitive && sdkInt >= Build.VERSION_CODES.TIRAMISU) {
+            description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
+        }
     }
-}
+
+/** Whether the system confirms a copy to the clipboard by itself: from Android 13. */
+private val systemConfirmsCopy: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
  * Everything the selection adds to the reader beyond the pages: carries out its effects
@@ -119,9 +127,15 @@ internal fun SelectionHandling(
  * Carries out the effects of the selection: puts the text on the clipboard and, before Android
  * 13 only, says so (« Texte copié »): from Android 13 the system shows its own confirmation.
  * Explains a refused copy, and a page without text.
+ *
+ * @param systemConfirmsCopy whether the system shows its own confirmation; given by tests.
  */
 @Composable
-internal fun SelectionEffectsHandler(effects: Flow<SelectionEffect>, snackbar: SnackbarHostState) {
+internal fun SelectionEffectsHandler(
+    effects: Flow<SelectionEffect>,
+    snackbar: SnackbarHostState,
+    systemConfirmsCopy: Boolean = io.github.myxomatom.lutrin.feature.reader.ui.systemConfirmsCopy,
+) {
     val clipboard = LocalClipboard.current
     val resources = LocalResources.current
     LaunchedEffect(effects) {
@@ -129,7 +143,7 @@ internal fun SelectionEffectsHandler(effects: Flow<SelectionEffect>, snackbar: S
             when (effect) {
                 is SelectionEffect.Copy -> {
                     clipboard.setClipEntry(selectionClip(effect.text, effect.isSensitive).toClipEntry())
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    if (!systemConfirmsCopy) {
                         inform(snackbar, resources.getString(R.string.reader_selection_copied))
                     }
                 }
