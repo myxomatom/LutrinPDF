@@ -32,6 +32,21 @@ class FakePdfEngineTest {
     }
 
     @Test
+    fun `closing one of two openings leaves the other one open`() = runTest {
+        val document = FakePdfDocument()
+        val engine = FakePdfEngine(Result.success(document))
+        val thumbnail = engine.open(source).getOrThrow()
+        val reader = engine.open(source).getOrThrow()
+
+        thumbnail.close()
+        val stillOpen = !document.isClosed
+        reader.close()
+
+        assertThat(stillOpen).isTrue()
+        assertThat(document.isClosed).isTrue()
+    }
+
+    @Test
     fun `an encrypted fake asks for its password and refuses another one`() = runTest {
         val engine = FakePdfEngine(password = "lutrin")
 

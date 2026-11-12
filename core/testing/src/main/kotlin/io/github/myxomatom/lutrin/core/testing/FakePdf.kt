@@ -21,6 +21,8 @@ import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -54,13 +56,19 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     val renders: MutableList<Render> = CopyOnWriteArrayList()
 
     /**
-     * Whether [close] was called since the last opening. [FakePdfEngine] opens the document again
-     * on each `open`: the real engine gives a new document every time, so a document closed by a
-     * previous user (a thumbnail, a reader that was left) must not reach the next one closed.
+     * Open handles on the document. The real engine gives a new document on every opening, so
+     * that a thumbnail closing its copy leaves the reader's copy open; this single fake stands for
+     * all of them: each [FakePdfEngine.open] after the first one adds a handle, each [close]
+     * removes one. A document built by a test starts with one handle, the one its first opening
+     * through [FakePdfEngine] takes.
      */
-    @Volatile
-    var isClosed: Boolean = false
-        internal set
+    internal val openHandles = AtomicInteger(1)
+
+    /** Whether [FakePdfEngine] has opened the document yet (it then took the initial handle). */
+    internal val isOpenedByEngine = AtomicBoolean(false)
+
+    /** Whether every opening of the document has been closed ([close]). */
+    val isClosed: Boolean get() = openHandles.get() <= 0
 
     /** What [outline] returns. */
     @Volatile
@@ -203,9 +211,9 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
         return links[index].orEmpty()
     }
 
-    /** Marks the document as closed ([isClosed]). */
+    /** Closes one opening of the document; [isClosed] once every opening is closed. */
     override fun close() {
-        isClosed = true
+        openHandles.updateAndGet { (it - 1).coerceAtLeast(0) }
     }
 
     private fun ensureOpen() {
@@ -238,7 +246,7 @@ class FakePdfEngine(
 
     /**
      * Records the call in [openedSources] and [givenPasswords], then checks [password] and returns
-     * [result]; a [FakePdfDocument] it returns is opened again ([FakePdfDocument.isClosed]), like
+     * [result]; a [FakePdfDocument] it returns gets one more open handle, like
      * the new document the real engine would give.
      */
     override suspend fun open(source: DocumentSource, password: String?): Result<PdfDocument> {
@@ -251,7 +259,14 @@ class FakePdfEngine(
             password != expected -> Result.failure(PdfError.IncorrectPassword())
             else -> result
         }
-        (outcome.getOrNull() as? FakePdfDocument)?.isClosed = false
+        (outcome.getOrNull() as? FakePdfDocument)?.let { document ->
+            // The first opening takes the handle the document was built with.
+            if (document.isOpenedByEngine.compareAndSet(false, true)) {
+                document.openHandles.updateAndGet { it.coerceAtLeast(1) }
+            } else {
+                document.openHandles.incrementAndGet()
+            }
+        }
         return outcome
     }
 }
