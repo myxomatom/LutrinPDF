@@ -7,8 +7,8 @@ import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -118,15 +120,16 @@ internal fun selectionHandles(selection: TextSelection): List<HandlePlacement> {
  * Whether the point is nearer the lower-left corner of [quad] than its lower-right one: the left
  * end of its line on screen, whatever the direction of the text.
  */
-private fun PdfPoint.isNearerStartOf(quad: PdfQuad): Boolean =
-    distanceTo(quad.lowerLeft) <= distanceTo(quad.lowerRight)
+private fun PdfPoint.isNearerStartOf(quad: PdfQuad): Boolean = distanceTo(quad.lowerLeft) <= distanceTo(quad.lowerRight)
 
 private fun PdfPoint.distanceTo(other: PdfPoint): Float = hypot(x - other.x, y - other.y)
 
 /** Smallest rectangle around every area of [selection], in page coordinates; `null` when empty. */
 internal fun selectionBounds(selection: TextSelection): PdfRect? = selection.quads
     .takeIf { it.isNotEmpty() }
-    ?.let { quads -> PdfRect.enclosing(quads.flatMap { it.bounds.let { b -> listOf(b.left to b.top, b.right to b.bottom) } }) }
+    ?.let { quads ->
+        PdfRect.enclosing(quads.flatMap { it.bounds.let { b -> listOf(b.left to b.top, b.right to b.bottom) } })
+    }
 
 /**
  * Where the action bar goes, in window pixels: centred above the selection when there is room
@@ -199,12 +202,38 @@ internal fun TextSelectionOverlay(pageSelection: PageSelection, page: PageSize, 
     val density = LocalDensity.current
     val scale = width / page.width
     val overlay = remember { CoordinatesHolder() }
-    Box(
-        Modifier
-            .size(with(density) { width.toDp() }, with(density) { height.toDp() })
-            .onPlaced { overlay.coordinates = it },
-    ) {
-        selectionBounds(pageSelection.selection)?.let { SelectionToolbarAnchor(it, scale, pageSelection) }
+    val direction = LocalLayoutDirection.current
+    // Page coordinates run left to right whatever the language of the interface.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        SelectionOverlayContent(
+            pageSelection,
+            page,
+            scale,
+            overlay,
+            direction,
+            Modifier.size(
+                with(density) {
+                    width.toDp()
+                },
+                with(density) { height.toDp() },
+            ),
+        )
+    }
+}
+
+/** The content of [TextSelectionOverlay], laid out left to right; the action bar in [direction]. */
+@Suppress("LongParameterList") // Plain wiring of TextSelectionOverlay.
+@Composable
+private fun SelectionOverlayContent(
+    pageSelection: PageSelection,
+    page: PageSize,
+    scale: Float,
+    overlay: CoordinatesHolder,
+    direction: LayoutDirection,
+    modifier: Modifier,
+) {
+    Box(modifier.onPlaced { overlay.coordinates = it }) {
+        selectionBounds(pageSelection.selection)?.let { SelectionToolbarAnchor(it, scale, pageSelection, direction) }
         selectionHandles(pageSelection.selection).forEach { placement ->
             TextSelectionHandle(
                 placement = placement,
@@ -261,9 +290,12 @@ private fun TextSelectionHandle(
                 R.string.reader_selection_end_handle
             },
         )
+    // Absolute: page coordinates do not mirror in a right-to-left interface.
     Spacer(
         Modifier
-            .offset { IntOffset((dropCentre.x - touch / 2).roundToInt(), (dropCentre.y - touch / 2).roundToInt()) }
+            .absoluteOffset {
+                IntOffset((dropCentre.x - touch / 2).roundToInt(), (dropCentre.y - touch / 2).roundToInt())
+            }
             .size(HandleTouchSize)
             .onPlaced { handle.coordinates = it }
             .semantics { contentDescription = label }
@@ -310,7 +342,12 @@ private fun handleDrop(centre: Offset, radius: Float, side: HandleSide): Path = 
  * window: never clipped by the page or by the reading area.
  */
 @Composable
-private fun SelectionToolbarAnchor(bounds: PdfRect, scale: Float, pageSelection: PageSelection) {
+private fun SelectionToolbarAnchor(
+    bounds: PdfRect,
+    scale: Float,
+    pageSelection: PageSelection,
+    direction: LayoutDirection,
+) {
     val density = LocalDensity.current
     val topLimit = with(density) { ToolbarTopLimit.roundToPx() }
     val provider =
@@ -323,11 +360,11 @@ private fun SelectionToolbarAnchor(bounds: PdfRect, scale: Float, pageSelection:
         }
     Box(
         Modifier
-            .offset { IntOffset((bounds.left * scale).roundToInt(), (bounds.top * scale).roundToInt()) }
+            .absoluteOffset { IntOffset((bounds.left * scale).roundToInt(), (bounds.top * scale).roundToInt()) }
             .size(with(density) { (bounds.width * scale).toDp() }, with(density) { (bounds.height * scale).toDp() }),
     ) {
         Popup(popupPositionProvider = provider, properties = PopupProperties(focusable = false)) {
-            SelectionActionBar(pageSelection)
+            CompositionLocalProvider(LocalLayoutDirection provides direction) { SelectionActionBar(pageSelection) }
         }
     }
 }

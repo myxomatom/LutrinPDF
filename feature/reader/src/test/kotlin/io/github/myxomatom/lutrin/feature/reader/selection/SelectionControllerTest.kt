@@ -37,8 +37,9 @@ class SelectionControllerTest {
         end = PdfPoint(right, 214f),
     )
 
-    private fun TestScope.controller() =
-        SelectionController(this, dispatcher, document = { document }, canCopy = { canCopy }, isProtected = { isProtected })
+    private fun TestScope.controller() = SelectionController(this, dispatcher, document = {
+        document
+    }, canCopy = { canCopy }, isProtected = { isProtected })
 
     /** Page 1 has text around [word]; the other pages have none (scanned). */
     private fun givenText(selection: TextSelection = word) {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader.ui
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipDescription
 import android.os.Build
-import android.annotation.SuppressLint
 import android.os.PersistableBundle
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.SnackbarHostState
@@ -151,7 +151,10 @@ internal fun SelectionEffectsHandler(
                 SelectionEffect.CopyRefused ->
                     inform(snackbar, resources.getString(R.string.reader_selection_copy_forbidden))
 
-                SelectionEffect.NothingToCopy -> inform(snackbar, resources.getString(R.string.reader_selection_no_text))
+                SelectionEffect.NothingToCopy -> inform(
+                    snackbar,
+                    resources.getString(R.string.reader_selection_no_text),
+                )
             }
         }
     }

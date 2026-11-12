@@ -408,7 +408,11 @@ class ReaderSelectionTest {
         composeRule.setContent {
             val snackbar = remember { SnackbarHostState() }
             LutrinTheme(dynamicColor = false) {
-                SelectionEffectsHandler(flowOf(SelectionEffect.Copy("bail", false)), snackbar, systemConfirmsCopy = false)
+                SelectionEffectsHandler(
+                    flowOf(SelectionEffect.Copy("bail", false)),
+                    snackbar,
+                    systemConfirmsCopy = false,
+                )
                 SnackbarHost(snackbar)
             }
         }
