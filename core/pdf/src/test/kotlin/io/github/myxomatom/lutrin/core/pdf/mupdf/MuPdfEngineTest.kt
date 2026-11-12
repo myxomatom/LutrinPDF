@@ -86,7 +86,7 @@ class MuPdfEngineTest {
     fun `opens an encrypted PDF with the right password`() = runTest {
         openTestPdf("pdfs/encrypted_password_lutrin.pdf", password = "lutrin").use { document ->
             assertThat(document.metadata.isEncrypted).isTrue()
-            assertThat(document.textAt(0, wholePage)).contains("Document chiffré")
+            assertThat(document.allText()).contains("Document chiffré")
         }
     }
 

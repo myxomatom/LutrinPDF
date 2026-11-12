@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-10.**
+> session de travail. **Dernière mise à jour : 2026-11-11.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -13,7 +13,8 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 à M8 | ⏳ À faire (E3 existe déjà en partie) |
+| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lots 3 (recherche, sélection) et 4 (sommaire, liens) à faire |
+| M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
 
@@ -98,6 +99,11 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
+0. **M4, lots 3 et 4**, sur l'API du lot 1 (ADR 0020) : `PdfDestination` pour le sommaire et
+   les liens (n'ouvrir que `http`, `https` et `mailto`, après confirmation) ; recherche avec
+   progression (`SearchPageResult`), extraits et « 1 000 résultats ou plus » ; sélection par
+   appui long (`selectText`, `SelectionMode.Words`), copie refusée si `canCopyText` est faux.
+   Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur appareil (CI seulement).
 1. **M3 Fichiers et récents** :
    - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
@@ -325,6 +331,43 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
   avec `runComposeUiTest` de `androidx.compose.ui.test.v2` et `emulateSaveAndRestore()`.
 - **LeakCanary** (APK de debug seulement) ajoute le raccourci « Lutrin Leaks » à l'icône :
   c'est normal, l'application publiée ne l'a pas.
+- **API texte du moteur** (ADR 0020, constaté le 2026-11-11) :
+  - `StructuredText.snapSelection` puis `highlight` / `copy` perdent la première lettre d'un mot
+    arabe (aller-retour caret → point → caret) : la sélection est calculée en Kotlin
+    (`PageText`), testable sans la bibliothèque native (`PageTextTest` tourne aussi sous
+    Windows) ;
+  - le marcheur de `StructuredText` (et `getBlocks()`) crée un `Font` Java par caractère et un
+    `Image` par bloc : `GlyphCollector` les détruit aussitôt, sur le thread du document ;
+  - `StructuredText.search` de MuPDF 1.28.6 échoue toujours (`NullPointerException` dans
+    `ArrayList.toArray` : son JNI appelle `toArray(T[])` sans argument) : utiliser
+    `Page.search`, qui extrait le texte avec la même option `dehyphenate` ; à revoir à chaque
+    mise à jour de MuPDF ;
+  - le constructeur Java de `LinkDestination` (MuPDF 1.28.6) affecte `width` et `height` à
+    eux-mêmes : ils valent toujours 0 ; la taille d'un `FitR` est lue dans l'URI (`viewrect=`) ;
+  - sur une page `/Rotate 90`, MuPDF perd la coordonnée de `/FitH`, `/FitV` et d'un `/XYZ`
+    incomplet (`populate_destination` tourne (0, y) et ne garde que l'axe d'origine) ;
+  - `FakePdfDocument` lève `Closed` comme le moteur et compte ses ouvertures : chaque
+    `FakePdfEngine.open` après la première en ajoute une, chaque `close` en retire une ; un test
+    qui partage un faux entre la vignette et le lecteur reste donc correct ;
+  - `search_for` de PyMuPDF ne trouve pas un mot coupé en fin de ligne, alors que la recherche
+    Java de MuPDF (texte extrait avec `dehyphenate`) le trouve : ne pas vérifier le jeu de test
+    avec `search_for` ;
+  - avec `python -I`, `PYTHONIOENCODING` est ignoré : utiliser `-X utf8` pour afficher de
+    l'arabe dans une console Windows.
+- **Worktree au chemin long sous Windows** (constaté le 2026-11-11) : dans
+  `.claude/worktrees/agent-…`, `configureNdkBuild*` de `:third-party:mupdf` échoue
+  (`make.exe: Interrupt/Exception caught (code = 0xc0000005)`), les chemins d'objets devenant trop
+  longs. Un lecteur `subst` n'y change rien (Gradle résout le vrai chemin). Pour
+  `assembleRelease`, copier l'arbre vers un chemin court (`robocopy <worktree> D:\lw /MIR /XD
+  build .gradle .kotlin /XF .git`) et y lancer Gradle ; les tâches sans code natif (`check` d'un
+  module, tests JVM) passent dans le worktree. Le démon Gradle garde le `java.io.tmpdir` de son
+  premier lancement : si ce dossier disparaît, la compilation Kotlin échoue avec
+  `NoSuchFileException …kotlin-compiler-in-…alive`. Arrêter la commande shell d'un Gradle lancé
+  en arrière-plan n'arrête pas son client Java : le build continue, verrouille des fichiers
+  (`bundleLibRuntimeToJarDebug … utilisé par un autre processus`) et écrit dans le même journal ;
+  attendre sa fin avant de relancer. Après une synchronisation de la copie courte suivie d'un
+  merge, des tests de `app` peuvent échouer avec `NoSuchMethodException ReaderViewModel.<init>()`
+  (code Hilt périmé) : `:app:clean` avant de conclure.
 
 ## 5. Préparer un conteneur cloud (session Claude Code sur le web)
 

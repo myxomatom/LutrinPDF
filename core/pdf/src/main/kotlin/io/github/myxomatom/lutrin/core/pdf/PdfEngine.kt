@@ -8,9 +8,12 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
-import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
+import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
+import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
+import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import java.io.Closeable
 import java.io.File
 import kotlinx.coroutines.flow.Flow
@@ -69,6 +72,14 @@ interface PdfDocument : Closeable {
     /** Document properties (F16). */
     val metadata: PdfMetadata
 
+    /**
+     * Whether the document lets its readers copy its text (F08): `false` when its author
+     * restricted copying through the permissions of an encrypted document (a document opened
+     * with its owner password has every permission). The engine only reports the permission;
+     * enforcing it is the caller's decision (ADR 0020).
+     */
+    val canCopyText: Boolean
+
     /** Size of the page at [index], rotation applied, in points. */
     suspend fun pageSize(index: Int): PageSize
 
@@ -84,18 +95,58 @@ interface PdfDocument : Closeable {
      */
     suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean)
 
-    /** Table of contents (F06); empty when the document has none. */
+    /**
+     * Table of contents (F06); empty when the document has none. Entries whose destination
+     * does not resolve keep their title, with a `null` destination.
+     */
     suspend fun outline(): List<OutlineItem>
 
     /**
-     * Searches the whole document, page by page (F07). The flow is cold and stops at the first
-     * cancellation; a blank [query] yields nothing.
+     * Searches the whole document, page by page (F07), from [startPage] to the last page, then
+     * from the first page back to the one before [startPage]: the first results are the ones
+     * after the page the reader shows. The flow is cold and stops at the first cancellation. It
+     * emits one [SearchPageResult] per page searched, even without any occurrence, so that the
+     * caller can follow the progress; it ends after every page is searched or once
+     * [SearchOptions.maxHits] occurrences are found. A blank [query] emits nothing. Pages are
+     * searched without evicting the pages kept for rendering.
+     *
+     * @param startPage zero-based page searched first.
+     * @throws PdfError.Closed from the flow if the document is closed, even for a blank query.
+     * @throws PdfError.PageOutOfRange from the flow if [startPage] is not a page of the document.
      */
-    fun search(query: String, options: SearchOptions = SearchOptions()): Flow<SearchHit>
+    fun search(query: String, options: SearchOptions = SearchOptions(), startPage: Int = 0): Flow<SearchPageResult>
 
-    /** Text inside [selection] on the page at [index], in reading order (F08). */
-    suspend fun textAt(index: Int, selection: PdfRect): String
+    /**
+     * Selects the text of the page at [index] between two points (F08), for example where a
+     * finger pressed and where it was released, or the two handles of a selection. The order
+     * of the points does not matter; each one is first moved to the nearest character, so a
+     * point beside the text still selects up to the edge of the closest line.
+     *
+     * @param start one end of the selection, in page coordinates.
+     * @param end the other end; equal to [start] for a long press.
+     * @param mode how the selection grows: [SelectionMode.Words] selects the whole word under a
+     *   long press; [SelectionMode.Characters] gives an empty selection when both points are equal.
+     * @return the selection, empty when the page has no text layer (scanned page). Its
+     *   [TextSelection.start] and [TextSelection.end] place the handles, in reading order.
+     */
+    suspend fun selectText(
+        index: Int,
+        start: PdfPoint,
+        end: PdfPoint,
+        mode: SelectionMode = SelectionMode.Characters,
+    ): TextSelection
 
-    /** Links of the page at [index] (F09). */
+    /**
+     * Whether [point] of the page at [index] lies on a line of text: `false` in a margin,
+     * between paragraphs, on an image or on a page without text layer. Lets the reader ignore a
+     * long press outside the text, which [selectText] would otherwise move to the nearest line.
+     */
+    suspend fun isOnText(index: Int, point: PdfPoint): Boolean
+
+    /**
+     * Links of the page at [index] (F09), in document order. Internal links whose destination
+     * does not resolve are left out; external ones keep their URI as written, whatever its
+     * scheme (ADR 0020).
+     */
     suspend fun links(index: Int): List<PdfLink>
 }

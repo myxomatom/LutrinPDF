@@ -47,4 +47,28 @@ class PdfGeometryTest {
     fun `enclosing rect needs points`() {
         assertThrows(IllegalArgumentException::class.java) { PdfRect.enclosing(emptyList()) }
     }
+
+    @Test
+    fun `a quad made from a rect has the rect corners and bounds`() {
+        val rect = PdfRect(10f, 20f, 110f, 70f)
+
+        val quad = PdfQuad.of(rect)
+
+        assertThat(quad.upperLeft).isEqualTo(PdfPoint(10f, 20f))
+        assertThat(quad.lowerRight).isEqualTo(PdfPoint(110f, 70f))
+        assertThat(quad.bounds).isEqualTo(rect)
+    }
+
+    @Test
+    fun `the bounds of a rotated quad enclose its four corners`() {
+        // Text going down the page: the top edge of the text is on the right.
+        val quad = PdfQuad(
+            upperLeft = PdfPoint(60f, 10f),
+            upperRight = PdfPoint(60f, 90f),
+            lowerLeft = PdfPoint(40f, 10f),
+            lowerRight = PdfPoint(40f, 90f),
+        )
+
+        assertThat(quad.bounds).isEqualTo(PdfRect(40f, 10f, 60f, 90f))
+    }
 }

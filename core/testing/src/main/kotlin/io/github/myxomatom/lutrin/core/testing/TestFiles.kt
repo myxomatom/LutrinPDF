@@ -13,14 +13,35 @@ object TestFiles {
         /** One page, text only. */
         const val SIMPLE = "pdfs/simple_1page.pdf"
 
-        /** 600 text pages. */
+        /** 600 text pages, with a two-level outline (12 parts of 5 chapters). */
         const val LARGE = "pdfs/large_600pages.pdf"
 
         /** Three-level outline with 15 entries over 6 pages. */
         const val NESTED_OUTLINE = "pdfs/nested_outline.pdf"
 
-        /** Page 1 links to page 3 and to `https://example.org/`. */
+        /**
+         * Page 1 links to page 3 and to `https://example.org/`; page 2 links to the middle of
+         * page 4, to a named destination at the top of page 3, and to `mailto:`, `javascript:`,
+         * `file:` and relative URIs. Its outline has an entry to the middle of page 4 and an
+         * external one.
+         */
         const val LINKS = "pdfs/links_internal_external.pdf"
+
+        /**
+         * One page for search and selection: a word cut by a hyphen at the end of a line
+         * ("biblio-" / "thèque") and an Arabic sentence.
+         */
+        const val TEXT_SELECTION = "pdfs/text_selection.pdf"
+
+        /** One page with 800 occurrences of "lutrin" (80 lines of 10). */
+        const val MANY_HITS = "pdfs/search_many_hits.pdf"
+
+        /**
+         * Three pages; page 1 links with explicit destinations to page 2, rotated by 90°
+         * (`/FitH 300`, `/FitV 200`, `/FitR 100 200 300 400`, `/XYZ 100 500`, `/XYZ null 500`), then
+         * to page 3, upright (`/FitH 300`, `/FitR 100 200 300 400`), in this order.
+         */
+        const val ROTATED_DESTINATIONS = "pdfs/rotated_destinations.pdf"
 
         /** AES-256 encrypted; the user password is [ENCRYPTED_PASSWORD]. */
         const val ENCRYPTED = "pdfs/encrypted_password_lutrin.pdf"
