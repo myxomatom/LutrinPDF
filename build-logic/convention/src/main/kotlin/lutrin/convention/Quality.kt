@@ -75,8 +75,15 @@ private fun Project.configureDetekt() {
         buildUponDefaultConfig = true
         parallel = true
         config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
-        // src/benchmark: code of the app's benchmark builds only (ADR 0012).
-        source.setFrom("src/main/kotlin", "src/test/kotlin", "src/androidTest/kotlin", "src/benchmark/kotlin")
+        // src/benchmark: code of the app's benchmark builds only (ADR 0012). src/sharedTest:
+        // test code compiled into both the JVM and the instrumented tests (core:pdf, ADR 0025).
+        source.setFrom(
+            "src/main/kotlin",
+            "src/test/kotlin",
+            "src/androidTest/kotlin",
+            "src/sharedTest/kotlin",
+            "src/benchmark/kotlin",
+        )
     }
     dependencies {
         "detektPlugins"(libs.library("compose-rules-detekt"))

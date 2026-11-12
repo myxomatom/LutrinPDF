@@ -58,6 +58,12 @@ object TestFiles {
         /** Accented French, Arabic (right to left) and Chinese text. */
         const val NON_LATIN = "pdfs/non_latin_text.pdf"
 
+        /**
+         * Simplified and traditional Chinese, Japanese and Korean text whose fonts are **not**
+         * embedded: drawn with a fallback font (ADR 0025).
+         */
+        const val CJK_NOT_EMBEDDED = "pdfs/cjk_not_embedded.pdf"
+
         /** A valid file cut in half; may be repaired by the engine. */
         const val CORRUPTED_TRUNCATED = "pdfs/corrupted_truncated.pdf"
 

@@ -7,6 +7,12 @@ plugins {
 android {
     namespace = "io.github.myxomatom.lutrin.core.pdf"
 
+    sourceSets {
+        // Engine checks run both on the JVM and on a device (CJK fallback font, ADR 0025).
+        named("test") { kotlin.directories.add("src/sharedTest/kotlin") }
+        named("androidTest") { kotlin.directories.add("src/sharedTest/kotlin") }
+    }
+
     testOptions.unitTests.all { test ->
         // JVM tests drive the real engine through MuPDF's JNI library built for this machine.
         val mupdf = project(":third-party:mupdf")

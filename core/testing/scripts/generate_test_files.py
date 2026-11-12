@@ -191,6 +191,30 @@ def non_latin() -> None:
     save(doc, "non_latin_text.pdf")
 
 
+# Lines of cjk_not_embedded.pdf: PyMuPDF CJK font name, text and baseline (points from the top). Letters
+# only (no space, no punctuation), so that every glyph must exist in the fallback font. Keep in sync with
+# CjkFixture.kt (core:pdf tests).
+CJK_LINES = (
+    ("china-s", "简体中文汉字", 100),
+    ("china-t", "繁體中文漢字", 160),
+    ("japan", "日本語ひらがなカタカナ", 220),
+    ("korea", "한국어한글", 280),
+)
+
+
+def cjk_not_embedded() -> None:
+    """Chinese (simplified and traditional), Japanese and Korean text whose fonts are NOT embedded (ADR 0025).
+
+    PyMuPDF's CJK fonts are references to Type0 / CIDFontType0 fonts (orderings GB1, CNS1, Japan1, Korea1)
+    without any FontFile: the reader must draw them with a fallback font, not with empty boxes.
+    """
+    doc = pymupdf.open()
+    page = doc.new_page(width=A4.width, height=A4.height)
+    for fontname, text, baseline in CJK_LINES:
+        page.insert_text((72, baseline), text, fontname=fontname, fontsize=24)
+    save(doc, "cjk_not_embedded.pdf")
+
+
 def corrupted() -> None:
     # Cut in the middle: MuPDF can usually repair it, the app must at least never crash.
     buffer = io.BytesIO()
@@ -264,7 +288,7 @@ def texts() -> None:
 
 
 GENERATORS = (simple, large, nested_outline, links, encrypted, encrypted_variants, form, scanned, mixed_sizes,
-              non_latin, corrupted, garbage, not_a_pdf, images, texts)
+              non_latin, cjk_not_embedded, corrupted, garbage, not_a_pdf, images, texts)
 
 
 def main(names: list[str]) -> None:

@@ -28,6 +28,7 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | `scanned_images_only.pdf` | 2 pages d'images, sans couche texte | Rendu correct, recherche sans résultat |
 | `mixed_page_sizes.pdf` | A4, Lettre paysage, A5, carré, page tournée de 90° | Tailles et rotation respectées |
 | `non_latin_text.pdf` | Français accentué, arabe (droite à gauche), chinois | Rendu, recherche, sélection F07–F08 |
+| `cjk_not_embedded.pdf` | Chinois simplifié et traditionnel, japonais (kana compris), coréen, en quatre polices CID **non incorporées** (orderings GB1, CNS1, Japan1, Korea1) | Texte dessiné avec de vrais glyphes, pas des carrés, même sans police CJK dans le système (police de secours, ADR 0025) |
 | `corrupted_truncated.pdf` | Fichier valide coupé en deux | Réparé par le moteur ou message clair, jamais de crash |
 | `corrupted_garbage.pdf` | En-tête `%PDF` suivi de données aléatoires | « Impossible d'ouvrir ce document » (`SPEC.md` §6) |
 | `not_a_pdf.pdf` | Fichier texte renommé en `.pdf` | Message « type de fichier non PDF » |
