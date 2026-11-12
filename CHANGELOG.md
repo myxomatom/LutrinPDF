@@ -10,14 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
-- **Police de secours CJK** (ADR 0025) : un texte chinois (simplifié ou traditionnel), japonais
-  ou coréen dont la police n'est pas incorporée au PDF s'affiche avec de vrais glyphes même sur
-  un appareil sans police CJK : MuPDF embarque DroidSansFallback (Apache-2.0), utilisée après
-  les polices du système. Chaque APK grossit de 3,4 Mio ; la limite de `SPEC.md` §3 passe de
-  15 à 18 Mo par ABI. Nouveau fichier de test `cjk_not_embedded.pdf`, vérifié sur la JVM et sur
-  appareil (`CjkFallbackFontCheck`). `generateMupdfResources` n'écrit plus que les ressources
-  compilées (≈ 200 Mo de sources C en moins) ; la bibliothèque des tests JVM a les mêmes
-  polices que l'application.
+- **Texte CJK dont la police n'est pas incorporée** (ADR 0025) : dessiné avec les polices CJK du
+  système, que MuPDF cherche dans `/system/fonts` ; aucune police CJK n'est embarquée (APK
+  inchangés, limite de `SPEC.md` §3 gardée à 15 Mo ; DroidSansFallback, essayée, ajoutait 3,4 Mio
+  par ABI). Sur un appareil sans police CJK, ce texte s'affiche en carrés. Nouveau fichier de test
+  `cjk_not_embedded.pdf`, vérifié sur appareil (`CjkFallbackFontInstrumentedTest`) et, pour la
+  limite sans police CJK, sur la JVM. `generateMupdfResources` n'écrit plus que les ressources
+  compilées (≈ 200 Mo de sources C en moins) ; la bibliothèque des tests JVM a les mêmes polices
+  que l'application.
 - **Aller à la page** (F05, V3) : un appui sur l'indicateur « 5 / 8 » de la barre flottante (une
   cible de 48 dp au moins, lue par TalkBack « Page 5 sur 8, bouton » avec l'action « Aller à une
   page ») ouvre un dialogue avec un champ numérique rempli de la page affichée, sélectionnée,

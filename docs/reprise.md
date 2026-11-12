@@ -152,16 +152,13 @@ montrée entière) pour la table des matières et les liens. **À essayer sur ap
 numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
 rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
 
-**M4, lot des polices CJK** (ADR 0025, branche `feat/cjk-fonts`, pas encore sur appareil) :
-DroidSansFallback (Apache-2.0, 3,4 Mio) compilée dans `libmupdf_java.so` par
-`MUPDF_EXTRA_CFLAGS=-UTOFU_CJK -DTOFU_CJK_EXT` et `ADD_SOURCE_FILES` (sans toucher à
-`Android.mk`) ; APK release de 13,1 à 16,8 Mo par ABI (avant : 9,5 à 13,3), limite de `SPEC.md`
-§3 relevée à 18 Mo. MuPDF cherche d'abord les polices CJK du système (`/system/fonts`) : la
-police embarquée ne sert que sur un appareil qui n'en a pas. **À essayer sur appareil** : ouvrir
-`cjk_not_embedded.pdf` (jeu de test) ; lancer `:core:pdf:connectedDebugAndroidTest`
-(`CjkFallbackFontInstrumentedTest`). **L'écran des licences (M5) doit citer DroidSansFallback et
-les polices URW** (`docs/dependencies.md`). Pas encore de vérification automatique de la taille
-des APK (proposition dans l'ADR 0025).
+**M4, lot des polices CJK** (ADR 0025, PR #28) : pas de police CJK embarquée. MuPDF dessine le
+texte CJK non incorporé avec les polices du système (`androidfonts.c` lit `/system/fonts`, quel
+que soit `TOFU_CJK`) ; carrés sur un appareil sans police CJK (limite connue). DroidSansFallback a
+été essayée (+3,4 Mio par ABI, mesures dans l'ADR) puis retirée ; limite de `SPEC.md` gardée à
+15 Mo. **À essayer sur appareil** : ouvrir `cjk_not_embedded.pdf` (jeu de test). **L'écran des
+licences (M5) doit citer les polices URW** (`docs/dependencies.md`). Pas encore de vérification
+automatique de la taille des APK (proposition dans l'ADR 0025).
 
 ## 3. Décisions à connaître
 
@@ -242,9 +239,9 @@ des APK (proposition dans l'ADR 0025).
   - `make` n'est plus nécessaire : `generateMupdfResources` est une tâche Kotlin de
     `build-logic` qui reproduit `scripts/hexdump.sh` octet pour octet ; à chaque mise à jour de
     MuPDF, revoir sa liste (`MUPDF_EMBEDDED_RESOURCES`) face à `FONT_BIN` / `HYPH_BIN` du
-    `Makefile` **avec les drapeaux de polices du build Android** (ADR 0025 ; les mêmes sont
-    dans `third-party/mupdf/build.gradle.kts` et `build-host-jni.sh`) ;
-  - changer `MUPDF_EXTRA_CFLAGS` recompile toute la bibliothèque native (≈ 8 min pour les trois
+    `Makefile` **avec les drapeaux de polices d'`Android.mk`** (ADR 0025 ; les mêmes sont
+    dans `build-host-jni.sh`) ;
+  - passer `MUPDF_EXTRA_CFLAGS` à ndk-build recompile toute la bibliothèque native (≈ 8 min pour les trois
     ABI sous Windows) ;
   - `git submodule update --reference` refuse un dépôt de référence superficiel (« reference
     repository … is shallow ») : dans un nouveau worktree, récupérer les bibliothèques de

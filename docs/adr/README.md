@@ -25,7 +25,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0017](0017-mot-de-passe-des-documents-proteges.md) | Mot de passe des documents protégés (V4) : dialogue, mot de passe jamais gardé, récents protégés (schéma 2) | Accepté |
 | [0018](0018-nouveau-design-visuel.md) | Nouveau design visuel (E1, E2, E9) : titres en Fraunces, accent chaud, carte de reprise, barre flottante, aperçu optionnel du curseur | Accepté |
 | [0019](0019-transition-vignette-lecteur.md) | Transition animée vignette → lecteur : éléments partagés, retour prédictif, cas de repli ; amendé : l'aller est un simple fondu, seul le retour replie la page vers la vignette | Accepté, amendé |
-| [0025](0025-police-de-secours-cjk.md) | Police de secours CJK (DroidSansFallback) compilée dans MuPDF, limite des APK relevée à 18 Mo par ABI | Accepté |
+| [0025](0025-police-de-secours-cjk.md) | Texte CJK non incorporé : polices CJK du système, pas de police embarquée (DroidSansFallback mesurée puis écartée) | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

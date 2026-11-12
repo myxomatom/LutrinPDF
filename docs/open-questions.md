@@ -20,7 +20,7 @@ puis déplacé dans la section « Tranchés ».
 
 | # | Sujet | Décision |
 |---|-------|----------|
-| 8 | Polices de secours CJK | DroidSansFallback (Apache-2.0, 3,4 Mio) compilée dans le build Android de MuPDF : chinois simplifié et traditionnel, japonais, coréen ; utilisée quand l'appareil n'a pas de police CJK (MuPDF essaie d'abord `/system/fonts`). Limite de taille relevée à 18 Mo par ABI — [ADR 0025](adr/0025-police-de-secours-cjk.md) |
+| 8 | Polices de secours CJK | Pas de police CJK embarquée : le texte CJK non incorporé est dessiné avec les polices CJK du système (MuPDF lit `/system/fonts`) ; carrés sur un appareil qui n'en a pas. Limite de taille gardée à 15 Mo par ABI — [ADR 0025](adr/0025-police-de-secours-cjk.md) |
 | 4 | Injection de dépendances | Hilt — [ADR 0002](adr/0002-injection-dependances-hilt.md) |
 | 5 | Licences tierces | Licensee (CI) et AboutLibraries (écran, M5) — [ADR 0003](adr/0003-licences-tierces.md) |
 | 9 | Réglage « Couleurs dynamiques » | Interrupteur dans E3, activé par défaut — [ADR 0010](adr/0010-couleurs-dynamiques-et-police.md) |
