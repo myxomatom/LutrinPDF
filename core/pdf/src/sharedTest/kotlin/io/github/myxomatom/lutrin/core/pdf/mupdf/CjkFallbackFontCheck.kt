@@ -16,15 +16,17 @@ import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 
 /**
- * Checks that the CJK text of `cjk_not_embedded.pdf`, whose fonts are not embedded, is drawn
- * with real glyphs and not with empty boxes (ADR 0025). Shared by the JVM test (desktop library,
- * which has the Android font set and no system font) and the instrumented test (Android library).
+ * Checks on `cjk_not_embedded.pdf`, whose CJK fonts are not embedded (ADR 0025): MuPDF must
+ * substitute a CJK font, which only the device provides (no CJK font is compiled in).
  *
- * Three checks, because each alone can be fooled:
+ * [verify] (instrumented test, device fonts) runs three checks, because each alone can be fooled:
  * - the fonts of the file are really not embedded (the file tests what it claims);
  * - every character is drawn with a font that has a glyph for it: when no CJK font is found,
  *   MuPDF falls back to a Latin font that has none, and draws boxes or wrong glyphs;
  * - every line leaves ink on the page.
+ *
+ * [verifyNoCjkFont] (JVM test, desktop library without system fonts) checks the known limit:
+ * without any CJK font, the text is not drawn with CJK glyphs.
  */
 internal object CjkFallbackFontCheck {
     /**
@@ -54,19 +56,38 @@ internal object CjkFallbackFontCheck {
     private const val MIN_INK_PIXELS_PER_LINE = 300
 
     /**
-     * Opens the file at [path] with MuPDF on the calling thread, runs the three checks and
-     * releases everything.
+     * Opens the file at [path] with MuPDF on the calling thread and checks that its CJK text is
+     * drawn with real glyphs.
      *
      * @throws AssertionError if a check fails.
      */
-    fun verify(path: String) {
+    fun verify(path: String) = withFirstPage(path) { page ->
+        assertFontsAreNotEmbedded(page)
+        assertEveryCharacterHasAGlyph(page)
+        assertEveryLineHasInk(page)
+    }
+
+    /**
+     * Opens the file at [path] and checks that its CJK text is **not** drawn with CJK glyphs,
+     * as on a device without any CJK font: proves that [verify] can tell boxes from text.
+     *
+     * @throws AssertionError if the text is drawn with CJK glyphs.
+     */
+    fun verifyNoCjkFont(path: String) = withFirstPage(path) { page ->
+        assertFontsAreNotEmbedded(page)
+        val characters = drawnCharacters(page)
+        val drawnWithGlyphs = characters.text() == expectedText && characters.all { it.fontHasGlyph }
+        assertWithMessage("CJK text drawn with glyphs without any CJK font").that(drawnWithGlyphs).isFalse()
+    }
+
+    private val expectedText = lines.joinToString("") { it.text }
+
+    private fun withFirstPage(path: String, checks: (PDFPage) -> Unit) {
         val document = Document.openDocument(path)
         try {
             val page = document.loadPage(0)
             try {
-                assertFontsAreNotEmbedded(page as PDFPage)
-                assertEveryCharacterHasAGlyph(page)
-                assertEveryLineHasInk(page)
+                checks(page as PDFPage)
             } finally {
                 page.destroy()
             }
@@ -74,6 +95,8 @@ internal object CjkFallbackFontCheck {
             document.destroy()
         }
     }
+
+    private fun List<DrawnCharacter>.text() = buildString { this@text.forEach { appendCodePoint(it.codePoint) } }
 
     private fun assertFontsAreNotEmbedded(page: PDFPage) {
         val fonts = page.getObject().get("Resources").get("Font")
@@ -88,8 +111,7 @@ internal object CjkFallbackFontCheck {
 
     private fun assertEveryCharacterHasAGlyph(page: Page) {
         val characters = drawnCharacters(page)
-        assertThat(buildString { characters.forEach { appendCodePoint(it.codePoint) } })
-            .isEqualTo(lines.joinToString("") { it.text })
+        assertThat(characters.text()).isEqualTo(expectedText)
         val withoutGlyph = characters.filterNot { it.fontHasGlyph }.map { "U+%04X".format(it.codePoint) }
         assertWithMessage("characters drawn without a glyph (boxes)").that(withoutGlyph).isEmpty()
     }

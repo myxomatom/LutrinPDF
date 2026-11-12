@@ -5,10 +5,9 @@
 # Never packaged in the app. Requires a C compiler, make, pkg-config, and the development
 # files of freetype2, libcrypto (OpenSSL) and zlib.
 #
-# The fallback fonts are those of the Android build (ADR 0025): TOFU_NOTO and TOFU_SIL like
-# Artifex's Android.mk, and TOFU_CJK_EXT like third-party/mupdf/build.gradle.kts, which keeps
-# DroidSansFallback only. The desktop library has no system font loader (Android's one reads
-# /system/fonts), so the JVM tests see exactly the fonts embedded in the app.
+# The fonts are those of the Android build (ADR 0025): TOFU_NOTO, TOFU_CJK and TOFU_SIL, like
+# Artifex's Android.mk. The desktop library has no system font loader (Android's one reads
+# /system/fonts), so the JVM tests see a device without any CJK font.
 #
 # Usage: build-host-jni.sh <output directory> [jobs]
 set -eu
@@ -16,7 +15,7 @@ OUT=$1
 JOBS=${2:-4}
 MUPDF=$(cd "$(dirname "$0")/libmupdf" && pwd)
 : "${JAVA_HOME:?JAVA_HOME must point to a JDK}"
-FONT_FLAGS="-DTOFU_NOTO -DTOFU_CJK_EXT -DTOFU_SIL"
+FONT_FLAGS="-DTOFU_NOTO -DTOFU_CJK -DTOFU_SIL"
 
 mkdir -p "$OUT"
 make -s -C "$MUPDF" -j"$JOBS" OUT="$OUT" build=release XCFLAGS="-fPIC $FONT_FLAGS" \

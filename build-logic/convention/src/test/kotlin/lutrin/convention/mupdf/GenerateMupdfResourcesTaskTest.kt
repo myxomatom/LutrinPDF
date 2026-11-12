@@ -73,19 +73,18 @@ class GenerateMupdfResourcesTaskTest {
     }
 
     @Test
-    fun `generates the CJK fallback font but not the fonts left out of the Android build`() {
-        val fallback = resource("resources/fonts/droid/DroidSansFallback.ttf", 7)
-        resource("resources/fonts/droid/DroidSansFallbackFull.ttf", 8)
+    fun `does not generate the fallback fonts left out of the Android build`() {
+        val kept = resource("resources/fonts/urw/Dingbats.cff", 7)
+        resource("resources/fonts/droid/DroidSansFallback.ttf", 8)
         resource("resources/fonts/han/SourceHanSerif-Regular.ttc", 9)
         resource("resources/fonts/noto/NotoSans-Regular.otf", 10)
         resource("resources/fonts/sil/CharisSIL.cff", 11)
 
         generate()
 
-        val fallbackSource = generated("resources/fonts/droid/DroidSansFallback.ttf")
-        assertThat(fallbackSource.readBytes()).isEqualTo(expectedDump(fallback))
+        assertThat(generated("resources/fonts/urw/Dingbats.cff").readBytes()).isEqualTo(expectedDump(kept))
         listOf(
-            "resources/fonts/droid/DroidSansFallbackFull.ttf",
+            "resources/fonts/droid/DroidSansFallback.ttf",
             "resources/fonts/han/SourceHanSerif-Regular.ttc",
             "resources/fonts/noto/NotoSans-Regular.otf",
             "resources/fonts/sil/CharisSIL.cff",

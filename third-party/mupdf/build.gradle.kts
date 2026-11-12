@@ -17,17 +17,10 @@ val isWindowsHost = hostOs.startsWith("Windows")
 // The desktop JNI library is only built on Linux (ADR 0013); core:pdf reads this flag.
 val isHostJniSupported = hostOs.startsWith("Linux")
 
-// CJK fallback font (ADR 0025). Artifex's Android.mk, left unchanged, defines TOFU_NOTO,
-// TOFU_CJK and TOFU_SIL: no fallback font at all, so CJK text whose font is not embedded in
-// the PDF is drawn with empty boxes on a device without system CJK fonts. Undefining TOFU_CJK
-// and defining TOFU_CJK_EXT keeps the smallest CJK font of MuPDF, DroidSansFallback (3.4 MiB,
-// Apache-2.0: Chinese, Japanese, Korean), and still leaves out DroidSansFallbackFull and
-// Source Han Serif. MUPDF_EXTRA_CFLAGS comes after Android.mk's own flags, so it wins.
-// Android.mk only compiles the generated sources of the URW fonts and of the hyphenation
-// patterns: the font's source goes in through its ADD_SOURCE_FILES hook. Keep in sync with
-// MUPDF_EMBEDDED_RESOURCES (build-logic) and build-host-jni.sh.
-val cjkFallbackFontFlags = "-UTOFU_CJK -DTOFU_CJK_EXT"
-val cjkFallbackFontSource = mupdfDir.file("generated/resources/fonts/droid/DroidSansFallback.ttf.c")
+// Fonts (ADR 0025): Artifex's Android.mk, left unchanged, sets TOFU_NOTO, TOFU_CJK and TOFU_SIL,
+// so no fallback font is compiled. CJK text whose font is not embedded in the PDF is drawn with
+// the device's CJK fonts (androidfonts.c reads /system/fonts), and with boxes on a device
+// without any. Keep MUPDF_EMBEDDED_RESOURCES (build-logic) and build-host-jni.sh in sync.
 
 android {
     namespace = "io.github.myxomatom.lutrin.thirdparty.mupdf"
@@ -43,8 +36,6 @@ android {
         externalNativeBuild {
             ndkBuild {
                 arguments += "-j$buildJobs"
-                arguments += "MUPDF_EXTRA_CFLAGS=$cjkFallbackFontFlags"
-                arguments += "ADD_SOURCE_FILES=${cjkFallbackFontSource.asFile.invariantSeparatorsPath}"
                 // Windows limits a command line to 32 767 characters; the archive command of
                 // libmupdf_core.a lists hundreds of objects by absolute path and fails with
                 // "make (e=87)". Short commands pass the object lists through response files.

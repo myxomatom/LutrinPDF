@@ -60,7 +60,7 @@ object TestFiles {
 
         /**
          * Simplified and traditional Chinese, Japanese and Korean text whose fonts are **not**
-         * embedded: drawn with a fallback font (ADR 0025).
+         * embedded: drawn with the device's CJK fonts (ADR 0025).
          */
         const val CJK_NOT_EMBEDDED = "pdfs/cjk_not_embedded.pdf"
 

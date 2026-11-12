@@ -206,7 +206,7 @@ def cjk_not_embedded() -> None:
     """Chinese (simplified and traditional), Japanese and Korean text whose fonts are NOT embedded (ADR 0025).
 
     PyMuPDF's CJK fonts are references to Type0 / CIDFontType0 fonts (orderings GB1, CNS1, Japan1, Korea1)
-    without any FontFile: the reader must draw them with a fallback font, not with empty boxes.
+    without any FontFile: the reader draws them with a CJK font of the device, not with empty boxes.
     """
     doc = pymupdf.open()
     page = doc.new_page(width=A4.width, height=A4.height)
