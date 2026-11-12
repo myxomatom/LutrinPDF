@@ -69,6 +69,22 @@ chaque mise à jour de MuPDF.
 
 La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.13676358.
 
+### Polices de MuPDF compilées dans `libmupdf_java.so`
+
+Fichiers du sous-module (`libmupdf/resources/fonts/`), transformés en tableaux C par
+`generateMupdfResources` (ADR 0013). Licensee ne les voit pas : elles sont vérifiées ici à
+chaque mise à jour de MuPDF. Les autres polices de MuPDF (Noto, Charis SIL, Source Han Serif,
+DroidSansFallbackFull) ne sont pas compilées (ADR 0025).
+
+| Police | Licence | Poids | Rôle |
+|--------|---------|-------|------|
+| URW Base 35 réduites aux 14 polices du PDF et Nimbus Boxes (`urw/*.cff`) | OFL-1.1 (« Copyright 2016 by (URW)++ Design & Development », `urw/OFL.txt`) | 611 954 octets | Les 14 polices standard du PDF (Base 14), toujours présentes |
+| DroidSansFallback (`droid/DroidSansFallback.ttf`, sha-256 `ee38813ea00c3e32add4268fff7fff9e39417b4913cb13be2415164a47807cc2`) | Apache-2.0 (« Copyright (c) 2005-2008, The Android Open Source Project », `droid/NOTICE`) | 3 556 308 octets (3,39 Mio) | Police de secours CJK (ADR 0025) : texte chinois, japonais ou coréen dont la police n'est pas incorporée au PDF, sur un appareil sans police CJK. 20 902 idéogrammes unifiés de base, les 11 172 syllabes hangûl, hiragana, katakana, bopomofo |
+
+Apache-2.0 et OFL-1.1 sont compatibles avec la GPL v3 et l'AGPL v3 pour une police embarquée. Les
+deux demandent de joindre la mention de copyright et le texte de la licence : **l'écran des licences
+(E4, jalon M5, ADR 0003) doit citer ces deux polices**, qu'AboutLibraries ne détecte pas.
+
 ## Debug uniquement (jamais dans l'APK publié)
 
 | Dépendance | Version | Licence | Justification |

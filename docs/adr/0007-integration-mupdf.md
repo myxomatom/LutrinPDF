@@ -61,7 +61,8 @@ uniquement d'un émulateur, alors que la couverture Kover ne compte que les test
 - **Taille** : `libmupdf_java.so` fait 7,6 Mo (armeabi-v7a) à 11,3 Mo (x86_64) ; les APK de
   release par ABI font 8,4 à 12,1 Mo, sous la limite de 15 Mo. Le build d'Artifex exclut les
   polices de secours Noto, CJK et SIL (`TOFU_*`) : un texte CJK dont la police n'est **pas**
-  incorporée au PDF s'affiche en carrés (voir `docs/open-questions.md`).
+  incorporée au PDF s'affiche en carrés (voir `docs/open-questions.md`). **Amendé par l'ADR 0025** : la
+  police de secours CJK DroidSansFallback est compilée, la limite passe à 18 Mo.
 - **Build** : la compilation native ajoute plusieurs minutes (3 ABI Android + la version hôte) ;
   il faut `make`, un compilateur C et les fichiers de développement de freetype2, OpenSSL et
   zlib pour les tests JVM (Linux). La CI les installe.

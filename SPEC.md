@@ -136,7 +136,7 @@ Dans les paramètres, section « Assistants IA » :
 | Performance | Première page affichée en < 1 s pour un PDF de 10 Mo sur un appareil milieu de gamme. Défilement à 60 fps sans saccade. |
 | Mémoire | Pas d'`OutOfMemoryError` sur un PDF de 1 000 pages / 200 Mo. Cache de bitmaps borné (LRU), recyclage des bitmaps hors écran. |
 | Robustesse | Un PDF corrompu ou malformé ne fait jamais planter l'app : message d'erreur clair. Le moteur natif est isolé derrière une interface. |
-| Taille | APK < 15 Mo par ABI (splits par ABI : arm64-v8a, armeabi-v7a, x86_64). |
+| Taille | APK < 18 Mo par ABI (1 Mo = 10⁶ octets ; splits par ABI : arm64-v8a, armeabi-v7a, x86_64). Relevée de 15 à 18 Mo pour embarquer la police de secours CJK de MuPDF ([ADR 0025](docs/adr/0025-police-de-secours-cjk.md)). |
 | Compatibilité | `minSdk` 26 (Android 8.0), `targetSdk` = dernière version stable. |
 | Vie privée | Aucune donnée ne quitte l'appareil. Pas de permission réseau. Pas de journalisation de chemins de fichiers en release. |
 | Sécurité | Fichiers temporaires dans le cache privé, nettoyés à la fermeture. Pas de rendu JavaScript PDF. |

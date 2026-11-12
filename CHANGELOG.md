@@ -10,6 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Police de secours CJK** (ADR 0025) : un texte chinois (simplifié ou traditionnel), japonais
+  ou coréen dont la police n'est pas incorporée au PDF s'affiche avec de vrais glyphes même sur
+  un appareil sans police CJK : MuPDF embarque DroidSansFallback (Apache-2.0), utilisée après
+  les polices du système. Chaque APK grossit de 3,4 Mio ; la limite de `SPEC.md` §3 passe de
+  15 à 18 Mo par ABI. Nouveau fichier de test `cjk_not_embedded.pdf`, vérifié sur la JVM et sur
+  appareil (`CjkFallbackFontCheck`). `generateMupdfResources` n'écrit plus que les ressources
+  compilées (≈ 200 Mo de sources C en moins) ; la bibliothèque des tests JVM a les mêmes
+  polices que l'application.
 - **Transition lecteur → vignette** (ADR 0018 §7, ADR 0019 amendé) : en touchant la carte
   « Reprendre la lecture » ou une ligne des récents, le lecteur apparaît par un simple fondu (la
   vignette qui s'agrandissait, essayée d'abord, était buggée sur appareil ; le rond de
