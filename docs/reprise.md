@@ -320,6 +320,10 @@ récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
     `ArrayList.toArray` : son JNI appelle `toArray(T[])` sans argument) : utiliser
     `Page.search`, qui extrait le texte avec la même option `dehyphenate` ; à revoir à chaque
     mise à jour de MuPDF ;
+  - le constructeur Java de `LinkDestination` (MuPDF 1.28.6) affecte `width` et `height` à
+    eux-mêmes : ils valent toujours 0 ; la taille d'un `FitR` est lue dans l'URI (`viewrect=`) ;
+  - sur une page `/Rotate 90`, MuPDF perd la coordonnée de `/FitH`, `/FitV` et d'un `/XYZ`
+    incomplet (`populate_destination` tourne (0, y) et ne garde que l'axe d'origine) ;
   - `search_for` de PyMuPDF ne trouve pas un mot coupé en fin de ligne, alors que la recherche
     Java de MuPDF (texte extrait avec `dehyphenate`) le trouve : ne pas vérifier le jeu de test
     avec `search_for` ;

@@ -20,10 +20,18 @@ changement y est signalé.
   résultat avec un **extrait** (« …la bibliothèque municipale… ») et un mot coupé en fin de ligne
   trouvé ; **permission de copie** du PDF exposée (`canCopyText`, rapportée sans être
   appliquée). Les liens externes gardent leur URI brute : le lecteur filtrera les schémas.
-  `FakePdfDocument` (`core:testing`) se règle : sommaire, liens, résultats, sélections,
-  permission de copie. Jeu de test enrichi : `text_selection.pdf` (mot coupé, phrase arabe),
-  liens vers le milieu d'une page, destination nommée, liens `mailto:`, `javascript:`, `file:`
-  et relatif, entrée de sommaire externe, sommaire du PDF de 600 pages.
+  Après relecture : recherche à partir d'une page donnée, avec bouclage (`startPage`) ;
+  zones des résultats en `PdfQuad` ; poignées de sélection dans l'ordre de lecture
+  (`TextSelection.start` / `end`) ; `isOnText` pour ignorer un appui long hors du texte ;
+  taille de la zone des destinations `FitR` ; destinations à une coordonnée vers une page
+  tournée d'un quart de tour ramenées au haut de la page (MuPDF perd la valeur) ; la recherche
+  n'évince plus les pages affichées du cache de rendu et ne calcule plus d'extrait pour les
+  résultats au-delà du plafond. `FakePdfDocument` (`core:testing`) se règle : sommaire, liens,
+  résultats, sélections, zones de texte, permission de copie, délai entre les pages d'une
+  recherche ; il lève `PageOutOfRange` et `Closed` comme le moteur. Jeu de test enrichi :
+  `text_selection.pdf` (mot coupé, phrase arabe), `rotated_destinations.pdf`,
+  `search_many_hits.pdf`, liens vers le milieu d'une page, destination nommée, liens `mailto:`,
+  `javascript:`, `file:` et relatif, entrée de sommaire externe, sommaire du PDF de 600 pages.
 - **Transition lecteur → vignette** (ADR 0018 §7, ADR 0019 amendé) : en touchant la carte
   « Reprendre la lecture » ou une ligne des récents, le lecteur apparaît par un simple fondu (la
   vignette qui s'agrandissait, essayée d'abord, était buggée sur appareil ; le rond de
