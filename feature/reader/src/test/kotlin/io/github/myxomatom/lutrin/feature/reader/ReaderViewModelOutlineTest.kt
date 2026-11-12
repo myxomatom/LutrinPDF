@@ -3,6 +3,7 @@ package io.github.myxomatom.lutrin.feature.reader
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.OutlineItem
@@ -150,10 +151,23 @@ class ReaderViewModelOutlineTest {
         viewModel.onExternalOutlineEntry("https://example.org/")
         advanceUntilIdle()
 
-        // Nothing happens yet: the link dialog (V7) is not there to confirm it.
+        // The address waits for its confirmation in V7 (ADR 0022); nothing is opened yet.
+        assertThat(viewModel.linkController.externalLink.value).isEqualTo("https://example.org/")
         assertThat(viewModel.uiState.value).isInstanceOf(ReaderUiState.Ready::class.java)
         assertThat(viewModel.ready.outline.entries).hasSize(1)
         assertThat(viewModel.ready.currentPage).isEqualTo(0)
+    }
+
+    @Test
+    fun `an external entry with a refused scheme is reported, never confirmed`() = runTest(dispatcher) {
+        val viewModel = open(listOf(entry("Script", page = null, uri = "javascript:alert(1)")))
+
+        viewModel.linkController.effects.test {
+            viewModel.onExternalOutlineEntry("javascript:alert(1)")
+
+            assertThat(awaitItem()).isEqualTo(LinkEffect.LinkRefused)
+        }
+        assertThat(viewModel.linkController.externalLink.value).isNull()
     }
 
     @Test

@@ -103,6 +103,7 @@ ADR 0003) doit citer ces polices**, qu'AboutLibraries ne détecte pas.
 | Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
 | AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
 | Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+| Espresso Intents (`espresso-intents`) | 3.7.0 | Apache-2.0 | Tests instrumentés de `app` : vérifie l'intent d'un lien externe confirmé (V7) sans lancer de navigateur (ADR 0022). Même projet et même version qu'`espresso-accessibility` ; tests seulement, absent de l'APK publié |
 | Hilt Android Testing (`hilt-android-testing`) | 2.60.1 | Apache-2.0 | Tests Robolectric de `app` : remplace le moteur MuPDF, que Robolectric ne peut pas charger, par un faux (`@TestInstallIn`, ADR 0014). Même projet et même licence que Hilt |
 | AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
 | AndroidX Test UiAutomator | 2.4.0 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) |

@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,6 +65,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val externalLink by viewModel.linkController.externalLink.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     ReaderScreen(
         state = state,
         onBack = onBack,
@@ -75,6 +78,15 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         },
         onPasswordSubmit = viewModel::onPasswordSubmit,
         documentId = viewModel.documentId,
+        links =
+            ReaderLinks(
+                externalLink = externalLink,
+                effects = viewModel.linkController.effects,
+                onLinkClick = viewModel.linkController::onLinkClick,
+                onExternalLinkConfirm = viewModel.linkController::onExternalLinkConfirm,
+                onExternalLinkDismiss = viewModel.linkController::onExternalLinkDismiss,
+                onOpenExternalLink = { uri -> openExternalLink(context, uri) },
+            ),
         onOutlineOpen = viewModel::onOutlineOpened,
         onOutlineToggle = viewModel::onOutlineToggle,
         onExternalOutlineEntry = viewModel::onExternalOutlineEntry,
@@ -98,6 +110,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param documentId identifier of the document in the recent list: once the app links it, the
  *   page shown shrinks back into its thumbnail in the library (ADR 0019); without it, or outside
  *   of the app's navigation, the reader has no shared element and only fades in and out.
+ * @param links the links of the document (F09) and the confirmation of external ones (V7).
  * @param onOutlineOpen called when the table of contents (V2) is about to open, so that the
  *   current section is expanded in it.
  * @param onOutlineToggle called with the id of an outline entry whose sub-sections are shown or
@@ -115,6 +128,7 @@ fun ReaderScreen(
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
+    links: ReaderLinks = ReaderLinks(),
     onOutlineOpen: () -> Unit = {},
     onOutlineToggle: (Int) -> Unit = {},
     onExternalOutlineEntry: (String) -> Unit = {},
@@ -136,6 +150,7 @@ fun ReaderScreen(
                     onBack = onBack,
                     onPageChange = onPageChange,
                     onScrollModeChange = onScrollModeChange,
+                    links = links,
                     pageTransition = pageTransition,
                     onOutlineOpen = onOutlineOpen,
                     onOutlineToggle = onOutlineToggle,
@@ -160,6 +175,7 @@ private fun ReaderContent(
     onBack: () -> Unit,
     onPageChange: (Int) -> Unit,
     onScrollModeChange: (ScrollMode) -> Unit,
+    links: ReaderLinks,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
     onOutlineOpen: () -> Unit = {},
@@ -199,6 +215,7 @@ private fun ReaderContent(
                 onIndicatorClick = { goToPageVisible = true },
             ),
             pageTransition = pageTransition,
+            links = links,
         )
     }
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
@@ -238,6 +255,7 @@ private fun ReaderScaffold(
     onToggleControls: () -> Unit,
     actions: ReaderBarActions,
     pageTransition: DocumentTransition?,
+    links: ReaderLinks,
 ) {
     Scaffold(
         topBar = {
@@ -263,6 +281,7 @@ private fun ReaderScaffold(
             onZoomChange = onZoomChange,
             controlsVisible = controlsVisible,
             onTap = onToggleControls,
+            links = links,
             onIndicatorClick = actions.onIndicatorClick,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,

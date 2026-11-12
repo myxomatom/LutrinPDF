@@ -17,7 +17,7 @@
 | M1 Moteur PDF | ✅ Terminé ; correctifs de l'audit le 2026-11-04 | — |
 | M2 Lecteur de base | ✅ Terminé (mesuré le 2026-11-08 sur un Xiaomi 23013PC75G, Android 15 / HyperOS, build `benchmarkRelease`) | Défilement continu (PDF de 600 pages) : `frameDurationCpuMs` P50 2,9 / P90 4,0 / P99 8,7 ms, objectif P90 < 16 ms atteint ; page par page : P90 6,6 ms ; ouverture à froid du gros PDF : `timeToFullDisplayMs` médiane 1050 ms ; aucun plantage. Baseline Profile committé ; gain au démarrage à froid d'environ 2,5 % (357,8 contre 367,1 ms), voir ADR 0012 |
 | M3 Fichiers et récents | ✅ Terminé (validé le 2026-11-10 sur un Xiaomi 23013PC75G, Android 15 / HyperOS) | Tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts sur l'appareil ; essais manuels du mainteneur réussis, dont un vrai PDF chiffré. F01 « Ouvrir avec » et partage entrant faits (ADR 0014) ; permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page faits (ADR 0015), testés sous Robolectric. « Retirer des récents » (menu de ligne avec annulation, V8) et « Vider les récents » (E3) faits (ADR 0016). Dialogue de mot de passe (V4) fait, documents protégés dans les récents avec cadenas (schéma Room 2, ADR 0017). Non essayée sur appareil : la migration Room 1→2 d'une base existante. Reportés : copie dans `cacheDir` des URI non seekables (point ouvert 11) ; zoom et décalage de F12 et empreinte des documents (point ouvert 16) reportés |
-| M4 Navigation, recherche, sélection | 🚧 En cours | Lot 1 (API texte et destinations du moteur, ADR 0020), lot 2 (« Aller à la page », V3) et lot 3 (table des matières, V2, ADR 0021) faits ; restent les liens (F09, V7, lot 4 ; les entrées externes du sommaire y seront branchées), la recherche (F07, V1) et la sélection (F08) |
+| M4 Navigation, recherche, sélection | 🚧 En cours | Lot 1 (API texte et destinations du moteur, ADR 0020), lot 2 (« Aller à la page », V3), lot 3 (table des matières, V2, ADR 0021) et lot 4 (liens, V7, ADR 0022 ; les entrées externes du sommaire passent par V7) faits ; restent la recherche (F07, V1) et la sélection (F08) |
 | M5 à M8 | ⏳ À faire | — |
 
 ### Vues
@@ -32,7 +32,8 @@
 | V8 Erreur / état vide | 🟡 Partielle | Document endommagé, non PDF, inaccessible ; « Retirer des récents » pour un document de la liste (ADR 0016) ; un document protégé ouvre V4 (ADR 0017) |
 | V4 Mot de passe | ✅ Faite | Dialogue au-dessus du lecteur, champ masqué avec œil, erreur annoncée, essais illimités, mot de passe jamais gardé (ADR 0017) ; essais sur appareil à faire |
 | E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; « Données et confidentialité » : « Vider les récents » avec confirmation (ADR 0016) ; thème, rendu, lecture en M5 |
-| Autres (E4–E10, V1, V5, V7, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| V7 Lien externe | ✅ Faite | Confirmation d'un lien `http`, `https` ou `mailto` (lien complet, copier, annuler, ouvrir par `ACTION_VIEW`) ; autres schémas refusés ; liens internes avec « Revenir » ; actions TalkBack (ADR 0022) ; essais sur appareil à faire |
+| Autres (E4–E10, V1, V5, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette

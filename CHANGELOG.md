@@ -10,6 +10,17 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Liens du document** (F09, V7, M4 lot 4, ADR 0022) : un toucher sur un lien interne montre
+  sa destination, à sa position en défilement continu, puis « Vous étiez à la page N. » propose
+  « Revenir » ; un lien externe `http`, `https` ou `mailto` ouvre la confirmation V7 (lien
+  complet, « Copier le lien », « Annuler », « Ouvrir »), et « Ouvrir » le confie à une autre
+  application par `ACTION_VIEW` (`CATEGORY_BROWSABLE`) : Lutrin n'accède toujours pas au réseau.
+  Tout autre schéma (`javascript:`, `file:`, `content:`, `intent:`…), les liens relatifs ou mal
+  formés sont refusés avec un message bref (`CheckExternalLinkUseCase`, `core:domain`). Les liens
+  fonctionnent au zoom et dans les deux modes ; un toucher ailleurs bascule toujours le plein
+  écran. TalkBack : une action par lien de la page courante (« Lien : page 3 »). Liens lus à la
+  demande, gardés pour 64 pages. Les entrées externes de la table des matières passent par le
+  même filtre et la même confirmation.
 - **Table des matières** (M4, lot 3, F06, V2, ADR 0021) : une icône « Table des matières » dans
   la barre du lecteur (cachée pour un document sans sommaire) ouvre un **tiroir latéral**, de
   droite pour une écriture de droite à gauche. Il s'ouvre sur la **section courante**, dépliée et
@@ -18,8 +29,8 @@ changement y est signalé.
   (grands sommaires). Le titre de la section visée s'affiche sous « Page N » dans l'aperçu du
   curseur. TalkBack annonce le niveau, l'état déplié et la page cible ; cibles de 48 dp. Les
   entrées qui mènent hors du document portent une icône « lien externe » et appellent
-  `ReaderViewModel.onExternalOutlineEntry(uri)`, **qui ne fait rien pour l'instant** : le
-  dialogue de confirmation V7 (lot 4) la branchera ; le lecteur n'ouvre jamais d'URI seul.
+  `ReaderViewModel.onExternalOutlineEntry(uri)`, branchée par le lot 4 sur la confirmation V7 ;
+  le lecteur n'ouvre jamais d'URI seul.
 - **Texte CJK dont la police n'est pas incorporée** (ADR 0025) : dessiné avec les polices CJK du
   système, que MuPDF cherche dans `/system/fonts` ; aucune police CJK n'est embarquée (APK
   inchangés, limite de `SPEC.md` §3 gardée à 15 Mo ; DroidSansFallback, essayée, ajoutait 3,4 Mio

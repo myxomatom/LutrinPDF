@@ -200,4 +200,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
+    // Checks the intent of a confirmed external link without starting a browser (ADR 0022).
+    androidTestImplementation(libs.androidx.test.espresso.intents)
 }
