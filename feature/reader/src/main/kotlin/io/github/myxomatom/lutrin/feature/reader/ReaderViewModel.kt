@@ -25,7 +25,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Opens the document given in the navigation arguments ([READER_URI_ARG]) and keeps it open while
@@ -36,6 +38,10 @@ import kotlinx.coroutines.launch
  * list can be removed from it from the error screen (V8, [onRemoveFromRecents]). Also follows the
  * scroll mode (F03) and page preview (F05, ADR 0018) settings, and remembers the current page, so
  * that switching mode keeps it.
+ *
+ * The outline of the document (F06, ADR 0021) is read once the document is shown, off the main
+ * thread, and flattened into [ReaderUiState.Ready.outline] with the section of the current page;
+ * [onOutlineOpened] and [onOutlineToggle] drive which sections are expanded.
  *
  * An encrypted document asks for its password ([ReaderUiState.PasswordRequired], V4, F10); each
  * password tried ([onPasswordSubmit]) goes through the same opening as any document, so that a
@@ -50,7 +56,7 @@ import kotlinx.coroutines.launch
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param history the recent list and the reading position of this document.
  */
-@Suppress("LongParameterList") // Dependencies injected by Hilt.
+@Suppress("LongParameterList", "TooManyFunctions") // Hilt dependencies; one short handler per user action.
 @HiltViewModel
 class ReaderViewModel
 @Inject
@@ -66,6 +72,7 @@ constructor(
     private val requestedPage: Int? = savedStateHandle.get<Int>(READER_PAGE_ARG)?.takeIf { it >= 0 }
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
+    private val outline = MutableStateFlow(ReaderOutline())
     private var document: PdfDocument? = null
 
     /**
@@ -77,9 +84,14 @@ constructor(
 
     /** State of the screen; [ReaderUiState.Ready] once the document and the settings are read. */
     val uiState: StateFlow<ReaderUiState> =
-        combine(documentState, observeSettings(), currentPage) { state, settings, page ->
+        combine(documentState, observeSettings(), currentPage, outline) { state, settings, page, outline ->
             if (state is ReaderUiState.Ready) {
-                state.copy(scrollMode = settings.scrollMode, pagePreview = settings.pagePreview, currentPage = page)
+                state.copy(
+                    scrollMode = settings.scrollMode,
+                    pagePreview = settings.pagePreview,
+                    currentPage = page,
+                    outline = outline.withCurrentSection(page),
+                )
             } else {
                 state
             }
@@ -107,6 +119,36 @@ constructor(
     fun onScrollModeChange(mode: ScrollMode) {
         viewModelScope.launch { setScrollMode(mode) }
     }
+
+    /**
+     * The table of contents is about to be shown: expands the path down to the section of the
+     * current page, so that it is visible and highlighted (F06). Sections the user expanded stay
+     * expanded. Ignored while the document has no outline.
+     */
+    fun onOutlineOpened() {
+        val page = currentPage.value
+        outline.update { it.withCurrentSection(page).revealingCurrentSection() }
+    }
+
+    /**
+     * Expands the sub-sections of an outline entry that is collapsed, or collapses one that is
+     * expanded. Ignored for an unknown entry and for an entry without sub-sections.
+     *
+     * @param id [OutlineEntry.id] of the entry.
+     */
+    fun onOutlineToggle(id: Int) {
+        outline.update { it.toggling(id) }
+    }
+
+    /**
+     * The user chose an outline entry that leads outside the document ([OutlineTarget.External]).
+     * Does nothing yet: the confirmation of external links (V7, F09) takes it over, and until then
+     * the reader never opens an address by itself (ADR 0021).
+     *
+     * @param uri address of the entry, as the engine reads it, whatever its scheme.
+     */
+    @Suppress("UNUSED_PARAMETER", "UnusedParameter", "EmptyFunctionBlock") // Placeholder for the link dialog.
+    fun onExternalOutlineEntry(uri: String) = Unit
 
     /**
      * Tries [password] on the encrypted document. Ignored unless the password is asked
@@ -164,6 +206,23 @@ constructor(
             )
         val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title, isProtected)
         viewModelScope.launch { history.follow(opening, currentPage) }
+        viewModelScope.launch { loadOutline(opened) }
+    }
+
+    /**
+     * Reads the outline and flattens it, off the main thread. A document whose outline cannot be
+     * read is read without one: the table of contents is a help, not a reason to refuse it.
+     */
+    private suspend fun loadOutline(opened: PdfDocument) {
+        val entries =
+            withContext(renderDispatcher) {
+                try {
+                    flattenOutline(opened.outline(), opened.pageCount)
+                } catch (ignored: PdfError) {
+                    emptyList()
+                }
+            }
+        outline.update { it.copy(entries = entries) }
     }
 
     private suspend fun failureState(error: Throwable): ReaderUiState = when (error) {

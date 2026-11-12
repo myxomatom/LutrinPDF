@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +53,8 @@ import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.ui.theme.titleLargeCompact
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
 import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
+import io.github.myxomatom.lutrin.feature.reader.OutlineEntry
+import io.github.myxomatom.lutrin.feature.reader.OutlineTarget
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
@@ -69,6 +75,9 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         },
         onPasswordSubmit = viewModel::onPasswordSubmit,
         documentId = viewModel.documentId,
+        onOutlineOpen = viewModel::onOutlineOpened,
+        onOutlineToggle = viewModel::onOutlineToggle,
+        onExternalOutlineEntry = viewModel::onExternalOutlineEntry,
     )
 }
 
@@ -89,6 +98,12 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param documentId identifier of the document in the recent list: once the app links it, the
  *   page shown shrinks back into its thumbnail in the library (ADR 0019); without it, or outside
  *   of the app's navigation, the reader has no shared element and only fades in and out.
+ * @param onOutlineOpen called when the table of contents (V2) is about to open, so that the
+ *   current section is expanded in it.
+ * @param onOutlineToggle called with the id of an outline entry whose sub-sections are shown or
+ *   hidden.
+ * @param onExternalOutlineEntry called with the address of an outline entry that leads outside
+ *   the document; the drawer stays open and the confirmation of external links (V7) takes over.
  */
 @Composable
 fun ReaderScreen(
@@ -100,6 +115,9 @@ fun ReaderScreen(
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
+    onOutlineOpen: () -> Unit = {},
+    onOutlineToggle: (Int) -> Unit = {},
+    onExternalOutlineEntry: (String) -> Unit = {},
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -119,6 +137,9 @@ fun ReaderScreen(
                     onPageChange = onPageChange,
                     onScrollModeChange = onScrollModeChange,
                     pageTransition = pageTransition,
+                    onOutlineOpen = onOutlineOpen,
+                    onOutlineToggle = onOutlineToggle,
+                    onExternalOutlineEntry = onExternalOutlineEntry,
                 )
         }
     }
@@ -141,6 +162,9 @@ private fun ReaderContent(
     onScrollModeChange: (ScrollMode) -> Unit,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
+    onOutlineOpen: () -> Unit = {},
+    onOutlineToggle: (Int) -> Unit = {},
+    onExternalOutlineEntry: (String) -> Unit = {},
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
@@ -152,10 +176,79 @@ private fun ReaderContent(
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
     ReportCurrentPage(navigator, onPageChange)
     ImmersiveMode(enabled = !controlsVisible)
-    Scaffold(
+    OutlineHost(
+        state = state,
+        navigator = navigator,
+        onOpen = onOutlineOpen,
+        onToggle = onOutlineToggle,
+        onExternalEntry = onExternalOutlineEntry,
         modifier = modifier,
+    ) { openOutline ->
+        ReaderScaffold(
+            state = state,
+            navigator = navigator,
+            scrubber = scrubber,
+            zoom = zoom,
+            onZoomChange = { zoom = it },
+            controlsVisible = controlsVisible,
+            onToggleControls = { controlsVisible = !controlsVisible },
+            actions = ReaderBarActions(
+                onBack = onBack,
+                onMoreOptions = { optionsVisible = true },
+                onOutline = openOutline,
+                onIndicatorClick = { goToPageVisible = true },
+            ),
+            pageTransition = pageTransition,
+        )
+    }
+    GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
+    OptionsSheet(optionsVisible, state.scrollMode, onScrollModeChange, onDismiss = { optionsVisible = false })
+}
+
+/** The display options (V6) over the reader, when [visible]. */
+@Composable
+private fun OptionsSheet(
+    visible: Boolean,
+    scrollMode: ScrollMode,
+    onScrollModeChange: (ScrollMode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (!visible) return
+    ReaderOptionsSheet(scrollMode = scrollMode, onScrollModeChange = onScrollModeChange, onDismiss = onDismiss)
+}
+
+/** What the bars of the reader do: back, the two buttons of the top bar and the page indicator. */
+private class ReaderBarActions(
+    val onBack: () -> Unit,
+    val onMoreOptions: () -> Unit,
+    val onOutline: (() -> Unit)?,
+    val onIndicatorClick: () -> Unit,
+)
+
+/** The top bar over the reading area, which the table of contents drawer covers. */
+@Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
+@Composable
+private fun ReaderScaffold(
+    state: ReaderUiState.Ready,
+    navigator: PageNavigator,
+    scrubber: PageScrubber,
+    zoom: Float,
+    onZoomChange: (Float) -> Unit,
+    controlsVisible: Boolean,
+    onToggleControls: () -> Unit,
+    actions: ReaderBarActions,
+    pageTransition: DocumentTransition?,
+) {
+    Scaffold(
         topBar = {
-            if (controlsVisible) ReaderTopBar(state.title, onBack, onMoreOptions = { optionsVisible = true })
+            if (controlsVisible) {
+                ReaderTopBar(
+                    title = state.title,
+                    onBack = actions.onBack,
+                    onMoreOptions = actions.onMoreOptions,
+                    onOutline = actions.onOutline,
+                )
+            }
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         // The pages run down to the bottom of the screen, under the floating bar and the
@@ -167,20 +260,12 @@ private fun ReaderContent(
             navigator = navigator,
             scrubber = scrubber,
             zoom = zoom,
-            onZoomChange = { zoom = it },
+            onZoomChange = onZoomChange,
             controlsVisible = controlsVisible,
-            onTap = { controlsVisible = !controlsVisible },
-            onIndicatorClick = { goToPageVisible = true },
+            onTap = onToggleControls,
+            onIndicatorClick = actions.onIndicatorClick,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,
-        )
-    }
-    GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
-    if (optionsVisible) {
-        ReaderOptionsSheet(
-            scrollMode = state.scrollMode,
-            onScrollModeChange = onScrollModeChange,
-            onDismiss = { optionsVisible = false },
         )
     }
 }
@@ -218,13 +303,21 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
 }
 
 /**
- * Top bar of the reader: back, title and, once a document is open, « More options » (V6).
+ * Top bar of the reader: back, title and, once a document is open, the table of contents (V2)
+ * and « More options » (V6).
  *
  * @param onMoreOptions opens the display options; `null` hides the button (error screen).
+ * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
+ *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ReaderTopBar(title: String, onBack: () -> Unit, onMoreOptions: (() -> Unit)? = null) {
+internal fun ReaderTopBar(
+    title: String,
+    onBack: () -> Unit,
+    onMoreOptions: (() -> Unit)? = null,
+    onOutline: (() -> Unit)? = null,
+) {
     TopAppBar(
         title = {
             Text(
@@ -240,6 +333,14 @@ internal fun ReaderTopBar(title: String, onBack: () -> Unit, onMoreOptions: (() 
             }
         },
         actions = {
+            if (onOutline != null) {
+                IconButton(onClick = onOutline) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.List,
+                        contentDescription = stringResource(R.string.reader_outline_title),
+                    )
+                }
+            }
             if (onMoreOptions != null) {
                 IconButton(onClick = onMoreOptions) {
                     Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.reader_more_options))
