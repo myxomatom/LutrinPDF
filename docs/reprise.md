@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31) ; recherche et sélection à faire |
+| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31, mergée) ; lot 5 « recherche » fait (ADR 0023, branche `feat/reader-search`) ; sélection à faire |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -99,10 +99,10 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **M4, lots suivants**, sur l'API du lot 1 (ADR 0020) (sommaire et liens faits, ADR 0021 et
-   0022, entrées externes du sommaire comprises) : recherche avec
-   progression (`SearchPageResult`), extraits et « 1 000 résultats ou plus » ; sélection par
-   appui long (`selectText`, `SelectionMode.Words`), copie refusée si `canCopyText` est faux.
+0. **M4, lot suivant**, sur l'API du lot 1 (ADR 0020) (sommaire, liens et recherche faits,
+   ADR 0021 à 0023) : sélection par appui long (`selectText`, `SelectionMode.Words`), copie
+   refusée si `canCopyText` est faux ; la sélection dessinera ses zones comme le calque de
+   recherche (`SearchHighlightLayer` dans `PdfPage`).
    Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur appareil (CI seulement).
 1. **M3 Fichiers et récents** :
    - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
@@ -182,6 +182,20 @@ appareil** : `links_internal_external.pdf` (jeu de test) au doigt, zoomé et pag
 lien `mailto` ; un téléphone sans navigateur (message) ; « Copier le lien » (confirmation du
 système dès Android 13) ; TalkBack (actions « Lien : … ») ; test instrumenté `LinksInstrumentedTest`.
 
+**M4, lot 5 : recherche** (F07, V1, ADR 0023, branche `feat/reader-search`, pas encore sur
+appareil). L'icône « Rechercher » de la barre du haut ouvre la barre de recherche (`SearchBar`) ;
+`SearchController` (paquet `search`, détenu par `ReaderViewModel`) lance la recherche 400 ms après
+la frappe ou à la validation, depuis la page courante, fusionne les résultats en ordre du document
+sur le dispatcher injecté (`SearchResults`, résultat courant `HitRef`) et demande au lecteur d'aller
+au premier trouvé, puis au suivant ou au précédent (`PageNavigator.reveal`, centré en continu).
+Surlignage : `SearchHighlightLayer` dans `PdfPage` (couleurs `LutrinReaderColors` de `core:ui`).
+Carte d'extrait (`SearchResultCard`) à la place de la barre flottante. **À essayer sur appareil** :
+le PDF de 600 pages (fluidité pendant le parcours, rang qui change après le bouclage, aller au
+premier résultat), `search_many_hits.pdf` (800 résultats sur une page, surlignage au zoom),
+`text_selection.pdf` (mot coupé, arabe), `scanned_images_only.pdf` (aucun résultat), TalkBack
+(annonce du nombre puis du résultat), clavier physique (Entrée), rotation pendant une recherche,
+mode page par page ; test instrumenté `SearchInstrumentedTest` (jamais exécuté sur appareil).
+
 **M4, lot des polices CJK** (ADR 0025, PR #28) : pas de police CJK embarquée. MuPDF dessine le
 texte CJK non incorporé avec les polices du système (`androidfonts.c` lit `/system/fonts`, quel
 que soit `TOFU_CJK`) ; carrés sur un appareil sans police CJK (limite connue). DroidSansFallback a
@@ -192,7 +206,7 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0017) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0025) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -411,6 +425,17 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     avec `search_for` ;
   - avec `python -I`, `PYTHONIOENCODING` est ignoré : utiliser `-X utf8` pour afficher de
     l'arabe dans une console Windows.
+- **Tests de la recherche** (lot 5, ADR 0023) :
+  - le premier résultat trouvé est envoyé dans le canal des effets avant qu'un test ne le
+    collecte : `effects.test { awaitItem() }` le reçoit d'abord (`SearchControllerTest`) ;
+  - sous Robolectric, un `SearchController` créé dans la composition avec
+    `rememberCoroutineScope()` suit l'horloge du test : `mainClock.advanceTimeBy(500)` passe le
+    délai de 400 ms après la frappe (`ReaderSearchTest`) ;
+  - une `FilterChip` expose `Selected`, pas `ToggleableState` : `assertIsSelected()` ;
+  - avant `Espresso.pressBack()`, valider le champ (`performImeAction()`) pour fermer le
+    clavier, sinon le premier retour ne ferme pas la recherche ;
+  - l'icône « Rechercher » de la barre du haut a changé les captures du lecteur
+    (`reader_*`, `outline_preview_section_light`), réenregistrées.
 - **Tests Compose du tiroir** (lot 3) : `@Config(qualifiers = "+fr")` (avec le `+`) ajoute la
   langue à celle de la classe, sans `+` elle échoue (« unrecognized trailing qualifier ») ; pour
   une capture à 200 %, `@Config(fontScale = 2f)` garde la taille des icônes, alors que

@@ -10,6 +10,21 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Recherche dans le document** (F07, V1, M4 lot 5, ADR 0023) : l'icône « Rechercher » de la
+  barre du lecteur fait place à une barre de recherche ; la recherche part 400 ms après la
+  dernière frappe ou à la validation du clavier, depuis la page affichée, avec bouclage, et
+  annule la précédente. Les résultats arrivent au fil de l'eau (compteur « 2 / 5… » et barre de
+  progression), le lecteur va au premier dès qu'il est trouvé ; « 1 000+ » au plafond.
+  « Résultat suivant » et « Résultat précédent » bouclent et centrent le résultat (page par
+  page, changent de page). Options « Respecter la casse » et « Respecter les accents »,
+  désactivées par défaut, gardées le temps de la session ; en changer relance la recherche. Les
+  occurrences des pages visibles sont surlignées dans les deux modes, la courante d'une couleur
+  plus soutenue avec un contour (jetons `color.reader`, `LutrinReaderColors`). Une carte en bas
+  montre la page, la section et l'extrait du résultat courant, ou « Aucun résultat » avec une
+  phrase sur les documents numérisés sans texte. Retour ferme la recherche et efface les
+  surlignages. TalkBack annonce le début et le résultat de la recherche, puis le résultat atteint,
+  sans répétition pendant le parcours ; cibles de 48 dp. Recherche et fusion des résultats hors
+  du fil principal.
 - **Liens du document** (F09, V7, M4 lot 4, ADR 0022) : un toucher sur un lien interne montre
   sa destination, à sa position en défilement continu, puis « Vous étiez à la page N. » propose
   « Revenir » ; un lien externe `http`, `https` ou `mailto` ouvre la confirmation V7 (lien
