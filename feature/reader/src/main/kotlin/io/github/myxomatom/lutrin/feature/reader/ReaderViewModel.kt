@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
+import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
@@ -17,6 +18,8 @@ import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
+import io.github.myxomatom.lutrin.feature.reader.links.LinkController
+import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -49,6 +52,10 @@ import kotlinx.coroutines.launch
  *   document (ADR 0011, ADR 0018).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param history the recent list and the reading position of this document.
+ * @param checkExternalLink decides which external links may be offered to another app (ADR 0022).
+ *
+ * The links of the document (F09, ADR 0022) are followed by [linkController]; their effects
+ * are handled by the screen, since the ViewModel never sees a `Context`.
  */
 @Suppress("LongParameterList") // Dependencies injected by Hilt.
 @HiltViewModel
@@ -61,12 +68,21 @@ constructor(
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
     private val history: ReadingHistory,
+    private val checkExternalLink: CheckExternalLinkUseCase = CheckExternalLinkUseCase(),
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
     private val requestedPage: Int? = savedStateHandle.get<Int>(READER_PAGE_ARG)?.takeIf { it >= 0 }
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
     private var document: PdfDocument? = null
+
+    /**
+     * Links of the document (F09, ADR 0022): what a tap or a TalkBack action on a link does, and
+     * the confirmation of external links (V7). Entries of the outline leading out of the
+     * document go through [LinkController.onExternalLink] too.
+     */
+    val linkController: LinkController =
+        LinkController(checkExternalLink) { (documentState.value as? ReaderUiState.Ready)?.pageSizes?.size }
 
     /**
      * Identifier of the document in the recent list (`documentIdFor`, ADR 0015), known before it
@@ -161,6 +177,7 @@ constructor(
                 title = title,
                 pageSizes = sizes,
                 renderer = PageRenderer(opened, sizes, renderDispatcher),
+                links = PageLinks(opened, renderDispatcher),
             )
         val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title, isProtected)
         viewModelScope.launch { history.follow(opening, currentPage) }

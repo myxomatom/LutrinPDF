@@ -26,8 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -36,9 +35,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
-import io.github.myxomatom.lutrin.feature.reader.render.fitPageWidth
 import io.github.myxomatom.lutrin.feature.reader.render.scrollAfterGesture
-import io.github.myxomatom.lutrin.feature.reader.render.zoomedExtent
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.drop
 
@@ -58,11 +55,13 @@ private val PAGE_MARGIN = 16.dp
  * @param pagerState current page and swipe state; hoisted so that the slider can move it.
  * @param zoom current zoom, 1 = whole page; hoisted so that the screen can reset it.
  * @param onZoomChange called with the new, clamped zoom.
- * @param onTap called on a single tap, to show or hide the controls (F14).
+ * @param onTap called on a single tap with the page and the point tapped, `null` outside the
+ *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
  * @param bottomClearance height of the floating bar laid over the bottom of the pages (ADR 0018):
  *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
+ * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
  */
 @Composable
 internal fun PdfPagerView(
@@ -71,12 +70,13 @@ internal fun PdfPagerView(
     pagerState: PagerState,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
-    onTap: () -> Unit,
+    onTap: (PageHit?) -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
     nightMode: Boolean = false,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
+    linkActions: List<CustomAccessibilityAction> = emptyList(),
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -84,7 +84,7 @@ internal fun PdfPagerView(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         HorizontalPager(
             state = pagerState,
-            modifier = modifier.fillMaxSize().semantics { this.contentDescription = contentDescription },
+            modifier = modifier.fillMaxSize().documentSemantics(contentDescription, linkActions),
             userScrollEnabled = zoom <= 1f,
             key = { it },
         ) { index ->
@@ -128,7 +128,7 @@ private fun ZoomablePage(
     renderer: PageRenderer,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
-    onTap: () -> Unit,
+    onTap: (PageHit?) -> Unit,
     pagerMoving: Boolean,
     nightMode: Boolean,
     bottomClearance: Dp,
@@ -140,22 +140,27 @@ private fun ZoomablePage(
     var viewport by remember { mutableStateOf<Viewport?>(null) }
     val commit = rememberPageCommit(zoom, onZoomChange, horizontal, vertical)
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight)
+        val layout =
+            rememberPagedLayout(page, IntSize(constraints.maxWidth, constraints.maxHeight), bottomClearance, zoom)
+        val onPageTap: (Offset) -> Unit = { position ->
+            val placement = layout.placement(pageIndex, page, zoom, horizontal.value, vertical.value)
+            onTap(hitTest(position.x, position.y, listOf(placement), listOf(page))?.copy(pageIndex = pageIndex))
+        }
         Box(
             Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { viewport = Viewport(it, it.size) }
-                .zoomGestures(zoom, onPinch = { pinch = it }, commit = commit, onTap = onTap)
+                .zoomGestures(zoom, onPinch = { pinch = it }, commit = commit, onTap = onPageTap)
                 .pinchLayer { pinch }
                 .verticalScroll(vertical, enabled = zoom > 1f)
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
         ) {
-            ZoomedArea(viewportSize, page, zoom, bottomClearance) { fitWidth ->
+            ZoomedArea(layout) {
                 PdfPage(
                     pageIndex = pageIndex,
                     page = page,
                     renderer = renderer,
-                    fitWidth = fitWidth,
+                    fitWidth = layout.fitWidth,
                     viewport = viewport,
                     zoom = zoom,
                     settled = pinch == null && !pagerMoving && !horizontal.isScrollInProgress &&
@@ -168,6 +173,17 @@ private fun ZoomablePage(
     }
 }
 
+/** Layout of [page] in the [viewport] at [zoom], with the floating bar [bottomClearance] ([pagedPageLayout]). */
+@Composable
+private fun rememberPagedLayout(page: PageSize, viewport: IntSize, bottomClearance: Dp, zoom: Float): PagedPageLayout {
+    val density = LocalDensity.current
+    val clearance = with(density) { bottomClearance.roundToPx() }
+    val margin = with(density) { PAGE_MARGIN.roundToPx() }
+    return remember(page, viewport, clearance, margin, zoom) {
+        pagedPageLayout(page, viewport, clearance, margin, zoom)
+    }
+}
+
 /**
  * Pinch, double tap and tap on a page: a pinch is reported at every move, then `null` once it is
  * committed; a double tap is committed at once.
@@ -177,7 +193,7 @@ private fun Modifier.zoomGestures(
     zoom: Float,
     onPinch: (PinchTransform?) -> Unit,
     commit: (PinchTransform) -> Unit,
-    onTap: () -> Unit,
+    onTap: (Offset) -> Unit,
 ): Modifier = readerGestures(
     zoom = zoom,
     onPinch = onPinch,
@@ -190,29 +206,19 @@ private fun Modifier.zoomGestures(
 )
 
 /**
- * The page area at [zoom]: the viewport above the [bottomClearance] scaled by the zoom
- * ([zoomedExtent]), the page centred in it, followed by the clearance itself, which does not
- * scale. [content] draws the page and receives its width at zoom 1, fitting it above the
- * clearance. At zoom 1 the whole area is the viewport: nothing scrolls.
+ * The page area of [layout] ([pagedPageLayout]): the zoomable area, the page centred in it,
+ * followed by the clearance of the floating bar, which does not scale. At zoom 1 the whole area
+ * is the viewport: nothing scrolls.
  */
 @Composable
-private fun ZoomedArea(
-    viewportSize: IntSize,
-    page: PageSize,
-    zoom: Float,
-    bottomClearance: Dp,
-    content: @Composable (fitWidth: Int) -> Unit,
-) {
+private fun ZoomedArea(layout: PagedPageLayout, content: @Composable () -> Unit) {
     val density = LocalDensity.current
-    val margin = with(density) { PAGE_MARGIN.roundToPx() }
-    // Never the whole viewport: a window too low for the bar still shows some of the page.
-    val clearance = minOf(with(density) { bottomClearance.roundToPx() }, viewportSize.height / 2).coerceAtLeast(0)
-    val pageAreaHeight = viewportSize.height - clearance
-    val width = with(density) { zoomedExtent(viewportSize.width, zoom).toDp() }
-    val height = with(density) { zoomedExtent(pageAreaHeight, zoom).toDp() }
-    Box(Modifier.size(width, height + with(density) { clearance.toDp() }), contentAlignment = Alignment.TopCenter) {
+    val width = with(density) { layout.areaWidth.toDp() }
+    val height = with(density) { layout.areaHeight.toDp() }
+    val clearance = with(density) { layout.clearance.toDp() }
+    Box(Modifier.size(width, height + clearance), contentAlignment = Alignment.TopCenter) {
         Box(Modifier.size(width, height), contentAlignment = Alignment.Center) {
-            content(fitPageWidth(page, viewportSize.width, pageAreaHeight, margin))
+            content()
         }
     }
 }

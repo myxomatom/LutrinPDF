@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -58,6 +59,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val externalLink by viewModel.linkController.externalLink.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     ReaderScreen(
         state = state,
         onBack = onBack,
@@ -69,6 +72,15 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         },
         onPasswordSubmit = viewModel::onPasswordSubmit,
         documentId = viewModel.documentId,
+        links =
+            ReaderLinks(
+                externalLink = externalLink,
+                effects = viewModel.linkController.effects,
+                onLinkClick = viewModel.linkController::onLinkClick,
+                onExternalLinkConfirm = viewModel.linkController::onExternalLinkConfirm,
+                onExternalLinkDismiss = viewModel.linkController::onExternalLinkDismiss,
+                onOpenExternalLink = { uri -> openExternalLink(context, uri) },
+            ),
     )
 }
 
@@ -89,6 +101,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param documentId identifier of the document in the recent list: once the app links it, the
  *   page shown shrinks back into its thumbnail in the library (ADR 0019); without it, or outside
  *   of the app's navigation, the reader has no shared element and only fades in and out.
+ * @param links the links of the document (F09) and the confirmation of external ones (V7).
  */
 @Composable
 fun ReaderScreen(
@@ -100,6 +113,7 @@ fun ReaderScreen(
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
+    links: ReaderLinks = ReaderLinks(),
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -118,6 +132,7 @@ fun ReaderScreen(
                     onBack = onBack,
                     onPageChange = onPageChange,
                     onScrollModeChange = onScrollModeChange,
+                    links = links,
                     pageTransition = pageTransition,
                 )
         }
@@ -139,6 +154,7 @@ private fun ReaderContent(
     onBack: () -> Unit,
     onPageChange: (Int) -> Unit,
     onScrollModeChange: (ScrollMode) -> Unit,
+    links: ReaderLinks,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
 ) {
@@ -154,9 +170,7 @@ private fun ReaderContent(
     ImmersiveMode(enabled = !controlsVisible)
     Scaffold(
         modifier = modifier,
-        topBar = {
-            if (controlsVisible) ReaderTopBar(state.title, onBack, onMoreOptions = { optionsVisible = true })
-        },
+        topBar = { if (controlsVisible) ReaderTopBar(state.title, onBack, onMoreOptions = { optionsVisible = true }) },
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         // The pages run down to the bottom of the screen, under the floating bar and the
         // navigation bar: the bar keeps clear of the bottom insets itself (ADR 0018).
@@ -170,6 +184,7 @@ private fun ReaderContent(
             onZoomChange = { zoom = it },
             controlsVisible = controlsVisible,
             onTap = { controlsVisible = !controlsVisible },
+            links = links,
             onIndicatorClick = { goToPageVisible = true },
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,

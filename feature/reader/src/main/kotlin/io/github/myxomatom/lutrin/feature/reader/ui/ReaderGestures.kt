@@ -55,7 +55,8 @@ internal fun Modifier.pinchLayer(pinch: () -> PinchTransform?): Modifier = graph
  * @param onPinch transform since the start of the pinch, at every move.
  * @param onPinchEnd final transform of the pinch, when the fingers lift.
  * @param onDoubleTap called with the tapped point.
- * @param onTap called on a single tap.
+ * @param onTap called on a single tap, with the tapped point (in the coordinates of the modified
+ *   element), to activate a link under it or else switch to full screen (F09, F14).
  */
 @Composable
 internal fun Modifier.readerGestures(
@@ -63,7 +64,7 @@ internal fun Modifier.readerGestures(
     onPinch: (PinchTransform) -> Unit,
     onPinchEnd: (PinchTransform) -> Unit,
     onDoubleTap: (Offset) -> Unit,
-    onTap: () -> Unit,
+    onTap: (Offset) -> Unit,
 ): Modifier {
     val currentZoom by rememberUpdatedState(zoom)
     val currentOnPinch by rememberUpdatedState(onPinch)
@@ -75,7 +76,7 @@ internal fun Modifier.readerGestures(
         onPinch = { currentOnPinch(it) },
         onPinchEnd = { currentOnPinchEnd(it) },
     ).pointerInput(Unit) {
-        detectTapGestures(onTap = { currentOnTap() }, onDoubleTap = { currentOnDoubleTap(it) })
+        detectTapGestures(onTap = { currentOnTap(it) }, onDoubleTap = { currentOnDoubleTap(it) })
     }
 }
 

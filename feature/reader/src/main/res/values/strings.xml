@@ -33,6 +33,21 @@
     <string name="reader_password_hide">Hide password</string>
     <string name="reader_password_open">Open</string>
     <string name="reader_password_cancel">Cancel</string>
+    <!-- Links of the document (F09) and confirmation of an external link (V7, ADR 0022). -->
+    <string name="reader_link_title">Open an external link?</string>
+    <string name="reader_link_message">Lutrin does not access the internet. The link will open in the app of your choice.</string>
+    <string name="reader_link_open">Open</string>
+    <string name="reader_link_copy">Copy link</string>
+    <string name="reader_link_cancel">Cancel</string>
+    <string name="reader_link_copied">Link copied</string>
+    <string name="reader_link_refused">This link cannot be opened.</string>
+    <string name="reader_link_no_app">No app can open this link.</string>
+    <!-- After following a link to another page; %1$d is the page the user was on. -->
+    <string name="reader_link_return_message">You were on page %1$d.</string>
+    <string name="reader_link_return_action">Go back</string>
+    <!-- TalkBack actions of the page, one per link. -->
+    <string name="reader_link_action_page">Link: page %1$d</string>
+    <string name="reader_link_action_external">Link: %1$s</string>
     <string name="reader_page_indicator_action">Go to a page</string>
     <string name="reader_goto_title">Go to page</string>
     <string name="reader_goto_label">Page number</string>

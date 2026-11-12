@@ -4,7 +4,9 @@ package io.github.myxomatom.lutrin.feature.reader
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
+import kotlinx.coroutines.Dispatchers
 
 /** State of the reader screen (E2), exposed by [ReaderViewModel]. */
 sealed interface ReaderUiState {
@@ -46,6 +48,7 @@ sealed interface ReaderUiState {
      *   moves the document on release only (F05, ADR 0018), from the settings.
      * @property currentPage zero-based page last reported by the screen; where the reader
      *   starts again when the scroll mode changes.
+     * @property links links of the pages (F09), read on demand; none by default.
      */
     data class Ready(
         val title: String,
@@ -54,6 +57,7 @@ sealed interface ReaderUiState {
         val scrollMode: ScrollMode = AppSettings.DEFAULT_SCROLL_MODE,
         val currentPage: Int = 0,
         val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
+        val links: PageLinks = PageLinks(document = null, dispatcher = Dispatchers.Unconfined),
     ) : ReaderUiState
 }
 

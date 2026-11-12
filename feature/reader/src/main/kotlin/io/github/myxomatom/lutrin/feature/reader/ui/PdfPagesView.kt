@@ -21,10 +21,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -55,11 +58,13 @@ internal val PAGE_GUTTER = 16.dp
  *
  * @param zoom current zoom, 1 = fit width; hoisted so that the screen can reset it.
  * @param onZoomChange called with the new, clamped zoom.
- * @param onTap called on a single tap, to show or hide the controls (F14).
+ * @param onTap called on a single tap with the page and the point tapped, `null` outside every
+ *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
  * @param bottomClearance extra free space after the last page, so that it can scroll above the
  *   floating bar laid over the bottom of the list (ADR 0018); not scaled by the zoom.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
+ * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
  */
 @Composable
 internal fun PdfPagesView(
@@ -68,12 +73,13 @@ internal fun PdfPagesView(
     listState: LazyListState,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
-    onTap: () -> Unit,
+    onTap: (PageHit?) -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
     nightMode: Boolean = false,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
+    linkActions: List<CustomAccessibilityAction> = emptyList(),
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -105,12 +111,37 @@ internal fun PdfPagesView(
                             pinch = null
                         },
                         onDoubleTap = { focus -> onCommit(doubleTapTransform(zoom, focus)) },
-                        onTap = onTap,
+                        onTap = { onTap(layout.hit(it, listState, pageSizes, zoom, horizontal.value)) },
                     )
-                    .semantics { this.contentDescription = contentDescription },
+                    .documentSemantics(contentDescription, linkActions),
         )
     }
 }
+
+/** The page and the point under [position], a tap in the reading area, as the list draws them. */
+private fun PagesLayout.hit(
+    position: Offset,
+    listState: LazyListState,
+    pageSizes: List<PageSize>,
+    zoom: Float,
+    horizontalScroll: Int,
+): PageHit? {
+    val info = listState.layoutInfo
+    // Item offsets start after the top content padding; the viewport starts before it.
+    val items = info.visibleItemsInfo.map { VisibleItem(it.index, it.offset - info.viewportStartOffset) }
+    val placements = continuousPlacements(items, pageSizes, pageWidthPx(fitWidth, zoom), contentWidth, horizontalScroll)
+    return hitTest(position.x, position.y, placements, pageSizes)
+}
+
+/**
+ * What TalkBack reads and offers on the document area (F18): its description, and one action
+ * per link of the current page (F09), shared by both scroll modes.
+ */
+internal fun Modifier.documentSemantics(description: String, linkActions: List<CustomAccessibilityAction>): Modifier =
+    semantics {
+        contentDescription = description
+        if (linkActions.isNotEmpty()) customActions = linkActions
+    }
 
 /**
  * Scrolls [horizontal] to [pending] after a gesture, then calls [onDone]: the horizontal range
