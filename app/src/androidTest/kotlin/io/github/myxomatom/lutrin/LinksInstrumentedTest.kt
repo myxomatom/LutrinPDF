@@ -53,9 +53,14 @@ class LinksInstrumentedTest {
     @After
     fun tearDown() = Intents.release()
 
+    /**
+     * Opens the document on its first page. The page asked for is required: without it, the
+     * reader resumes the page saved by a previous test (page 3 after the internal link, ADR 0015).
+     */
     private fun launchLinks(): ActivityScenario<MainActivity> = ActivityScenario.launch(
         Intent(Intent.ACTION_VIEW)
             .setDataAndType(TestDocumentProvider.uriOf(TestFiles.Pdf.LINKS), PDF)
+            .putExtra(EXTRA_PAGE, 1)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             .setClass(targetContext, MainActivity::class.java),
     )

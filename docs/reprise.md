@@ -365,6 +365,11 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
   de la zone du document (≈ 96 dp) : un toucher dans cette bande touche la barre, pas la page ;
   `shadowOf(application).checkActivities(true)` fait lever `ActivityNotFoundException` pour
   simuler l'absence d'application.
+- **Tests instrumentés de `app` et reprise de lecture** (constaté le 2026-11-12, PR #31) : les
+  récents survivent d'un test à l'autre (même installation). Un document rouvert reprend la page
+  enregistrée par le test précédent (ADR 0015) : un test qui attend une page précise doit la
+  demander (`EXTRA_PAGE`), sinon il attend une page qui n'apparaît jamais (échec selon l'ordre
+  des tests).
 - **Tests Compose** : avec un champ de texte en focus, le premier « retour » (`Espresso.pressBack`)
   ferme le clavier, le second ferme le dialogue ; `StateRestorationTester` (API v2) se construit
   avec `runComposeUiTest` de `androidx.compose.ui.test.v2` et `emulateSaveAndRestore()`.
