@@ -46,6 +46,8 @@ sealed interface ReaderUiState {
      *   moves the document on release only (F05, ADR 0018), from the settings.
      * @property currentPage zero-based page last reported by the screen; where the reader
      *   starts again when the scroll mode changes.
+     * @property outline table of contents (F06, ADR 0021): empty while it is read and for a
+     *   document without one.
      */
     data class Ready(
         val title: String,
@@ -54,6 +56,7 @@ sealed interface ReaderUiState {
         val scrollMode: ScrollMode = AppSettings.DEFAULT_SCROLL_MODE,
         val currentPage: Int = 0,
         val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
+        val outline: ReaderOutline = ReaderOutline(),
     ) : ReaderUiState
 }
 
