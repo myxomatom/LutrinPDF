@@ -57,6 +57,8 @@ internal fun Modifier.pinchLayer(pinch: () -> PinchTransform?): Modifier = graph
  * @param onDoubleTap called with the tapped point.
  * @param onTap called on a single tap, with the tapped point (in the coordinates of the modified
  *   element), to activate a link under it or else switch to full screen (F09, F14).
+ * @param onLongPress called on a long press, with the pressed point, to select the word under it
+ *   (F08); the press is then not a tap.
  */
 @Composable
 internal fun Modifier.readerGestures(
@@ -65,18 +67,24 @@ internal fun Modifier.readerGestures(
     onPinchEnd: (PinchTransform) -> Unit,
     onDoubleTap: (Offset) -> Unit,
     onTap: (Offset) -> Unit,
+    onLongPress: (Offset) -> Unit = {},
 ): Modifier {
     val currentZoom by rememberUpdatedState(zoom)
     val currentOnPinch by rememberUpdatedState(onPinch)
     val currentOnPinchEnd by rememberUpdatedState(onPinchEnd)
     val currentOnDoubleTap by rememberUpdatedState(onDoubleTap)
     val currentOnTap by rememberUpdatedState(onTap)
+    val currentOnLongPress by rememberUpdatedState(onLongPress)
     return pinchToZoom(
         scaleBounds = { MIN_ZOOM / currentZoom to MAX_ZOOM / currentZoom },
         onPinch = { currentOnPinch(it) },
         onPinchEnd = { currentOnPinchEnd(it) },
     ).pointerInput(Unit) {
-        detectTapGestures(onTap = { currentOnTap(it) }, onDoubleTap = { currentOnDoubleTap(it) })
+        detectTapGestures(
+            onTap = { currentOnTap(it) },
+            onDoubleTap = { currentOnDoubleTap(it) },
+            onLongPress = { currentOnLongPress(it) },
+        )
     }
 }
 

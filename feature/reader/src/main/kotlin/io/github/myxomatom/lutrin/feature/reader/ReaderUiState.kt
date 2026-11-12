@@ -51,6 +51,8 @@ sealed interface ReaderUiState {
      * @property links links of the pages (F09), read on demand; none by default.
      * @property outline table of contents (F06, ADR 0021): empty while it is read and for a
      *   document without one.
+     * @property canCopyText whether selected text may be copied (F08, ADR 0024): the document allows
+     *   it, or the user chose to ignore its restriction in the settings; followed live.
      */
     data class Ready(
         val title: String,
@@ -61,6 +63,7 @@ sealed interface ReaderUiState {
         val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
         val links: PageLinks = PageLinks(document = null, dispatcher = Dispatchers.Unconfined),
         val outline: ReaderOutline = ReaderOutline(),
+        val canCopyText: Boolean = true,
     ) : ReaderUiState
 }
 

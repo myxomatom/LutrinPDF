@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -66,6 +67,10 @@ internal val PAGE_GUTTER = 16.dp
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
  * @param highlights occurrences of the search to highlight on the pages (F07).
+ * @param onLongPress called on a long press with the page and the point pressed, `null` outside
+ *   every page: to select a word (F08).
+ * @param selection the text selection (F08), drawn on its page with its handles.
+ * @param canCopy whether the selection may be copied (ADR 0024).
  */
 @Composable
 internal fun PdfPagesView(
@@ -82,6 +87,9 @@ internal fun PdfPagesView(
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
     highlights: SearchHighlights = SearchHighlights.None,
+    onLongPress: (PageHit?) -> Unit = {},
+    selection: ReaderSelection = ReaderSelection(),
+    canCopy: Boolean = true,
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -104,6 +112,8 @@ internal fun PdfPagesView(
             nightMode = nightMode,
             sharedPage = sharedPage,
             highlights = highlights,
+            selection = selection,
+            canCopy = canCopy,
             modifier =
                 Modifier
                     .readerGestures(
@@ -115,6 +125,7 @@ internal fun PdfPagesView(
                         },
                         onDoubleTap = { focus -> onCommit(doubleTapTransform(zoom, focus)) },
                         onTap = { onTap(layout.hit(it, listState, pageSizes, zoom, horizontal.value)) },
+                        onLongPress = { onLongPress(layout.hit(it, listState, pageSizes, zoom, horizontal.value)) },
                     )
                     .documentSemantics(contentDescription, linkActions),
         )
@@ -202,6 +213,8 @@ private fun PagesList(
     nightMode: Boolean,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
+    selection: ReaderSelection,
+    canCopy: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf<Viewport?>(null) }
@@ -222,6 +235,7 @@ private fun PagesList(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         itemsIndexed(pageSizes, key = { index, _ -> index }) { index, page ->
+            val pageSelection = rememberPageSelection(selection, canCopy, index)
             PdfPage(
                 pageIndex = index,
                 page = page,
@@ -231,9 +245,14 @@ private fun PagesList(
                 zoom = zoom,
                 settled = pinch == null && !listState.isScrollInProgress && !horizontal.isScrollInProgress,
                 nightMode = nightMode,
-                modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
+                // Above the next page: the handles of its last line may hang over it.
+                modifier =
+                    Modifier
+                        .width(with(density) { layout.contentWidth.toDp() })
+                        .zIndex(if (pageSelection != null) 1f else 0f),
                 pageModifier = Modifier.sharedPage(sharedPage, index),
                 highlights = rememberPageHighlights(highlights, index),
+                selection = pageSelection,
             )
         }
     }

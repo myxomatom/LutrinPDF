@@ -114,4 +114,14 @@
     <string name="reader_search_card_page_section">Page %1$d · %2$s</string>
     <!-- Points de suspension autour d’un extrait coupé de sa ligne. -->
     <string name="reader_search_ellipsis">…</string>
+    <!-- Text selection (F08, ADR 0024). -->
+    <string name="reader_selection_copy">Copier</string>
+    <string name="reader_selection_select_all">Tout sélectionner</string>
+    <string name="reader_selection_copied">Texte copié</string>
+    <string name="reader_selection_copy_forbidden">L’auteur de ce document interdit la copie du texte</string>
+    <string name="reader_selection_copy_forbidden_state">Interdit par l’auteur</string>
+    <string name="reader_selection_no_text">Aucun texte sur cette page</string>
+    <string name="reader_selection_copy_page_action">Copier le texte de la page</string>
+    <string name="reader_selection_start_handle">Début de la sélection</string>
+    <string name="reader_selection_end_handle">Fin de la sélection</string>
 </resources>

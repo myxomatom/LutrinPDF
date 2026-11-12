@@ -63,6 +63,10 @@ private val PAGE_MARGIN = 16.dp
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
  * @param highlights occurrences of the search to highlight on the pages (F07).
+ * @param onLongPress called on a long press with the page and the point pressed, `null` outside
+ *   the page: to select a word (F08).
+ * @param selection the text selection (F08), drawn on its page with its handles.
+ * @param canCopy whether the selection may be copied (ADR 0024).
  */
 @Composable
 internal fun PdfPagerView(
@@ -79,6 +83,9 @@ internal fun PdfPagerView(
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
     highlights: SearchHighlights = SearchHighlights.None,
+    onLongPress: (PageHit?) -> Unit = {},
+    selection: ReaderSelection = ReaderSelection(),
+    canCopy: Boolean = true,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -97,11 +104,13 @@ internal fun PdfPagerView(
                 zoom = zoom,
                 onZoomChange = onZoomChange,
                 onTap = onTap,
+                onLongPress = onLongPress,
                 pagerMoving = pagerState.isScrollInProgress,
                 nightMode = nightMode,
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 highlights = highlights,
+                selection = rememberPageSelection(selection, canCopy, index),
             )
         }
     }
@@ -132,11 +141,13 @@ private fun ZoomablePage(
     zoom: Float,
     onZoomChange: (Float) -> Unit,
     onTap: (PageHit?) -> Unit,
+    onLongPress: (PageHit?) -> Unit,
     pagerMoving: Boolean,
     nightMode: Boolean,
     bottomClearance: Dp,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
+    selection: PageSelection?,
 ) {
     val horizontal = rememberScrollState()
     val vertical = rememberScrollState()
@@ -147,11 +158,12 @@ private fun ZoomablePage(
         val layout =
             rememberPagedLayout(page, IntSize(constraints.maxWidth, constraints.maxHeight), bottomClearance, zoom)
         val onPageTap = layout.tapHandler(pageIndex, page, zoom, horizontal, vertical, onTap)
+        val onPageLongPress = layout.tapHandler(pageIndex, page, zoom, horizontal, vertical, onLongPress)
         Box(
             Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { viewport = Viewport(it, it.size) }
-                .zoomGestures(zoom, onPinch = { pinch = it }, commit = commit, onTap = onPageTap)
+                .zoomGestures(zoom, { pinch = it }, commit, onPageTap, onPageLongPress)
                 .pinchLayer { pinch }
                 .verticalScroll(vertical, enabled = zoom > 1f)
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
@@ -169,13 +181,17 @@ private fun ZoomablePage(
                     nightMode = nightMode,
                     pageModifier = Modifier.sharedPage(sharedPage, pageIndex),
                     highlights = rememberPageHighlights(highlights, pageIndex),
+                    selection = selection,
                 )
             }
         }
     }
 }
 
-/** Reports a tap at a position of the page area to [onTap], as a point of the page, `null` outside it. */
+/**
+ * Reports a tap, or a long press, at a position of the page area to [onTap], as a point of the
+ * page, `null` outside it.
+ */
 @Suppress("LongParameterList") // The position of the page in its scrolled, zoomed area.
 private fun PagedPageLayout.tapHandler(
     pageIndex: Int,
@@ -201,8 +217,8 @@ private fun rememberPagedLayout(page: PageSize, viewport: IntSize, bottomClearan
 }
 
 /**
- * Pinch, double tap and tap on a page: a pinch is reported at every move, then `null` once it is
- * committed; a double tap is committed at once.
+ * Pinch, double tap, tap and long press on a page: a pinch is reported at every move, then `null`
+ * once it is committed; a double tap is committed at once.
  */
 @Composable
 private fun Modifier.zoomGestures(
@@ -210,6 +226,7 @@ private fun Modifier.zoomGestures(
     onPinch: (PinchTransform?) -> Unit,
     commit: (PinchTransform) -> Unit,
     onTap: (Offset) -> Unit,
+    onLongPress: (Offset) -> Unit,
 ): Modifier = readerGestures(
     zoom = zoom,
     onPinch = onPinch,
@@ -219,6 +236,7 @@ private fun Modifier.zoomGestures(
     },
     onDoubleTap = { focus -> commit(doubleTapTransform(zoom, focus)) },
     onTap = onTap,
+    onLongPress = onLongPress,
 )
 
 /**
