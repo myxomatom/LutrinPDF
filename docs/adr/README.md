@@ -28,6 +28,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0020](0020-api-texte-et-destinations.md) | API texte et destinations du moteur : position des liens et du sommaire, sélection entre deux points (mot, ligne, arabe), recherche page par page avec extraits et plafond, permission de copie | Accepté |
 | [0021](0021-presentation-table-des-matieres.md) | Table des matières (V2) : tiroir latéral, sommaire aplati dans l'état, section courante dépliée, liste paresseuse, entrées externes reportées sur V7 | Accepté |
 | [0022](0022-liens-externes.md) | Liens du document : schémas `http`, `https`, `mailto` seulement, confirmation V7, ouverture par `ACTION_VIEW` sans accès réseau, « Revenir » après un lien interne, toucher et TalkBack | Accepté |
+| [0023](0023-recherche-dans-le-lecteur.md) | Recherche dans le lecteur : contrôleur dédié, 400 ms après la frappe, depuis la page courante, résultats en ordre du document, calque de surlignage dans chaque page, carte d'extrait, annonces TalkBack sans répétition | Accepté |
 | [0025](0025-police-de-secours-cjk.md) | Texte CJK non incorporé : polices CJK du système, pas de police embarquée (DroidSansFallback mesurée puis écartée) | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :

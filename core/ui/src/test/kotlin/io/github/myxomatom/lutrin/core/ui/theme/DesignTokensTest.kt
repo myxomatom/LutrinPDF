@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import java.io.File
+import kotlin.math.roundToInt
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -99,6 +100,24 @@ class DesignTokensTest {
         assertThat(LutrinDarkColorScheme.tertiaryContainer).isEqualTo(Color(0xFF5D4200))
     }
 
+    /** Parses `#RRGGBB` or `rgba(r,g,b,a)`, the two notations of the tokens. */
+    private fun tokenColor(value: String): Color {
+        if (value.startsWith("#")) return Color(value.removePrefix("#").toLong(HEX_RADIX) or OPAQUE)
+        val parts = value.removePrefix("rgba(").removeSuffix(")").split(",").map { it.trim() }
+        val (red, green, blue) = parts.take(RGB_COMPONENTS).map { it.toInt() }
+        return Color(red, green, blue, (parts[RGB_COMPONENTS].toFloat() * MAX_CHANNEL).roundToInt())
+    }
+
+    @Test
+    fun `search highlight colours are the reader tokens`() {
+        val reader = tokens.getJSONObject("color").getJSONObject("reader")
+
+        assertThat(LutrinReaderColors.SearchHit).isEqualTo(tokenColor(reader.getString("searchHit")))
+        assertThat(LutrinReaderColors.SearchHitCurrent).isEqualTo(tokenColor(reader.getString("searchHitCurrent")))
+        assertThat(LutrinReaderColors.SearchHitCurrentOutline)
+            .isEqualTo(tokenColor(reader.getString("searchHitCurrentOutline")))
+    }
+
     private fun styles(typography: Typography): Map<String, TextStyle> = mapOf(
         "displayLarge" to typography.displayLarge,
         "headlineLarge" to typography.headlineLarge,
@@ -144,5 +163,7 @@ class DesignTokensTest {
         val SYSTEM_FAMILY: FontFamily? = Typography().bodyLarge.fontFamily
         const val HEX_RADIX = 16
         const val OPAQUE = 0xFF000000
+        const val RGB_COMPONENTS = 3
+        const val MAX_CHANNEL = 255
     }
 }

@@ -62,6 +62,7 @@ private val PAGE_MARGIN = 16.dp
  *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
+ * @param highlights occurrences of the search to highlight on the pages (F07).
  */
 @Composable
 internal fun PdfPagerView(
@@ -77,6 +78,7 @@ internal fun PdfPagerView(
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
+    highlights: SearchHighlights = SearchHighlights.None,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -99,6 +101,7 @@ internal fun PdfPagerView(
                 nightMode = nightMode,
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
+                highlights = highlights,
             )
         }
     }
@@ -133,6 +136,7 @@ private fun ZoomablePage(
     nightMode: Boolean,
     bottomClearance: Dp,
     sharedPage: SharedPage?,
+    highlights: SearchHighlights,
 ) {
     val horizontal = rememberScrollState()
     val vertical = rememberScrollState()
@@ -142,10 +146,7 @@ private fun ZoomablePage(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout =
             rememberPagedLayout(page, IntSize(constraints.maxWidth, constraints.maxHeight), bottomClearance, zoom)
-        val onPageTap: (Offset) -> Unit = { position ->
-            val placement = layout.placement(pageIndex, page, zoom, horizontal.value, vertical.value)
-            onTap(hitTest(position.x, position.y, listOf(placement), listOf(page))?.copy(pageIndex = pageIndex))
-        }
+        val onPageTap = layout.tapHandler(pageIndex, page, zoom, horizontal, vertical, onTap)
         Box(
             Modifier
                 .fillMaxSize()
@@ -167,10 +168,25 @@ private fun ZoomablePage(
                         !vertical.isScrollInProgress,
                     nightMode = nightMode,
                     pageModifier = Modifier.sharedPage(sharedPage, pageIndex),
+                    highlights = rememberPageHighlights(highlights, pageIndex),
                 )
             }
         }
     }
+}
+
+/** Reports a tap at a position of the page area to [onTap], as a point of the page, `null` outside it. */
+@Suppress("LongParameterList") // The position of the page in its scrolled, zoomed area.
+private fun PagedPageLayout.tapHandler(
+    pageIndex: Int,
+    page: PageSize,
+    zoom: Float,
+    horizontal: ScrollState,
+    vertical: ScrollState,
+    onTap: (PageHit?) -> Unit,
+): (Offset) -> Unit = { position ->
+    val placement = placement(pageIndex, page, zoom, horizontal.value, vertical.value)
+    onTap(hitTest(position.x, position.y, listOf(placement), listOf(page))?.copy(pageIndex = pageIndex))
 }
 
 /** Layout of [page] in the [viewport] at [zoom], with the floating bar [bottomClearance] ([pagedPageLayout]). */

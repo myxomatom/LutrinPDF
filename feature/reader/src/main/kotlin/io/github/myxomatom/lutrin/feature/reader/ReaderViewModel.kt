@@ -21,6 +21,7 @@ import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import io.github.myxomatom.lutrin.feature.reader.links.LinkController
 import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
+import io.github.myxomatom.lutrin.feature.reader.search.SearchController
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,7 +62,8 @@ import kotlinx.coroutines.withContext
  * @param checkExternalLink decides which external links may be offered to another app (ADR 0022).
  *
  * The links of the document (F09, ADR 0022) are followed by [linkController]; their effects
- * are handled by the screen, since the ViewModel never sees a `Context`.
+ * are handled by the screen, since the ViewModel never sees a `Context`. The search (F07, ADR
+ * 0023) is run by [searchController].
  */
 @Suppress("LongParameterList", "TooManyFunctions") // Hilt dependencies; one short handler per user action.
 @HiltViewModel
@@ -90,6 +92,14 @@ constructor(
      */
     val linkController: LinkController =
         LinkController(checkExternalLink) { (documentState.value as? ReaderUiState.Ready)?.pageSizes?.size }
+
+    /**
+     * Search in the document (F07, V1, ADR 0023): the search bar, its results page by page and
+     * the occurrence shown. It searches from the page shown, on the render dispatcher, and is
+     * cancelled with the ViewModel, before the document closes.
+     */
+    val searchController: SearchController =
+        SearchController(viewModelScope, renderDispatcher, document = { document }, currentPage = { currentPage.value })
 
     /**
      * Identifier of the document in the recent list (`documentIdFor`, ADR 0015), known before it
@@ -253,6 +263,8 @@ constructor(
         ?: displayName(uri).removeSuffix(PDF_EXTENSION)
 
     override fun onCleared() {
+        // Normally cancelled with the scope already: no page may be searched once the document closes.
+        searchController.cancel()
         // The debounced save is cancelled with the ViewModel: the page shown last is written now.
         if (document != null) history.saveOnClose(uri, currentPage.value)
         document?.close()

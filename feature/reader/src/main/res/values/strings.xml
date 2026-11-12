@@ -77,4 +77,40 @@
     <string name="reader_outline_collapse">Collapse</string>
     <string name="reader_outline_expanded">Expanded</string>
     <string name="reader_outline_collapsed">Collapsed</string>
+    <!-- Search in the document (F07, V1) -->
+    <string name="reader_search_open">Search</string>
+    <string name="reader_search_close">Close search</string>
+    <string name="reader_search_field">Search in the document</string>
+    <string name="reader_search_previous">Previous result</string>
+    <string name="reader_search_next">Next result</string>
+    <string name="reader_search_match_case">Match case</string>
+    <string name="reader_search_match_accents">Match accents</string>
+    <string name="reader_search_progress">Search progress</string>
+    <!-- Counter of the search bar: current result, then the number of results. -->
+    <string name="reader_search_counter">%1$,d / %2$,d</string>
+    <!-- The same while pages are still being searched. -->
+    <string name="reader_search_counter_running">%1$,d / %2$,d…</string>
+    <!-- The same once the search stopped at its limit: there may be more results. -->
+    <string name="reader_search_counter_limit">%1$,d / %2$,d+</string>
+    <!-- What TalkBack reads for the counter, and announces after « next » or « previous ». -->
+    <string name="reader_search_position">Result %1$,d of %2$,d</string>
+    <string name="reader_search_position_limit">Result %1$,d of %2$,d or more</string>
+    <string name="reader_search_position_page">Result %1$,d of %2$,d, page %3$d</string>
+    <string name="reader_search_searching">Searching…</string>
+    <plurals name="reader_search_result_count">
+        <item quantity="one">%1$,d result</item>
+        <item quantity="other">%1$,d results</item>
+    </plurals>
+    <plurals name="reader_search_limit">
+        <item quantity="one">%1$,d result or more</item>
+        <item quantity="other">%1$,d results or more</item>
+    </plurals>
+    <string name="reader_search_no_result">No results</string>
+    <string name="reader_search_no_text_hint">A scanned document without text cannot be searched.</string>
+    <string name="reader_search_failed">The search failed.</string>
+    <!-- Header of the excerpt card: page of the current result, then its section. -->
+    <string name="reader_search_card_page">Page %1$d</string>
+    <string name="reader_search_card_page_section">Page %1$d · %2$s</string>
+    <!-- Ellipsis around an excerpt cut out of its line. -->
+    <string name="reader_search_ellipsis">…</string>
 </resources>

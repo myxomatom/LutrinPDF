@@ -12,6 +12,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.feature.reader.render.currentPage
 
@@ -38,6 +39,17 @@ internal sealed interface PageNavigator {
      *   [PageSize]); clamped to the page height, 0 shows the top of the page.
      */
     suspend fun goTo(page: Int, yOffset: Float = 0f)
+
+    /**
+     * Shows [area] of [page] in the middle of the reading area, without animation: an
+     * occurrence of a search (F07). In continuous scroll, the middle of [area] goes to the middle
+     * of the part of the reading area above the floating controls; page by page, the page is shown
+     * whole, as [goTo] does.
+     *
+     * @param page zero-based page, within the document.
+     * @param area part of the page to show, in page coordinates (points, from the top-left corner).
+     */
+    suspend fun reveal(page: Int, area: PdfRect)
 }
 
 /**
@@ -60,6 +72,18 @@ internal class ContinuousNavigator(val listState: LazyListState, private val pag
         val fraction = (yOffset / pageSizes[page].height).coerceIn(0f, 1f)
         listState.scrollBy(fraction * item.size)
     }
+
+    override suspend fun reveal(page: Int, area: PdfRect) {
+        listState.scrollToItem(page)
+        val layout = listState.layoutInfo
+        val item = layout.visibleItemsInfo.firstOrNull { it.index == page } ?: return
+        val centre = ((area.top + area.bottom) / 2f / pageSizes[page].height).coerceIn(0f, 1f) * item.size
+        // The end padding keeps the last page clear of the floating controls: the free part of
+        // the reading area is above it.
+        val visibleHeight = (layout.viewportSize.height - layout.afterContentPadding).coerceAtLeast(0)
+        // The page starts at the top of the viewport once scrolled to, after the top padding.
+        listState.scrollBy(centre + item.offset - layout.viewportStartOffset - visibleHeight / 2f)
+    }
 }
 
 /**
@@ -71,6 +95,8 @@ internal class PagedNavigator(val pagerState: PagerState) : PageNavigator {
     override val currentPage: Int get() = pagerState.currentPage
 
     override suspend fun goTo(page: Int, yOffset: Float) = pagerState.scrollToPage(page)
+
+    override suspend fun reveal(page: Int, area: PdfRect) = pagerState.scrollToPage(page)
 }
 
 /**

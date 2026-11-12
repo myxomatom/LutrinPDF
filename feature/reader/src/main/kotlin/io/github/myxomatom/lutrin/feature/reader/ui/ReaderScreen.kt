@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -66,6 +67,7 @@ import kotlinx.coroutines.launch
 fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val externalLink by viewModel.linkController.externalLink.collectAsStateWithLifecycle()
+    val searchState by viewModel.searchController.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     ReaderScreen(
         state = state,
@@ -90,6 +92,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onOutlineOpen = viewModel::onOutlineOpened,
         onOutlineToggle = viewModel::onOutlineToggle,
         onExternalOutlineEntry = viewModel::onExternalOutlineEntry,
+        search = readerSearch(viewModel.searchController, searchState),
     )
 }
 
@@ -117,6 +120,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   hidden.
  * @param onExternalOutlineEntry called with the address of an outline entry that leads outside
  *   the document; the drawer stays open and the confirmation of external links (V7) takes over.
+ * @param search the search in the document (F07, V1): while it is open, its bar replaces the top
+ *   bar, the excerpt of the current result replaces the floating bar, and back closes it.
  */
 @Composable
 fun ReaderScreen(
@@ -132,6 +137,7 @@ fun ReaderScreen(
     onOutlineOpen: () -> Unit = {},
     onOutlineToggle: (Int) -> Unit = {},
     onExternalOutlineEntry: (String) -> Unit = {},
+    search: ReaderSearch = ReaderSearch(),
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -155,6 +161,7 @@ fun ReaderScreen(
                     onOutlineOpen = onOutlineOpen,
                     onOutlineToggle = onOutlineToggle,
                     onExternalOutlineEntry = onExternalOutlineEntry,
+                    search = search,
                 )
         }
     }
@@ -181,6 +188,7 @@ private fun ReaderContent(
     onOutlineOpen: () -> Unit = {},
     onOutlineToggle: (Int) -> Unit = {},
     onExternalOutlineEntry: (String) -> Unit = {},
+    search: ReaderSearch = ReaderSearch(),
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
@@ -206,8 +214,9 @@ private fun ReaderContent(
             scrubber = scrubber,
             zoom = zoom,
             onZoomChange = { zoom = it },
-            controlsVisible = controlsVisible,
-            onToggleControls = { controlsVisible = !controlsVisible },
+            // The search bar stays while the search is open: a tap on the pages keeps the controls.
+            controlsVisible = controlsVisible || search.state.isOpen,
+            onToggleControls = { if (!search.state.isOpen) controlsVisible = !controlsVisible },
             actions = ReaderBarActions(
                 onBack = onBack,
                 onMoreOptions = { optionsVisible = true },
@@ -216,6 +225,7 @@ private fun ReaderContent(
             ),
             pageTransition = pageTransition,
             links = links,
+            search = search,
         )
     }
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
@@ -242,7 +252,10 @@ private class ReaderBarActions(
     val onIndicatorClick: () -> Unit,
 )
 
-/** The top bar over the reading area, which the table of contents drawer covers. */
+/**
+ * The top bar over the reading area, which the table of contents drawer covers, or the search
+ * bar (V1) while the search is open.
+ */
 @Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
 private fun ReaderScaffold(
@@ -256,15 +269,20 @@ private fun ReaderScaffold(
     actions: ReaderBarActions,
     pageTransition: DocumentTransition?,
     links: ReaderLinks,
+    search: ReaderSearch,
 ) {
+    SearchHandling(search, navigator)
     Scaffold(
         topBar = {
-            if (controlsVisible) {
+            if (search.state.isOpen) {
+                SearchBar(search.state, search)
+            } else if (controlsVisible) {
                 ReaderTopBar(
                     title = state.title,
                     onBack = actions.onBack,
                     onMoreOptions = actions.onMoreOptions,
                     onOutline = actions.onOutline,
+                    onSearch = search.onOpen,
                 )
             }
         },
@@ -285,6 +303,7 @@ private fun ReaderScaffold(
             onIndicatorClick = actions.onIndicatorClick,
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,
+            search = search.state,
         )
     }
 }
@@ -322,12 +341,13 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
 }
 
 /**
- * Top bar of the reader: back, title and, once a document is open, the table of contents (V2)
- * and « More options » (V6).
+ * Top bar of the reader: back, title and, once a document is open, « Rechercher » (V1), the
+ * table of contents (V2) and « More options » (V6).
  *
  * @param onMoreOptions opens the display options; `null` hides the button (error screen).
  * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
  *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
+ * @param onSearch opens the search bar; `null` hides the button (error screen).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -336,6 +356,7 @@ internal fun ReaderTopBar(
     onBack: () -> Unit,
     onMoreOptions: (() -> Unit)? = null,
     onOutline: (() -> Unit)? = null,
+    onSearch: (() -> Unit)? = null,
 ) {
     TopAppBar(
         title = {
@@ -352,6 +373,11 @@ internal fun ReaderTopBar(
             }
         },
         actions = {
+            if (onSearch != null) {
+                IconButton(onClick = onSearch) {
+                    Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.reader_search_open))
+                }
+            }
             if (onOutline != null) {
                 IconButton(onClick = onOutline) {
                     Icon(
