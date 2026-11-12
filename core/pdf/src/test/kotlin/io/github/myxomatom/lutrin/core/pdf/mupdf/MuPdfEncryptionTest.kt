@@ -55,7 +55,7 @@ class MuPdfEncryptionTest {
         userPasswords.forEach { (path, password) ->
             openTestPdf(path, password).use { document ->
                 assertThat(document.metadata.isEncrypted).isTrue()
-                assertThat(document.textAt(0, wholePage)).contains(password)
+                assertThat(document.allText()).contains(password)
             }
         }
     }
@@ -72,7 +72,7 @@ class MuPdfEncryptionTest {
     fun `opens a document restricted by its owner only without asking`() = runTest {
         openTestPdf("pdfs/encrypted_owner_password_only.pdf").use { document ->
             assertThat(document.metadata.isEncrypted).isTrue()
-            assertThat(document.textAt(0, wholePage)).contains("Document restreint")
+            assertThat(document.allText()).contains("Document restreint")
         }
     }
 
@@ -80,6 +80,24 @@ class MuPdfEncryptionTest {
     fun `ignores a password given for a document that needs none`() = runTest {
         openTestPdf("pdfs/encrypted_owner_password_only.pdf", password = "anything").use { document ->
             assertThat(document.pageCount).isEqualTo(1)
+        }
+    }
+
+    @Test
+    fun `reports that the author forbids copying the text`() = runTest {
+        // Its permissions allow accessibility only (core/testing/README.md).
+        openTestPdf("pdfs/encrypted_owner_password_only.pdf").use { document ->
+            assertThat(document.canCopyText).isFalse()
+            // The engine reports the permission and still extracts the text (ADR 0020).
+            assertThat(document.allText()).contains("Document restreint")
+        }
+    }
+
+    @Test
+    fun `allows copying the text of documents without restriction`() = runTest {
+        openTestPdf("pdfs/simple_1page.pdf").use { assertThat(it.canCopyText).isTrue() }
+        userPasswords.forEach { (path, password) ->
+            openTestPdf(path, password).use { assertThat(it.canCopyText).isTrue() }
         }
     }
 }
