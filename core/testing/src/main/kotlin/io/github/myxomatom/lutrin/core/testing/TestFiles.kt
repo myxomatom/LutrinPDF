@@ -33,6 +33,16 @@ object TestFiles {
          */
         const val TEXT_SELECTION = "pdfs/text_selection.pdf"
 
+        /** One page with 800 occurrences of "lutrin" (80 lines of 10). */
+        const val MANY_HITS = "pdfs/search_many_hits.pdf"
+
+        /**
+         * Three pages; page 1 links with explicit destinations to page 2, rotated by 90°
+         * (`/FitH 300`, `/FitV 200`, `/FitR 100 200 300 400`, `/XYZ 100 500`, `/XYZ null 500`), then
+         * to page 3, upright (`/FitH 300`, `/FitR 100 200 300 400`), in this order.
+         */
+        const val ROTATED_DESTINATIONS = "pdfs/rotated_destinations.pdf"
+
         /** AES-256 encrypted; the user password is [ENCRYPTED_PASSWORD]. */
         const val ENCRYPTED = "pdfs/encrypted_password_lutrin.pdf"
 

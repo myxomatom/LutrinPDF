@@ -264,6 +264,52 @@ def text_selection() -> None:
     save(doc, "text_selection.pdf")
 
 
+def many_hits() -> None:
+    """One page with 800 occurrences of "lutrin": a page search must return them all (ADR 0020)."""
+    doc = pymupdf.open()
+    page = doc.new_page(width=A4.width, height=A4.height)
+    for row in range(80):
+        page.insert_text((36, 40 + row * 9.5), " ".join(["lutrin"] * 10), fontsize=8)
+    save(doc, "search_many_hits.pdf")
+
+
+# Explicit destinations of rotated_destinations.pdf, in PDF coordinates (origin at the bottom left
+# of the unrotated page): (label, target page, destination arguments).
+EXPLICIT_DESTINATIONS = [
+    ("FitH 300, page tournée", 1, "/FitH 300"),
+    ("FitV 200, page tournée", 1, "/FitV 200"),
+    ("FitR 100 200 300 400, page tournée", 1, "/FitR 100 200 300 400"),
+    ("XYZ 100 500, page tournée", 1, "/XYZ 100 500 0"),
+    ("XYZ null 500, page tournée", 1, "/XYZ null 500 0"),
+    ("FitH 300, page droite", 2, "/FitH 300"),
+    ("FitR 100 200 300 400, page droite", 2, "/FitR 100 200 300 400"),
+]
+
+
+def rotated_destinations() -> None:
+    """Links with explicit destinations to a page rotated by 90° and to an upright one (F09, ADR 0020)."""
+    doc = pymupdf.open()
+    text_page(doc, "Destinations explicites")
+    text_page(doc, "Page tournée de 90°")
+    text_page(doc, "Page droite")
+    doc[1].set_rotation(90)
+    page = doc[0]
+    for row, (label, target, arguments) in enumerate(EXPLICIT_DESTINATIONS):
+        area = pymupdf.Rect(72, 300 + row * 30, 400, 318 + row * 30)
+        page.insert_text(area.bl - (0, 4), label, fontsize=11, color=(0, 0, 1))
+        annotation = doc.get_new_xref()
+        r = area * page.transformation_matrix
+        doc.update_object(
+            annotation,
+            f"<< /Type /Annot /Subtype /Link /Rect [{r.x0:g} {r.y0:g} {r.x1:g} {r.y1:g}] /Border [0 0 0] "
+            f"/Dest [{doc[target].xref} 0 R {arguments}] >>",
+        )
+        annots = doc.xref_get_key(page.xref, "Annots")
+        existing = annots[1][1:-1] if annots[0] == "array" else ""
+        doc.xref_set_key(page.xref, "Annots", f"[{existing} {annotation} 0 R]")
+    save(doc, "rotated_destinations.pdf")
+
+
 def corrupted() -> None:
     # Cut in the middle: MuPDF can usually repair it, the app must at least never crash.
     buffer = io.BytesIO()
@@ -337,7 +383,7 @@ def texts() -> None:
 
 
 GENERATORS = (simple, large, nested_outline, links, encrypted, encrypted_variants, form, scanned, mixed_sizes,
-              non_latin, text_selection, corrupted, garbage, not_a_pdf, images, texts)
+              non_latin, text_selection, many_hits, rotated_destinations, corrupted, garbage, not_a_pdf, images, texts)
 
 
 def main(names: list[str]) -> None:
