@@ -461,7 +461,10 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     valider le champ (`performImeAction()`) au lieu d'avancer l'horloge ;
   - `--tests "*Settings*"` est développé par le shell sous Git Bash (`settings.gradle.kts`) :
     donner le nom qualifié (`io.github…*Settings*`) ;
-  - les captures des Paramètres ont changé (nouvel interrupteur), réenregistrées.
+  - les captures des Paramètres ont changé (nouvel interrupteur), réenregistrées ;
+  - `check assembleRelease :dokkaGenerate` ne compile pas les tests instrumentés : une API de
+    test expérimentale sans `@OptIn(ExperimentalTestApi::class)` n'échoue qu'en CI. Lancer aussi
+    `:app:compileDebugAndroidTestKotlin` avant de pousser.
 - **Tests Compose du tiroir** (lot 3) : `@Config(qualifiers = "+fr")` (avec le `+`) ajoute la
   langue à celle de la classe, sans `+` elle échoue (« unrecognized trailing qualifier ») ; pour
   une capture à 200 %, `@Config(fontScale = 2f)` garde la taille des icônes, alors que

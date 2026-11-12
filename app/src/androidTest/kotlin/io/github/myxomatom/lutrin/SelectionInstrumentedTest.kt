@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -24,6 +25,7 @@ import org.junit.runner.RunWith
  * through « Copier le texte de la page », the TalkBack action of the document: the text of
  * `text_selection.pdf` is copied, the copy of `encrypted_owner_password_only.pdf` is refused.
  */
+@OptIn(ExperimentalTestApi::class) // performCustomAccessibilityActionWithLabel
 @RunWith(AndroidJUnit4::class)
 class SelectionInstrumentedTest {
     @get:Rule
