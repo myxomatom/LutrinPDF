@@ -262,6 +262,9 @@ changement y est signalé.
   au lieu de `SearchHit` ; `textAt(index, PdfRect)`, qui lisait en fait le texte entre deux
   points et non celui d'un rectangle, est remplacé par `selectText`. Le PDF de 600 pages du jeu
   de test (aussi utilisé par `:benchmark`) a désormais un sommaire.
+- **Build** : `:app` tolère les avertissements Dokka (`failOnWarning` reste actif ailleurs), car
+  Dokka 2.3 signale un lien KDoc non résolu dans `androidx` (`MenuHost`, hérité de
+  `MainActivity`). Prépare la montée à Dokka 2.3.
 - `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
   désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
 - L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
