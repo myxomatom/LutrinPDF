@@ -196,6 +196,12 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
   Dokka échoue sur toute déclaration publique sans KDoc, y compris les `override` des fakes de
   `core:testing` (PR #11). Avant de pousser :
   `./gradlew check assembleRelease :dokkaGenerate`.
+- **Dokka 2.3 : liens non résolus hérités d'androidx.** `MainActivity` hérite de `MenuHost`,
+  dont la KDoc cite `Lifecycle.State` ; Dokka 2.3 le signale (`... is unresolved in
+  androidx.core.view/MenuHost/...`) et `failOnWarning` fait échouer `:app:dokkaGenerateModuleHtml`.
+  `suppressInheritedMembers` et un `perPackageOption` sur `androidx` n'y changent rien : seul
+  `:app` tolère donc les avertissements (`configureDokka`, `Quality.kt`). Les autres modules
+  restent en `failOnWarning`. À revoir quand Dokka corrigera l'analyse des classes externes.
 - **Merger une PR seulement quand sa CI est verte.** Une PR mergée avant la fin de sa CI ne
   prouve rien.
 - **CI GitHub** :
