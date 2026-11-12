@@ -55,8 +55,9 @@ internal fun StructuredText.toPageText(): PageText {
  *
  * @param pageIndex page reported in the results.
  * @param flags MuPDF search flags (see [toMuPdfFlags]).
+ * @param described only the first results get an excerpt: the search drops the others.
  */
-internal fun Page.searchHits(pageIndex: Int, query: String, flags: Int): List<SearchHit> {
+internal fun Page.searchHits(pageIndex: Int, query: String, flags: Int, described: Int): List<SearchHit> {
     // Page.search, not StructuredText.search: in MuPDF 1.28.6 the JNI of the latter calls
     // ArrayList.toArray(T[]) without its argument and always fails (NullPointerException).
     // Page.search extracts the text with the same "dehyphenate" option.
@@ -64,10 +65,22 @@ internal fun Page.searchHits(pageIndex: Int, query: String, flags: Int): List<Se
     if (matches.isEmpty()) return emptyList()
     // The characters are only read when the page has a result: most pages have none.
     val pageText = withStructuredText { it.toPageText() }
-    return matches.map { quads ->
-        val areas = quads.map { it.toPdfRect() }
-        SearchHit(pageIndex, areas, pageText.excerpt(areas))
+    return matches.mapIndexed { index, quads ->
+        val areas = quads.map { it.toPdfQuad() }
+        SearchHit(pageIndex, areas, if (index < described) pageText.excerpt(areas) else null)
     }
+}
+
+/**
+ * Text of the last page asked for, kept for the next request: dragging a selection handle
+ * selects again and again on the same page. Not thread-safe: used on the document thread only.
+ */
+internal class LastPageText(private val pages: PageCache) {
+    private var last: Pair<Int, PageText>? = null
+
+    /** Text of the page at [index]; throws [io.github.myxomatom.lutrin.core.domain.pdf.PdfError.PageOutOfRange]. */
+    operator fun get(index: Int): PageText = last?.takeIf { (page, _) -> page == index }?.second
+        ?: pages[index].withStructuredText { it.toPageText() }.also { last = index to it }
 }
 
 /** Converts a MuPDF quad. */

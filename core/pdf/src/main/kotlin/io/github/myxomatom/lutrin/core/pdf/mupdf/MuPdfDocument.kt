@@ -53,9 +53,8 @@ internal class MuPdfDocument(
     // Accessed on the document thread only.
     private val pages = PageCache(document, pageCount)
 
-    // Text of the last page selected, accessed on the document thread only: dragging a
-    // selection handle selects again and again on the same page.
-    private var selectedPageText: Pair<Int, PageText>? = null
+    // Accessed on the document thread only.
+    private val pageTexts = LastPageText(pages)
 
     override suspend fun pageSize(index: Int): PageSize = onDocumentThread {
         val bounds = pages[index].bounds.toPdfRect()
@@ -104,13 +103,17 @@ internal class MuPdfDocument(
         document.toOutlineItems(document.loadOutline())
     }
 
-    override fun search(query: String, options: SearchOptions): Flow<SearchPageResult> = flow {
+    override fun search(query: String, options: SearchOptions, startPage: Int): Flow<SearchPageResult> = flow {
+        closed.ensureOpen()
+        if (startPage !in 0 until pageCount) throw PdfError.PageOutOfRange(startPage, pageCount)
         if (query.isBlank()) return@flow
         val flags = options.toMuPdfFlags()
         var found = 0
-        for (index in 0 until pageCount) {
-            val hits = onDocumentThread { pages[index].searchHits(index, query, flags) }
+        for (index in searchOrder(startPage, pageCount)) {
             val remaining = options.maxHits - found
+            val hits = onDocumentThread {
+                pages.withPageOutsideCache(index) { it.searchHits(index, query, flags, described = remaining) }
+            }
             val isLimitReached = hits.size >= remaining
             emit(SearchPageResult(index, hits.take(remaining), isLimitReached))
             if (isLimitReached) break
@@ -119,11 +122,10 @@ internal class MuPdfDocument(
     }
 
     override suspend fun selectText(index: Int, start: PdfPoint, end: PdfPoint, mode: SelectionMode): TextSelection =
-        onDocumentThread {
-            val text = selectedPageText?.takeIf { (page, _) -> page == index }?.second
-                ?: pages[index].withStructuredText { it.toPageText() }.also { selectedPageText = index to it }
-            text.select(index, start, end, mode)
-        }
+        onDocumentThread { pageTexts[index].select(index, start, end, mode) }
+
+    override suspend fun isOnText(index: Int, point: PdfPoint): Boolean =
+        onDocumentThread { pageTexts[index].isOnText(point) }
 
     override suspend fun links(index: Int): List<PdfLink> = onDocumentThread {
         val links = pages[index].links.orEmpty()
@@ -155,10 +157,10 @@ internal class MuPdfDocument(
      * @throws PdfError.Closed if the document is or gets closed before [block] runs.
      */
     private suspend fun <T> onDocumentThread(block: () -> T): T {
-        ensureOpen()
+        closed.ensureOpen()
         return try {
             withContext(dispatcher) {
-                ensureOpen()
+                closed.ensureOpen()
                 translatingMuPdfErrors(block)
             }
         } catch (error: CancellationException) {
@@ -171,8 +173,12 @@ internal class MuPdfDocument(
             throw error
         }
     }
-
-    private fun ensureOpen() {
-        if (closed.get()) throw PdfError.Closed()
-    }
 }
+
+/** Throws [PdfError.Closed] if this flag, set by `close`, is set. */
+private fun AtomicBoolean.ensureOpen() {
+    if (get()) throw PdfError.Closed()
+}
+
+/** Pages from [startPage] to the last one, then from the first one to the one before [startPage]. */
+internal fun searchOrder(startPage: Int, pageCount: Int): List<Int> = (startPage until pageCount) + (0 until startPage)

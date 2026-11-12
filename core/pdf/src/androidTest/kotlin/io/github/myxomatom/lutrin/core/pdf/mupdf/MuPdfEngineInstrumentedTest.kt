@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
@@ -60,6 +61,8 @@ class MuPdfEngineInstrumentedTest {
                 TestFiles.Pdf.MIXED_PAGE_SIZES to 5,
                 TestFiles.Pdf.NON_LATIN to 1,
                 TestFiles.Pdf.TEXT_SELECTION to 1,
+                TestFiles.Pdf.MANY_HITS to 1,
+                TestFiles.Pdf.ROTATED_DESTINATIONS to 3,
                 TestFiles.Pdf.CORRUPTED_TRUNCATED to 1,
             )
         expected.forEach { (path, pages) ->
@@ -221,8 +224,7 @@ class MuPdfEngineInstrumentedTest {
     @Test
     fun searchesAndSelectsArabicText() = runTest {
         open(TestFiles.Pdf.TEXT_SELECTION).use { document ->
-            val areas = document.search("مكتبة").toList().flatMap { it.hits }.single().areas
-            val word = PdfRect.enclosing(areas.flatMap { listOf(it.left to it.top, it.right to it.bottom) })
+            val word = document.search("مكتبة").toList().flatMap { it.hits }.single().bounds
             val press = PdfPoint((word.left + word.right) / 2, (word.top + word.bottom) / 2)
 
             val selection = document.selectText(0, press, press, SelectionMode.Words)
@@ -241,6 +243,52 @@ class MuPdfEngineInstrumentedTest {
             assertThat(document.selectText(0, press, press, SelectionMode.Words).text).isEqualTo("mot")
             assertThat(document.selectText(0, press, press, SelectionMode.Lines).text)
                 .isEqualTo("Le mot suivant est coupé en fin de ligne : la biblio-")
+        }
+    }
+
+    @Test
+    fun resolvesDestinationsOnARotatedPage() = runTest {
+        open(TestFiles.Pdf.ROTATED_DESTINATIONS).use { document ->
+            val destinations = document.links(0).filterIsInstance<PdfLink.Internal>().map { it.destination }
+
+            // FitH, FitV, FitR, XYZ, XYZ without x to the page turned by 90°, then FitH, FitR upright.
+            assertThat(destinations)
+                .containsExactly(
+                    PdfDestination(1),
+                    PdfDestination(1),
+                    PdfDestination(1, x = 200f, y = 100f, width = 200f, height = 200f),
+                    PdfDestination(1, x = 500f, y = 100f),
+                    PdfDestination(1),
+                    PdfDestination(2, y = 542f),
+                    PdfDestination(2, x = 100f, y = 442f, width = 200f, height = 200f),
+                ).inOrder()
+        }
+    }
+
+    @Test
+    fun searchReturnsEveryOccurrenceOfAPageAndStartsAtTheGivenPage() = runTest {
+        open(TestFiles.Pdf.MANY_HITS).use { document ->
+            val hits = document.search("lutrin", SearchOptions(maxHits = 5_000)).toList().flatMap { it.hits }
+
+            assertThat(hits).hasSize(800)
+        }
+        open(TestFiles.Pdf.NESTED_OUTLINE).use { document ->
+            val pages = document.search("section", startPage = 4).toList()
+
+            assertThat(pages.map { it.pageIndex }).containsExactly(4, 5, 0, 1, 2, 3).inOrder()
+        }
+    }
+
+    @Test
+    fun tellsWhetherAPointIsOnTextAndPlacesTheHandles() = runTest {
+        open(TestFiles.Pdf.TEXT_SELECTION).use { document ->
+            val press = PdfPoint(98f, 136f)
+            val selection = document.selectText(0, press, press, SelectionMode.Words)
+
+            assertThat(document.isOnText(0, press)).isTrue()
+            assertThat(document.isOnText(0, PdfPoint(20f, 20f))).isFalse()
+            assertThat(document.selectText(0, checkNotNull(selection.start), checkNotNull(selection.end)).text)
+                .isEqualTo("mot")
         }
     }
 

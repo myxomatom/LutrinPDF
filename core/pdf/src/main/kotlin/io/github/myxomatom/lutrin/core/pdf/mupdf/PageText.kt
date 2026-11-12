@@ -70,8 +70,18 @@ internal class PageText(private val lines: List<GlyphLine>) {
 
     private val extents: List<LineExtent> = lines.map(::LineExtent)
 
+    // Centres of the characters, computed once: every search result tests them.
+    private val centerX = FloatArray(glyphs.size) { glyphs[it].quad.centerX() }
+    private val centerY = FloatArray(glyphs.size) { glyphs[it].quad.centerY() }
+
     /** Whether the page has no text at all (scanned page). */
     val isEmpty: Boolean get() = glyphs.isEmpty()
+
+    /**
+     * Whether [point] lies on a line of text, between its first and last characters: `false` in
+     * a margin, between paragraphs or on an image, so that a long press there selects nothing.
+     */
+    fun isOnText(point: PdfPoint): Boolean = extents.any { it.contains(point) }
 
     /**
      * Selects the text between [start] and [end] (in any order), grown according to [mode].
@@ -83,7 +93,13 @@ internal class PageText(private val lines: List<GlyphLine>) {
         return if (range.isEmpty()) {
             TextSelection.empty(pageIndex)
         } else {
-            TextSelection(pageIndex, quadsOf(range), flatten(range, LINE_BREAK).text)
+            TextSelection(
+                pageIndex = pageIndex,
+                quads = quadsOf(range),
+                text = flatten(range, LINE_BREAK).text,
+                start = glyphs[range.first].leadingCorner(),
+                end = glyphs[range.last].trailingCorner(),
+            )
         }
     }
 
@@ -100,35 +116,47 @@ internal class PageText(private val lines: List<GlyphLine>) {
     /**
      * The search excerpt of the occurrence covering [areas], or `null` if no character lies in
      * them. The context is read on one line: lines are joined by a space, or by nothing after a
-     * hyphen, which is then dropped, as MuPDF's search does.
+     * hyphen, which is then dropped, as MuPDF's search does (unless the occurrence ends on it).
      */
-    fun excerpt(areas: List<PdfRect>, maxContext: Int = SearchExcerpt.MAX_CONTEXT_LENGTH): SearchExcerpt? {
-        // A hit area may also cover the space next to the occurrence: it is context, not match.
-        val matched = glyphs.indices
-            .filter { index -> areas.any { it.containsCenterOf(glyphs[index].quad) } }
-            .dropWhile { glyphs[it].isWhitespace }
-            .dropLastWhile { glyphs[it].isWhitespace }
+    fun excerpt(areas: List<PdfQuad>, maxContext: Int = SearchExcerpt.MAX_CONTEXT_LENGTH): SearchExcerpt? {
+        val matched = matchedGlyphs(areas.map { it.bounds })
         if (matched.isEmpty()) return null
         // Enough characters on each side to fill the context once whitespace is collapsed.
         val margin = maxContext * 2
-        val from = (matched.first() - margin).coerceAtLeast(0)
-        val to = (matched.last() + 1 + margin).coerceAtMost(glyphs.size)
-        val flat = flatten(from until to, JOINED_LINE)
-        val matchEnd = if (matched.last() + 1 < to) flat.offsets[matched.last() + 1 - from] else flat.text.length
-        return SearchExcerpt.around(flat.text, flat.offsets[matched.first() - from], matchEnd, maxContext)
+        val from = (matched.first - margin).coerceAtLeast(0)
+        val to = (matched.last + 1 + margin).coerceAtMost(glyphs.size)
+        val flat = flatten(from until to, JOINED_LINE, keepHyphenAt = matched.last)
+        val matchStart = flat.offsets[matched.first - from]
+        val matchEnd = flat.offsets[matched.last - from] + Character.charCount(glyphs[matched.last].codePoint)
+        return SearchExcerpt.around(flat.text, matchStart, matchEnd, maxContext)
+    }
+
+    /**
+     * Characters whose centre lies in one of [areas], from the first to the last, without the
+     * spaces at either end: a hit area may also cover the space next to the occurrence. Only the
+     * lines that the areas touch are looked at.
+     */
+    private fun matchedGlyphs(areas: List<PdfRect>): IntRange {
+        val matched = lines.indices
+            .filter { line -> areas.any { extents[line].bounds.intersects(it) } }
+            .flatMap { line -> lineStarts[line] until lineStarts[line + 1] }
+            .filter { index ->
+                !glyphs[index].isWhitespace && areas.any { it.contains(centerX[index], centerY[index]) }
+            }
+        return if (matched.isEmpty()) IntRange.EMPTY else matched.first()..matched.last()
     }
 
     /**
      * Text of [range], with [lineSeparator] between lines; with [JOINED_LINE], a hyphen ending a
-     * line is dropped and the lines joined directly.
+     * line is dropped and the lines joined directly, except the hyphen at [keepHyphenAt].
      */
-    private fun flatten(range: IntRange, lineSeparator: String): FlatText {
+    private fun flatten(range: IntRange, lineSeparator: String, keepHyphenAt: Int = -1): FlatText {
         val offsets = IntArray(range.count())
         val text = buildString {
             for (index in range) {
                 if (index > range.first && lineOfGlyph[index] != lineOfGlyph[index - 1]) {
                     val previous = glyphs[index - 1]
-                    if (lineSeparator == JOINED_LINE && previous.isHyphen) {
+                    if (lineSeparator == JOINED_LINE && previous.isHyphen && index - 1 != keepHyphenAt) {
                         setLength(length - Character.charCount(previous.codePoint))
                     } else {
                         append(lineSeparator)
@@ -159,12 +187,15 @@ internal class PageText(private val lines: List<GlyphLine>) {
         .map { (line, indices) -> lineQuad(lines[line].direction, indices.map { glyphs[it] }) }
 
     /**
-     * The caret nearest to [point]: on the line whose band holds the point, or else the closest
-     * line across, at the character edge nearest along that line.
+     * The caret nearest to [point]: on the line whose band holds the point (the one whose middle
+     * is nearest when bands overlap), or else the closest line across, at the character edge
+     * nearest along that line.
      */
     private fun caretAt(point: PdfPoint): Caret {
         val line = extents.indices.minWith(
-            compareBy<Int> { extents[it].distanceAcross(point) }.thenBy { extents[it].distanceAlong(point) },
+            compareBy<Int> { extents[it].distanceAcross(point) }
+                .thenBy { extents[it].distanceAlong(point) }
+                .thenBy { extents[it].distanceFromMiddle(point) },
         )
         val direction = lines[line].direction
         val position = point.along(direction)
@@ -202,9 +233,16 @@ internal class PageText(private val lines: List<GlyphLine>) {
         private val acrossMin = corners.minOf { it.across(direction) }
         private val acrossMax = corners.maxOf { it.across(direction) }
 
+        /** Axis-aligned rectangle around the line. */
+        val bounds: PdfRect = PdfRect.enclosing(corners.map { it.x to it.y })
+
         fun distanceAcross(point: PdfPoint): Float = distanceOutside(point.across(direction), acrossMin, acrossMax)
 
         fun distanceAlong(point: PdfPoint): Float = distanceOutside(point.along(direction), alongMin, alongMax)
+
+        fun distanceFromMiddle(point: PdfPoint): Float = abs(point.across(direction) - (acrossMin + acrossMax) / 2)
+
+        fun contains(point: PdfPoint): Boolean = distanceAcross(point) == 0f && distanceAlong(point) == 0f
     }
 }
 
@@ -214,37 +252,8 @@ private fun Glyph.edgesAlong(direction: PdfPoint): Pair<Float, Float> {
     return if (isRightToLeft) positions.max() to positions.min() else positions.min() to positions.max()
 }
 
-/** Quad of [glyphs] on a line going in [direction]: their extent along and across the line. */
-private fun lineQuad(direction: PdfPoint, glyphs: List<Glyph>): PdfQuad {
-    val corners = glyphs.flatMap { it.quad.corners() }
-    val start = corners.minOf { it.along(direction) }
-    val end = corners.maxOf { it.along(direction) }
-    val top = corners.minOf { it.across(direction) }
-    val bottom = corners.maxOf { it.across(direction) }
+/** Bottom corner on the side where reading enters the glyph: left, or right in right-to-left text. */
+private fun Glyph.leadingCorner(): PdfPoint = if (isRightToLeft) quad.lowerRight else quad.lowerLeft
 
-    // Inverse of along / across: back to page coordinates.
-    fun point(along: Float, across: Float) = PdfPoint(
-        x = along * direction.x - across * direction.y,
-        y = along * direction.y + across * direction.x,
-    )
-    return PdfQuad(point(start, top), point(end, top), point(start, bottom), point(end, bottom))
-}
-
-private fun PdfQuad.corners() = listOf(upperLeft, upperRight, lowerLeft, lowerRight)
-
-/** Coordinate along a line going in [direction] (a unit vector). */
-private fun PdfPoint.along(direction: PdfPoint): Float = x * direction.x + y * direction.y
-
-/** Coordinate across a line going in [direction]: grows downwards for horizontal text. */
-private fun PdfPoint.across(direction: PdfPoint): Float = -x * direction.y + y * direction.x
-
-private fun distanceOutside(value: Float, min: Float, max: Float): Float = when {
-    value < min -> min - value
-    value > max -> value - max
-    else -> 0f
-}
-
-private fun PdfRect.containsCenterOf(quad: PdfQuad): Boolean {
-    val bounds = quad.bounds
-    return contains((bounds.left + bounds.right) / 2, (bounds.top + bounds.bottom) / 2)
-}
+/** Bottom corner on the side where reading leaves the glyph. */
+private fun Glyph.trailingCorner(): PdfPoint = if (isRightToLeft) quad.lowerLeft else quad.lowerRight

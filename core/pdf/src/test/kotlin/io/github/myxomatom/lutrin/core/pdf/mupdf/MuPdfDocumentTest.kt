@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.core.pdf.mupdf
 import com.artifex.mupdf.fitz.Document
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
@@ -299,8 +300,7 @@ class MuPdfDocumentTest {
     @Test
     fun `selects a whole Arabic word in reading order`() = runTest {
         openTestPdf("pdfs/text_selection.pdf").use { document ->
-            val areas = document.search("مكتبة").hits().single().areas
-            val word = PdfRect.enclosing(areas.flatMap { listOf(it.left to it.top, it.right to it.bottom) })
+            val word = document.search("مكتبة").hits().single().bounds
             val press = PdfPoint((word.left + word.right) / 2, (word.top + word.bottom) / 2)
 
             val selection = document.selectText(0, press, press, SelectionMode.Words)
@@ -308,6 +308,90 @@ class MuPdfDocumentTest {
             assertThat(selection.text).isEqualTo("مكتبة")
             assertThat(selection.quads.single().bounds.width).isWithin(1f).of(word.width)
         }
+    }
+
+    @Test
+    fun `resolves explicit destinations on a rotated page and an upright one`() = runTest {
+        openTestPdf("pdfs/rotated_destinations.pdf").use { document ->
+            val destinations = document.links(0).filterIsInstance<PdfLink.Internal>().map { it.destination }
+
+            assertThat(destinations)
+                .containsExactly(
+                    // Page 2 is turned by 90°: the single coordinate of FitH, FitV and an incomplete
+                    // XYZ is lost by MuPDF, so only the page is kept.
+                    PdfDestination(1),
+                    PdfDestination(1),
+                    // In the coordinates of the turned page: PDF (x, y) becomes (y, x).
+                    PdfDestination(1, x = 200f, y = 100f, width = 200f, height = 200f),
+                    PdfDestination(1, x = 500f, y = 100f),
+                    PdfDestination(1),
+                    // Page 3 is upright, 842 points high: y is measured from the top.
+                    PdfDestination(2, y = 542f),
+                    PdfDestination(2, x = 100f, y = 442f, width = 200f, height = 200f),
+                ).inOrder()
+        }
+    }
+
+    @Test
+    fun `returns every occurrence of a page that has many`() = runTest {
+        openTestPdf("pdfs/search_many_hits.pdf").use { document ->
+            val hits = document.search("lutrin", SearchOptions(maxHits = 5_000)).hits()
+
+            assertThat(hits).hasSize(800)
+        }
+    }
+
+    @Test
+    fun `starts the search at the given page and wraps around`() = runTest {
+        openTestPdf("pdfs/nested_outline.pdf").use { document ->
+            val pages = document.search("section", startPage = 4).toList()
+
+            assertThat(pages.map { it.pageIndex }).containsExactly(4, 5, 0, 1, 2, 3).inOrder()
+            assertThat(runCatching { document.search("section", startPage = 6).toList() }.exceptionOrNull())
+                .isInstanceOf(PdfError.PageOutOfRange::class.java)
+        }
+    }
+
+    @Test
+    fun `describes only the results it returns`() = runTest {
+        openTestPdf("pdfs/search_many_hits.pdf").use { document ->
+            val pages = document.search("lutrin", SearchOptions(maxHits = 15)).toList()
+
+            assertThat(pages.single().hits).hasSize(15)
+            assertThat(pages.single().hits.all { it.excerpt?.match == "lutrin" }).isTrue()
+        }
+    }
+
+    @Test
+    fun `tells whether a point is on text`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            assertThat(document.isOnText(0, PdfPoint(98f, 136f))).isTrue()
+            assertThat(document.isOnText(0, PdfPoint(20f, 20f))).isFalse()
+        }
+        openTestPdf("pdfs/scanned_images_only.pdf").use { assertThat(it.isOnText(0, PdfPoint(100f, 100f))).isFalse() }
+    }
+
+    @Test
+    fun `places the handles of a selection`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            val press = PdfPoint(98f, 136f)
+
+            val selection = document.selectText(0, press, press, SelectionMode.Words)
+            val start = checkNotNull(selection.start)
+            val end = checkNotNull(selection.end)
+
+            assertThat(start.x).isLessThan(end.x)
+            assertThat(document.selectText(0, start, end).text).isEqualTo("mot")
+        }
+    }
+
+    @Test
+    fun `a blank search on a closed document reports it closed`() = runTest {
+        val document = openTestPdf("pdfs/simple_1page.pdf")
+        document.close()
+
+        assertThat(runCatching { document.search(" ").toList() }.exceptionOrNull())
+            .isInstanceOf(PdfError.Closed::class.java)
     }
 
     @Test

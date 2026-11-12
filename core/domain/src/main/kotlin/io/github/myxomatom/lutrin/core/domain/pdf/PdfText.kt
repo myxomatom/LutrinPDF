@@ -26,12 +26,23 @@ data class SearchOptions(
  * One occurrence of the searched text.
  *
  * @property pageIndex zero-based page of the occurrence.
- * @property areas highlighted areas, in page coordinates; several when the match spans lines,
- *   for example a word cut by a hyphen at the end of a line.
+ * @property areas highlighted areas, in page coordinates, like the quads of a [TextSelection];
+ *   several when the match spans lines, for example a word cut by a hyphen at the end of a line.
  * @property excerpt the occurrence in its context, for a list of results; `null` when the engine
  *   could not tell which characters matched.
+ * @throws IllegalArgumentException if [areas] is empty.
  */
-data class SearchHit(val pageIndex: Int, val areas: List<PdfRect>, val excerpt: SearchExcerpt? = null)
+data class SearchHit(val pageIndex: Int, val areas: List<PdfQuad>, val excerpt: SearchExcerpt? = null) {
+    init {
+        require(areas.isNotEmpty()) { "A search hit covers at least one area" }
+    }
+
+    /** Smallest axis-aligned rectangle around every area, for example to scroll it into view. */
+    val bounds: PdfRect
+        get() = PdfRect.enclosing(
+            areas.flatMap { quad -> quad.bounds.let { listOf(it.left to it.top, it.right to it.bottom) } },
+        )
+}
 
 /**
  * An occurrence of the searched text with the words around it, on one line. Shown as
@@ -112,10 +123,11 @@ data class SearchExcerpt(val before: String, val match: String, val after: Strin
 }
 
 /**
- * What a search found on one page (F07). A search emits one result per page, in page order,
- * including the pages without any occurrence, so that the caller can show its progress.
+ * What a search found on one page (F07). A search emits one result per page, including the pages
+ * without any occurrence, so that the caller can show its progress.
  *
- * @property pageIndex zero-based page just searched; `pageIndex + 1` pages are done.
+ * @property pageIndex zero-based page just searched. Pages come in search order, from the start
+ *   page to the last one, then from the first one back to the start page.
  * @property hits occurrences on this page, in reading order; possibly empty.
  * @property isLimitReached `true` on the last result of a search stopped at
  *   [SearchOptions.maxHits]: the following pages were not searched.
@@ -140,8 +152,20 @@ enum class SelectionMode {
  * @property pageIndex zero-based page of the selection.
  * @property quads areas to highlight, in page coordinates: one per line of the selection.
  * @property text the selected text in reading (logical) order, lines separated by `\n`.
+ * @property start where the selection starts in reading order: on the leading edge of its first
+ *   character (the right edge in right-to-left text), at the bottom of the character. Where to
+ *   draw the start handle, and the point to give back to `selectText` when the end handle moves.
+ *   `null` when the selection is empty.
+ * @property end where the selection ends in reading order: on the trailing edge of its last
+ *   character, at the bottom; `null` when the selection is empty.
  */
-data class TextSelection(val pageIndex: Int, val quads: List<PdfQuad>, val text: String) {
+data class TextSelection(
+    val pageIndex: Int,
+    val quads: List<PdfQuad>,
+    val text: String,
+    val start: PdfPoint? = null,
+    val end: PdfPoint? = null,
+) {
     /** Whether nothing is selected (no text under the points, or a page without text layer). */
     val isEmpty: Boolean get() = text.isEmpty()
 

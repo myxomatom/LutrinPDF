@@ -102,14 +102,19 @@ interface PdfDocument : Closeable {
     suspend fun outline(): List<OutlineItem>
 
     /**
-     * Searches the whole document, page by page from the first one (F07). The flow is cold and
-     * stops at the first cancellation. It emits one [SearchPageResult] per page searched, even
-     * without any occurrence, so that the caller can follow the progress; it ends after the last
-     * page or once [SearchOptions.maxHits] occurrences are found. A blank [query] emits nothing.
+     * Searches the whole document, page by page (F07), from [startPage] to the last page, then
+     * from the first page back to the one before [startPage]: the first results are the ones
+     * after the page the reader shows. The flow is cold and stops at the first cancellation. It
+     * emits one [SearchPageResult] per page searched, even without any occurrence, so that the
+     * caller can follow the progress; it ends after every page is searched or once
+     * [SearchOptions.maxHits] occurrences are found. A blank [query] emits nothing. Pages are
+     * searched without evicting the pages kept for rendering.
      *
-     * @throws PdfError.Closed from the flow if the document is closed.
+     * @param startPage zero-based page searched first.
+     * @throws PdfError.Closed from the flow if the document is closed, even for a blank query.
+     * @throws PdfError.PageOutOfRange from the flow if [startPage] is not a page of the document.
      */
-    fun search(query: String, options: SearchOptions = SearchOptions()): Flow<SearchPageResult>
+    fun search(query: String, options: SearchOptions = SearchOptions(), startPage: Int = 0): Flow<SearchPageResult>
 
     /**
      * Selects the text of the page at [index] between two points (F08), for example where a
@@ -121,7 +126,8 @@ interface PdfDocument : Closeable {
      * @param end the other end; equal to [start] for a long press.
      * @param mode how the selection grows: [SelectionMode.Words] selects the whole word under a
      *   long press; [SelectionMode.Characters] gives an empty selection when both points are equal.
-     * @return the selection, empty when the page has no text layer (scanned page).
+     * @return the selection, empty when the page has no text layer (scanned page). Its
+     *   [TextSelection.start] and [TextSelection.end] place the handles, in reading order.
      */
     suspend fun selectText(
         index: Int,
@@ -129,6 +135,13 @@ interface PdfDocument : Closeable {
         end: PdfPoint,
         mode: SelectionMode = SelectionMode.Characters,
     ): TextSelection
+
+    /**
+     * Whether [point] of the page at [index] lies on a line of text: `false` in a margin,
+     * between paragraphs, on an image or on a page without text layer. Lets the reader ignore a
+     * long press outside the text, which [selectText] would otherwise move to the nearest line.
+     */
+    suspend fun isOnText(index: Int, point: PdfPoint): Boolean
 
     /**
      * Links of the page at [index] (F09), in document order. Internal links whose destination

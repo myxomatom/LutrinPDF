@@ -21,6 +21,8 @@ import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.time.Duration
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -38,11 +40,12 @@ val A4: PageSize = PageSize(595f, 842f)
  * val document = FakePdfDocument().apply {
  *     outline = listOf(OutlineItem("Chapitre 1", PdfDestination(pageIndex = 2)))
  *     searchHits = { query -> if (query == "lutrin") listOf(SearchHit(1, listOf(area))) else emptyList() }
+ *     searchPageDelay = 10.milliseconds // To see the progress and cancel the search.
  * }
  * ```
  *
  * Like the real engine, the functions taking a page index throw [PdfError.PageOutOfRange]
- * outside the document, and the text functions throw [PdfError.Closed] once [close] is called.
+ * outside the document, and every function throws [PdfError.Closed] once [close] is called.
  *
  * @property pageSizes size of each page.
  */
@@ -71,11 +74,23 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     var searchHits: (query: String) -> List<SearchHit> = { emptyList() }
 
     /**
+     * Wait before each page of a search, in the coroutine that collects it (virtual time under
+     * `runTest`): lets a test see the results arrive one page after the other, and cancel the
+     * search in the middle.
+     */
+    @Volatile
+    var searchPageDelay: Duration = Duration.ZERO
+
+    /**
      * Selection returned for each page, whatever the points and mode; pages missing from the map
      * have no text (empty selection).
      */
     @Volatile
     var selections: Map<Int, TextSelection> = emptyMap()
+
+    /** Areas of text of each page, for [isOnText]; pages missing from the map have none. */
+    @Volatile
+    var textAreas: Map<Int, List<PdfRect>> = emptyMap()
 
     /** What [canCopyText] returns. */
     @Volatile
@@ -92,8 +107,9 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
      *
      * @property query searched text.
      * @property options search options.
+     * @property startPage page searched first.
      */
-    data class Search(val query: String, val options: SearchOptions)
+    data class Search(val query: String, val options: SearchOptions, val startPage: Int = 0)
 
     /**
      * One call to [selectText].
@@ -123,10 +139,14 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     override val metadata: PdfMetadata = PdfMetadata(pageCount = pageCount, title = title)
 
     /** Returns the configured size of the page. */
-    override suspend fun pageSize(index: Int): PageSize = pageSizes[index]
+    override suspend fun pageSize(index: Int): PageSize {
+        checkPage(index)
+        return pageSizes[index]
+    }
 
     /** Records the request in [renders] and fills [target] with [FAKE_PAGE_COLOR]. */
     override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean) {
+        checkPage(index)
         renders += Render(index, target.width, target.height, region, scale)
         target.eraseColor(FAKE_PAGE_COLOR)
     }
@@ -138,17 +158,19 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     }
 
     /**
-     * Records the call in [searches], then emits a result for each page, in order, with the
-     * [searchHits] of [query] on that page, until [SearchOptions.maxHits]; nothing for a blank
-     * query.
+     * Records the call in [searches], then emits a result for each page, from [startPage] and
+     * wrapping around like the real engine, after [searchPageDelay], with the [searchHits] of
+     * [query] on that page, until [SearchOptions.maxHits]; nothing for a blank query.
      */
-    override fun search(query: String, options: SearchOptions): Flow<SearchPageResult> = flow {
-        ensureOpen()
-        searches += Search(query, options)
+    override fun search(query: String, options: SearchOptions, startPage: Int): Flow<SearchPageResult> = flow {
+        checkPage(startPage)
+        searches += Search(query, options, startPage)
         if (query.isBlank()) return@flow
         val byPage = searchHits(query).groupBy { it.pageIndex }
         var found = 0
-        for (index in 0 until pageCount) {
+        for (index in (startPage until pageCount) + (0 until startPage)) {
+            delay(searchPageDelay)
+            ensureOpen()
             val hits = byPage[index].orEmpty()
             val remaining = options.maxHits - found
             val isLimitReached = hits.size >= remaining
@@ -163,6 +185,12 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
         checkPage(index)
         selectionRequests += SelectionRequest(index, start, end, mode)
         return selections[index] ?: TextSelection.empty(index)
+    }
+
+    /** Whether [point] lies in one of the [textAreas] of the page. */
+    override suspend fun isOnText(index: Int, point: PdfPoint): Boolean {
+        checkPage(index)
+        return textAreas[index].orEmpty().any { it.contains(point.x, point.y) }
     }
 
     /** Returns the [links] set by the test for the page. */

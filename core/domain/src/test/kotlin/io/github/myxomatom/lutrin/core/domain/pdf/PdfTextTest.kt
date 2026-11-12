@@ -78,11 +78,35 @@ class PdfTextTest {
     }
 
     @Test
+    fun `a search hit is bounded by all its areas`() {
+        val hit = SearchHit(
+            pageIndex = 0,
+            areas = listOf(PdfQuad.of(PdfRect(300f, 100f, 400f, 112f)), PdfQuad.of(PdfRect(72f, 120f, 130f, 132f))),
+        )
+
+        assertThat(hit.bounds).isEqualTo(PdfRect(72f, 100f, 400f, 132f))
+    }
+
+    @Test
+    fun `a search hit needs an area`() {
+        assertThrows(IllegalArgumentException::class.java) { SearchHit(0, emptyList()) }
+    }
+
+    @Test
+    fun `a destination to an area keeps its size`() {
+        val destination = PdfDestination(pageIndex = 1, x = 200f, y = 100f, width = 150f, height = 80f)
+
+        assertThat(destination.width).isEqualTo(150f)
+        assertThat(PdfDestination(pageIndex = 1).height).isNull()
+    }
+
+    @Test
     fun `an empty selection has no text and no area`() {
         val selection = TextSelection.empty(pageIndex = 4)
 
         assertThat(selection.isEmpty).isTrue()
         assertThat(selection.quads).isEmpty()
+        assertThat(selection.start).isNull()
         assertThat(selection.pageIndex).isEqualTo(4)
     }
 

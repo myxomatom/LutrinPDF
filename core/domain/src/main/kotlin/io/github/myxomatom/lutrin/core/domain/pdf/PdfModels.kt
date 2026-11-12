@@ -41,9 +41,17 @@ data class PdfMetadata(
  *   does not set it (keep the current horizontal position).
  * @property y top edge of the target area, in page coordinates; `null` when the destination
  *   does not set it (show the top of the page).
+ * @property width width of the area to fit on screen (PDF `/FitR` destinations), or `null`.
+ * @property height height of the area to fit on screen (PDF `/FitR` destinations), or `null`.
  * @throws IllegalArgumentException if [pageIndex] is negative.
  */
-data class PdfDestination(val pageIndex: Int, val x: Float? = null, val y: Float? = null) {
+data class PdfDestination(
+    val pageIndex: Int,
+    val x: Float? = null,
+    val y: Float? = null,
+    val width: Float? = null,
+    val height: Float? = null,
+) {
     init {
         require(pageIndex >= 0) { "Negative page index $pageIndex" }
     }

@@ -139,7 +139,7 @@ class PageTextTest {
         val text = PageText(
             listOf(line("la biblio-", x = 100f, y = 100f), line("thèque municipale", x = 100f, y = 120f)),
         )
-        val areas = listOf(PdfRect(130f, 100f, 200f, 112f), PdfRect(100f, 120f, 160f, 132f))
+        val areas = listOf(PdfRect(130f, 100f, 200f, 112f), PdfRect(100f, 120f, 160f, 132f)).map(PdfQuad::of)
 
         val excerpt = text.excerpt(areas)
 
@@ -149,7 +149,7 @@ class PageTextTest {
     @Test
     fun `an excerpt leaves out the spaces a hit area also covers`() {
         // From the space before "mot" to the space after it.
-        val excerpt = page.excerpt(listOf(PdfRect(120f, 100f, 170f, 112f)))
+        val excerpt = page.excerpt(listOf(PdfQuad.of(PdfRect(120f, 100f, 170f, 112f))))
 
         assertThat(excerpt).isEqualTo(SearchExcerpt("Le ", "mot", " suivant deux"))
     }
@@ -159,7 +159,7 @@ class PageTextTest {
         val long = PageText(listOf(line("a".repeat(30) + " un deux trois MOT quatre cinq " + "b".repeat(30), 0f, 0f)))
         val start = 45f * 10f
 
-        val excerpt = long.excerpt(listOf(PdfRect(start, 0f, start + 30f, 12f)), maxContext = 10)
+        val excerpt = long.excerpt(listOf(PdfQuad.of(PdfRect(start, 0f, start + 30f, 12f))), maxContext = 10)
 
         // The last 10 characters before the match are "eux trois ": "deux" is cut, so dropped.
         assertThat(excerpt).isEqualTo(SearchExcerpt("trois ", "MOT", " quatre"))
@@ -167,7 +167,81 @@ class PageTextTest {
 
     @Test
     fun `no excerpt when the areas cover no character`() {
-        assertThat(page.excerpt(listOf(PdfRect(400f, 400f, 450f, 450f)))).isNull()
+        assertThat(page.excerpt(listOf(PdfQuad.of(PdfRect(400f, 400f, 450f, 450f))))).isNull()
+    }
+
+    @Test
+    fun `an occurrence at the end of a line does not take the joining space`() {
+        val excerpt = page.excerpt(listOf(PdfQuad.of(PdfRect(170f, 100f, 240f, 112f))))
+
+        assertThat(excerpt).isEqualTo(SearchExcerpt("Le mot ", "suivant", " deux"))
+    }
+
+    @Test
+    fun `a hyphen found at the end of a line is kept in the match`() {
+        val text = PageText(
+            listOf(line("la biblio-", x = 100f, y = 100f), line("thèque municipale", x = 100f, y = 120f)),
+        )
+
+        val excerpt = text.excerpt(listOf(PdfQuad.of(PdfRect(190f, 100f, 200f, 112f))))
+
+        assertThat(excerpt).isEqualTo(SearchExcerpt("la biblio", "-", " thèque municipale"))
+    }
+
+    @Test
+    fun `a point where two lines overlap goes to the line whose middle is nearest`() {
+        // "aaa" from y = 100 to 112, "bbb" from y = 108 to 120: both hold y = 109 to 111.
+        val overlapping = PageText(listOf(line("aaa", x = 100f, y = 100f), line("bbb", x = 100f, y = 108f)))
+
+        val lower = overlapping.select(0, PdfPoint(115f, 111f), PdfPoint(115f, 111f), SelectionMode.Words)
+        val upper = overlapping.select(0, PdfPoint(115f, 109f), PdfPoint(115f, 109f), SelectionMode.Words)
+
+        assertThat(lower.text).isEqualTo("bbb")
+        assertThat(upper.text).isEqualTo("aaa")
+    }
+
+    @Test
+    fun `a selection gives the bottom corners where it starts and ends in reading order`() {
+        val selection = page.select(0, PdfPoint(130f, 106f), PdfPoint(160f, 106f), SelectionMode.Characters)
+
+        assertThat(selection.start).isEqualTo(PdfPoint(130f, 112f))
+        assertThat(selection.end).isEqualTo(PdfPoint(160f, 112f))
+        // Given back, the handles select the same text.
+        val again = page.select(
+            0,
+            checkNotNull(selection.start),
+            checkNotNull(selection.end),
+            SelectionMode.Characters,
+        )
+        assertThat(again.text).isEqualTo("mot")
+    }
+
+    @Test
+    fun `right-to-left handles start on the right`() {
+        val arabic = PageText(listOf(line("مرحبا بكم", x = 500f, y = 200f, rightToLeft = true)))
+        val press = PdfPoint(495f, 206f)
+
+        val selection = arabic.select(0, press, press, SelectionMode.Words)
+
+        assertThat(selection.start).isEqualTo(PdfPoint(500f, 212f))
+        assertThat(selection.end).isEqualTo(PdfPoint(450f, 212f))
+    }
+
+    @Test
+    fun `an empty selection has no handles`() {
+        val selection = page.select(0, PdfPoint(145f, 106f), PdfPoint(145f, 106f), SelectionMode.Characters)
+
+        assertThat(selection.start).isNull()
+        assertThat(selection.end).isNull()
+    }
+
+    @Test
+    fun `tells whether a point lies on a line of text`() {
+        assertThat(page.isOnText(PdfPoint(145f, 106f))).isTrue()
+        assertThat(page.isOnText(PdfPoint(50f, 106f))).isFalse() // Left margin.
+        assertThat(page.isOnText(PdfPoint(145f, 116f))).isFalse() // Between the lines.
+        assertThat(page.isOnText(PdfPoint(200f, 126f))).isFalse() // After the end of "deux".
+        assertThat(PageText(emptyList()).isOnText(PdfPoint(145f, 106f))).isFalse()
     }
 
     private companion object {
