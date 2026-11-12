@@ -340,6 +340,9 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
     eux-mêmes : ils valent toujours 0 ; la taille d'un `FitR` est lue dans l'URI (`viewrect=`) ;
   - sur une page `/Rotate 90`, MuPDF perd la coordonnée de `/FitH`, `/FitV` et d'un `/XYZ`
     incomplet (`populate_destination` tourne (0, y) et ne garde que l'axe d'origine) ;
+  - `FakePdfDocument` lève `Closed` comme le moteur et compte ses ouvertures : chaque
+    `FakePdfEngine.open` après la première en ajoute une, chaque `close` en retire une ; un test
+    qui partage un faux entre la vignette et le lecteur reste donc correct ;
   - `search_for` de PyMuPDF ne trouve pas un mot coupé en fin de ligne, alors que la recherche
     Java de MuPDF (texte extrait avec `dehyphenate`) le trouve : ne pas vérifier le jeu de test
     avec `search_for` ;
@@ -353,7 +356,12 @@ rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
   build .gradle .kotlin /XF .git`) et y lancer Gradle ; les tâches sans code natif (`check` d'un
   module, tests JVM) passent dans le worktree. Le démon Gradle garde le `java.io.tmpdir` de son
   premier lancement : si ce dossier disparaît, la compilation Kotlin échoue avec
-  `NoSuchFileException …kotlin-compiler-in-…alive`.
+  `NoSuchFileException …kotlin-compiler-in-…alive`. Arrêter la commande shell d'un Gradle lancé
+  en arrière-plan n'arrête pas son client Java : le build continue, verrouille des fichiers
+  (`bundleLibRuntimeToJarDebug … utilisé par un autre processus`) et écrit dans le même journal ;
+  attendre sa fin avant de relancer. Après une synchronisation de la copie courte suivie d'un
+  merge, des tests de `app` peuvent échouer avec `NoSuchMethodException ReaderViewModel.<init>()`
+  (code Hilt périmé) : `:app:clean` avant de conclure.
 
 ## 5. Préparer un conteneur cloud (session Claude Code sur le web)
 
