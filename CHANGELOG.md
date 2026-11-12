@@ -10,6 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Texte CJK dont la police n'est pas incorporée** (ADR 0025) : dessiné avec les polices CJK du
+  système, que MuPDF cherche dans `/system/fonts` ; aucune police CJK n'est embarquée (APK
+  inchangés, limite de `SPEC.md` §3 gardée à 15 Mo ; DroidSansFallback, essayée, ajoutait 3,4 Mio
+  par ABI). Sur un appareil sans police CJK, ce texte s'affiche en carrés. Nouveau fichier de test
+  `cjk_not_embedded.pdf`, vérifié sur appareil (`CjkFallbackFontInstrumentedTest`) et, pour la
+  limite sans police CJK, sur la JVM. `generateMupdfResources` n'écrit plus que les ressources
+  compilées (≈ 200 Mo de sources C en moins) ; la bibliothèque des tests JVM a les mêmes polices
+  que l'application.
 - **API texte et destinations du moteur PDF** (M4, lot 1, ADR 0020), sans écran pour l'instant :
   les liens internes et les entrées du sommaire donnent la **position** visée dans la page
   (`PdfDestination(pageIndex, x, y)`, destinations nommées comprises) ; **sélection de texte**

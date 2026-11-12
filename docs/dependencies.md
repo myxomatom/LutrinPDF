@@ -69,6 +69,21 @@ chaque mise à jour de MuPDF.
 
 La bibliothèque zlib est celle d'Android (`-lz`). Le NDK utilisé est la 28.2.13676358.
 
+### Polices de MuPDF compilées dans `libmupdf_java.so`
+
+Fichiers du sous-module (`libmupdf/resources/fonts/`), transformés en tableaux C par
+`generateMupdfResources` (ADR 0013). Licensee ne les voit pas : elles sont vérifiées ici à
+chaque mise à jour de MuPDF. Les autres polices de MuPDF (Noto, Charis SIL, polices CJK) ne sont pas compilées : le texte
+CJK non incorporé utilise les polices du système (ADR 0025).
+
+| Police | Licence | Poids | Rôle |
+|--------|---------|-------|------|
+| URW Base 35 réduites aux 14 polices du PDF et Nimbus Boxes (`urw/*.cff`) | OFL-1.1 (« Copyright 2016 by (URW)++ Design & Development », `urw/OFL.txt`) | 611 954 octets | Les 14 polices standard du PDF (Base 14), toujours présentes |
+
+OFL-1.1 est compatible avec la GPL v3 et l'AGPL v3 pour une police embarquée ; elle demande de
+joindre la mention de copyright et le texte de la licence : **l'écran des licences (E4, jalon M5,
+ADR 0003) doit citer ces polices**, qu'AboutLibraries ne détecte pas.
+
 ## Debug uniquement (jamais dans l'APK publié)
 
 | Dépendance | Version | Licence | Justification |

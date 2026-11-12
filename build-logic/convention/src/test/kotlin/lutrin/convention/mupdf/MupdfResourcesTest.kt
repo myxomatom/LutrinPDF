@@ -28,4 +28,17 @@ class MupdfResourcesTest {
         )
         assertThat(MUPDF_EMBEDDED_RESOURCES.all { it.startsWith("resources/") }).isTrue()
     }
+
+    @Test
+    fun `embedded resources leave out the fallback fonts, like the Android font flags`() {
+        // TOFU_NOTO, TOFU_CJK and TOFU_SIL (ADR 0025): CJK text uses the device's fonts.
+        val leftOut =
+            MUPDF_EMBEDDED_RESOURCES.filter {
+                it.startsWith("resources/fonts/han/") ||
+                    it.startsWith("resources/fonts/droid/") ||
+                    it.startsWith("resources/fonts/noto/") ||
+                    it.startsWith("resources/fonts/sil/")
+            }
+        assertThat(leftOut).isEmpty()
+    }
 }

@@ -42,7 +42,8 @@ La sortie du build Linux (CI) ne doit pas changer, et aucun test ne doit être a
 
 - **Ressources : option B.** `generateMupdfResources` est une tâche typée de `build-logic`
   (`GenerateMupdfResourcesTask`, plugin `lutrin.mupdf`) ; la liste reprend `FONT_BIN` et
-  `HYPH_BIN` du `Makefile` sans option `TOFU*`, comme l'appel précédent. Les autres cibles de
+  `HYPH_BIN` du `Makefile` sans option `TOFU*`, comme l'appel précédent (depuis l'ADR 0025 : avec
+  les drapeaux de polices d'`Android.mk`, soit URW et `hyph-all.zip`). Les autres cibles de
   `generate` (profils ICC, CMaps, `util.js.h`, `css-properties.h`) produisent des en-têtes que
   MuPDF versionne dans `source/` : ils sont utilisés tels quels. Un test compare la sortie à
   celle de `hexdump.sh` sur toutes les ressources ; il tourne en CI (il échoue s'il ne peut

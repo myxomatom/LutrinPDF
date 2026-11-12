@@ -73,19 +73,38 @@ class GenerateMupdfResourcesTaskTest {
     }
 
     @Test
-    fun `regenerates changed resources and deletes the sources of removed ones`() {
-        val kept = resource("resources/fonts/urw/Dingbats.cff", 1)
-        resource("resources/fonts/sil/Old.cff", 2)
-        generate()
+    fun `does not generate the fallback fonts left out of the Android build`() {
+        val kept = resource("resources/fonts/urw/Dingbats.cff", 7)
+        resource("resources/fonts/droid/DroidSansFallback.ttf", 8)
+        resource("resources/fonts/han/SourceHanSerif-Regular.ttc", 9)
+        resource("resources/fonts/noto/NotoSans-Regular.otf", 10)
+        resource("resources/fonts/sil/CharisSIL.cff", 11)
 
-        kept.writeBytes(byteArrayOf(4, 5))
-        mupdf.resolve("resources/fonts/sil/Old.cff").delete()
-        val added = resource("resources/fonts/noto/New-Regular.otf", 6)
         generate()
 
         assertThat(generated("resources/fonts/urw/Dingbats.cff").readBytes()).isEqualTo(expectedDump(kept))
-        assertThat(generated("resources/fonts/noto/New-Regular.otf").readBytes()).isEqualTo(expectedDump(added))
-        assertThat(generated("resources/fonts/sil/Old.cff").exists()).isFalse()
+        listOf(
+            "resources/fonts/droid/DroidSansFallback.ttf",
+            "resources/fonts/han/SourceHanSerif-Regular.ttc",
+            "resources/fonts/noto/NotoSans-Regular.otf",
+            "resources/fonts/sil/CharisSIL.cff",
+        ).forEach { assertThat(generated(it).exists()).isFalse() }
+    }
+
+    @Test
+    fun `regenerates changed resources and deletes the sources of removed ones`() {
+        val kept = resource("resources/fonts/urw/Dingbats.cff", 1)
+        resource("resources/fonts/urw/Old.cff", 2)
+        generate()
+
+        kept.writeBytes(byteArrayOf(4, 5))
+        mupdf.resolve("resources/fonts/urw/Old.cff").delete()
+        val added = resource("resources/fonts/urw/New-Regular.cff", 6)
+        generate()
+
+        assertThat(generated("resources/fonts/urw/Dingbats.cff").readBytes()).isEqualTo(expectedDump(kept))
+        assertThat(generated("resources/fonts/urw/New-Regular.cff").readBytes()).isEqualTo(expectedDump(added))
+        assertThat(generated("resources/fonts/urw/Old.cff").exists()).isFalse()
     }
 
     @Test

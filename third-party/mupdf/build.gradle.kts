@@ -17,6 +17,11 @@ val isWindowsHost = hostOs.startsWith("Windows")
 // The desktop JNI library is only built on Linux (ADR 0013); core:pdf reads this flag.
 val isHostJniSupported = hostOs.startsWith("Linux")
 
+// Fonts (ADR 0025): Artifex's Android.mk, left unchanged, sets TOFU_NOTO, TOFU_CJK and TOFU_SIL,
+// so no fallback font is compiled. CJK text whose font is not embedded in the PDF is drawn with
+// the device's CJK fonts (androidfonts.c reads /system/fonts), and with boxes on a device
+// without any. Keep MUPDF_EMBEDDED_RESOURCES (build-logic) and build-host-jni.sh in sync.
+
 android {
     namespace = "io.github.myxomatom.lutrin.thirdparty.mupdf"
     compileSdk = libs.versions.compileSdk.get().toInt()
