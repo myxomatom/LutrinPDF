@@ -53,10 +53,14 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     /** Every rendering request, in order. */
     val renders: MutableList<Render> = CopyOnWriteArrayList()
 
-    /** Whether [close] was called. */
+    /**
+     * Whether [close] was called since the last opening. [FakePdfEngine] opens the document again
+     * on each `open`: the real engine gives a new document every time, so a document closed by a
+     * previous user (a thumbnail, a reader that was left) must not reach the next one closed.
+     */
     @Volatile
     var isClosed: Boolean = false
-        private set
+        internal set
 
     /** What [outline] returns. */
     @Volatile
@@ -232,16 +236,22 @@ class FakePdfEngine(
     /** The password given to each call, in order (`null` when none). */
     val givenPasswords: MutableList<String?> = CopyOnWriteArrayList()
 
-    /** Records the call in [openedSources] and [givenPasswords], then checks [password] and returns [result]. */
+    /**
+     * Records the call in [openedSources] and [givenPasswords], then checks [password] and returns
+     * [result]; a [FakePdfDocument] it returns is opened again ([FakePdfDocument.isClosed]), like
+     * the new document the real engine would give.
+     */
     override suspend fun open(source: DocumentSource, password: String?): Result<PdfDocument> {
         openedSources += source
         givenPasswords += password
         val expected = this.password
-        return when {
+        val outcome = when {
             expected == null -> result
             password == null -> Result.failure(PdfError.PasswordRequired())
             password != expected -> Result.failure(PdfError.IncorrectPassword())
             else -> result
         }
+        (outcome.getOrNull() as? FakePdfDocument)?.isClosed = false
+        return outcome
     }
 }
