@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -70,8 +69,8 @@ internal val PAGE_GUTTER = 16.dp
  * @param onLongPress called on a long press with the page and the point pressed, `null` outside
  *   every page: to select a word (F08).
  * @param selection the text selection (F08), drawn on its page with its handles.
- * @param canCopy whether the selection may be copied (ADR 0024).
  */
+@Suppress("LongMethod") // Plain wiring of the gestures and the list.
 @Composable
 internal fun PdfPagesView(
     pageSizes: List<PageSize>,
@@ -89,7 +88,6 @@ internal fun PdfPagesView(
     highlights: SearchHighlights = SearchHighlights.None,
     onLongPress: (PageHit?) -> Unit = {},
     selection: ReaderSelection = ReaderSelection(),
-    canCopy: Boolean = true,
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -113,7 +111,6 @@ internal fun PdfPagesView(
             sharedPage = sharedPage,
             highlights = highlights,
             selection = selection,
-            canCopy = canCopy,
             modifier =
                 Modifier
                     .readerGestures(
@@ -214,7 +211,6 @@ private fun PagesList(
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
     selection: ReaderSelection,
-    canCopy: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf<Viewport?>(null) }
@@ -235,7 +231,6 @@ private fun PagesList(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         itemsIndexed(pageSizes, key = { index, _ -> index }) { index, page ->
-            val pageSelection = rememberPageSelection(selection, canCopy, index)
             PdfPage(
                 pageIndex = index,
                 page = page,
@@ -245,14 +240,10 @@ private fun PagesList(
                 zoom = zoom,
                 settled = pinch == null && !listState.isScrollInProgress && !horizontal.isScrollInProgress,
                 nightMode = nightMode,
-                // Above the next page: the handles of its last line may hang over it.
-                modifier =
-                    Modifier
-                        .width(with(density) { layout.contentWidth.toDp() })
-                        .zIndex(if (pageSelection != null) 1f else 0f),
+                modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
                 pageModifier = Modifier.sharedPage(sharedPage, index),
                 highlights = rememberPageHighlights(highlights, index),
-                selection = pageSelection,
+                selection = rememberPageSelection(selection, index),
             )
         }
     }

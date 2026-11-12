@@ -47,13 +47,11 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
-import io.github.myxomatom.lutrin.core.domain.pdf.PdfQuad
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinReaderColors
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionHandle
-import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 /** Radius of the drop drawn for a handle (Material text handles: 22 dp wide). */
@@ -77,86 +75,6 @@ private val ToolbarElevation = 3.dp
 /** Opacity of « Copier » when the author forbids the copy (Material 3 disabled content: 38 %). */
 private const val FORBIDDEN_ALPHA = 0.38f
 
-// Geometry of the handles (F08, ADR 0024). Pure functions, tested without a screen.
-
-/** On which side of the point it marks a handle hangs: away from the selected text. */
-internal enum class HandleSide {
-    /** The drop is to the left of its point, its tip at its top-right corner. */
-    Left,
-
-    /** The drop is to the right of its point, its tip at its top-left corner. */
-    Right,
-}
-
-/**
- * One handle of a selection.
- *
- * @property handle which end of the selection it moves.
- * @property point the point of the page it marks: the bottom of the first or last character.
- * @property side where the drop hangs, away from the selected text.
- */
-internal data class HandlePlacement(val handle: SelectionHandle, val point: PdfPoint, val side: HandleSide)
-
-/**
- * The two handles of [selection], placed at its start and end in reading order: in right-to-left
- * text the start is on the right, so its drop hangs to the right, outside the selection, and the
- * end one to the left. Empty for an empty selection.
- */
-internal fun selectionHandles(selection: TextSelection): List<HandlePlacement> {
-    val start = selection.start
-    val end = selection.end
-    val first = selection.quads.firstOrNull()
-    val last = selection.quads.lastOrNull()
-    if (start == null || end == null || first == null || last == null) return emptyList()
-    val startSide = if (start.isNearerStartOf(first)) HandleSide.Left else HandleSide.Right
-    val endSide = if (end.isNearerStartOf(last)) HandleSide.Left else HandleSide.Right
-    return listOf(
-        HandlePlacement(SelectionHandle.Start, start, startSide),
-        HandlePlacement(SelectionHandle.End, end, endSide),
-    )
-}
-
-/**
- * Whether the point is nearer the lower-left corner of [quad] than its lower-right one: the left
- * end of its line on screen, whatever the direction of the text.
- */
-private fun PdfPoint.isNearerStartOf(quad: PdfQuad): Boolean = distanceTo(quad.lowerLeft) <= distanceTo(quad.lowerRight)
-
-private fun PdfPoint.distanceTo(other: PdfPoint): Float = hypot(x - other.x, y - other.y)
-
-/** Smallest rectangle around every area of [selection], in page coordinates; `null` when empty. */
-internal fun selectionBounds(selection: TextSelection): PdfRect? = selection.quads
-    .takeIf { it.isNotEmpty() }
-    ?.let { quads ->
-        PdfRect.enclosing(quads.flatMap { it.bounds.let { b -> listOf(b.left to b.top, b.right to b.bottom) } })
-    }
-
-/**
- * Where the action bar goes, in window pixels: centred above the selection when there is room
- * under [topLimit], otherwise below it, past its handles; always inside the window.
- *
- * @param anchor bounds of the selection in the window.
- * @param window size of the window.
- * @param content size of the action bar.
- * @param gapAbove space between the selection and the bar above it.
- * @param gapBelow space between the selection and the bar below it.
- * @param topLimit lowest y the bar may start at when above (status bar).
- */
-@Suppress("LongParameterList") // Plain geometry inputs.
-internal fun toolbarPosition(
-    anchor: IntRect,
-    window: IntSize,
-    content: IntSize,
-    gapAbove: Int,
-    gapBelow: Int,
-    topLimit: Int,
-): IntOffset {
-    val x = (anchor.center.x - content.width / 2).coerceIn(0, maxOf(0, window.width - content.width))
-    val above = anchor.top - gapAbove - content.height
-    val y = if (above >= topLimit) above else anchor.bottom + gapBelow
-    return IntOffset(x, y.coerceIn(0, maxOf(0, window.height - content.height)))
-}
-
 // Drawing and gestures.
 
 /**
@@ -172,9 +90,9 @@ internal class PageSelection(val selection: TextSelection, val canCopy: Boolean,
 
 /** The selection on the page at [pageIndex], or `null` when it is on another page or there is none. */
 @Composable
-internal fun rememberPageSelection(selection: ReaderSelection, canCopy: Boolean, pageIndex: Int): PageSelection? {
+internal fun rememberPageSelection(selection: ReaderSelection, pageIndex: Int): PageSelection? {
     val current = selection.selection?.takeIf { it.pageIndex == pageIndex }
-    return remember(current, canCopy, selection) { current?.let { PageSelection(it, canCopy, selection) } }
+    return remember(current, selection) { current?.let { PageSelection(it, selection.canCopy, selection) } }
 }
 
 /**
@@ -230,10 +148,12 @@ private fun SelectionOverlayContent(
     scale: Float,
     overlay: CoordinatesHolder,
     direction: LayoutDirection,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier.onPlaced { overlay.coordinates = it }) {
-        selectionBounds(pageSelection.selection)?.let { SelectionToolbarAnchor(it, scale, pageSelection, direction) }
+        selectionBounds(pageSelection.selection)?.let {
+            SelectionToolbarAnchor(it, scale, pageSelection, direction)
+        }
         selectionHandles(pageSelection.selection).forEach { placement ->
             TextSelectionHandle(
                 placement = placement,
@@ -299,19 +219,8 @@ private fun TextSelectionHandle(
             .size(HandleTouchSize)
             .onPlaced { handle.coordinates = it }
             .semantics { contentDescription = label }
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    // Consumed: a press on a handle neither scrolls nor taps the page.
-                    down.consume()
-                    val grab = overlay.positionOf(handle, down.position) - currentAnchor
-                    currentOnDragStart()
-                    drag(down.id) { change ->
-                        change.consume()
-                        currentOnDrag(overlay.positionOf(handle, change.position) - grab)
-                    }
-                    currentOnDragEnd()
-                }
+            .handleDrag(overlay, handle, { currentAnchor }, { currentOnDragStart() }, { currentOnDrag(it) }) {
+                currentOnDragEnd()
             }
             .drawWithCache {
                 val drop = handleDrop(Offset(size.width / 2, size.height / 2), radius, placement.side)
@@ -321,13 +230,40 @@ private fun TextSelectionHandle(
 }
 
 /**
+ * Drags a handle: reports where its tip would be, in the coordinates of [overlay], keeping the
+ * distance between the finger and the tip measured when the finger went down.
+ */
+@Suppress("LongParameterList") // Where the handle is, and its three drag callbacks.
+private fun Modifier.handleDrag(
+    overlay: CoordinatesHolder,
+    handle: CoordinatesHolder,
+    anchor: () -> Offset,
+    onDragStart: () -> Unit,
+    onDrag: (Offset) -> Unit,
+    onDragEnd: () -> Unit,
+): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown()
+        // Consumed: a press on a handle neither scrolls nor taps the page.
+        down.consume()
+        val grab = overlay.positionOf(handle, down.position) - anchor()
+        onDragStart()
+        drag(down.id) { change ->
+            change.consume()
+            onDrag(overlay.positionOf(handle, change.position) - grab)
+        }
+        onDragEnd()
+    }
+}
+
+/**
  * [position], in the coordinates of [handle], in those of the overlay; computed from the live
  * layout, so that a handle moved by the selection it changes does not move the finger.
  */
 private fun CoordinatesHolder.positionOf(handle: CoordinatesHolder, position: Offset): Offset {
-    val overlay = coordinates?.takeIf { it.isAttached } ?: return position
-    val own = handle.coordinates?.takeIf { it.isAttached } ?: return position
-    return overlay.localPositionOf(own, position)
+    val overlay = coordinates?.takeIf { it.isAttached }
+    val own = handle.coordinates?.takeIf { it.isAttached }
+    return if (overlay != null && own != null) overlay.localPositionOf(own, position) else position
 }
 
 /** A drop centred on [centre]: a disc with a square corner, its tip towards the text. */

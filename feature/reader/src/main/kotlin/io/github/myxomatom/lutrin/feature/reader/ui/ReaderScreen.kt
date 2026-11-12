@@ -94,7 +94,12 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onOutlineToggle = viewModel::onOutlineToggle,
         onExternalOutlineEntry = viewModel::onExternalOutlineEntry,
         search = readerSearch(viewModel.searchController, searchState),
-        selection = readerSelection(viewModel.selectionController, selection),
+        selection =
+            readerSelection(
+                viewModel.selectionController,
+                selection,
+                canCopy = (state as? ReaderUiState.Ready)?.canCopyText == true,
+            ),
     )
 }
 
@@ -181,7 +186,7 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
     }
 }
 
-@Suppress("LongParameterList") // Plain wiring of the state and callbacks of ReaderScreen.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state and callbacks of ReaderScreen.
 @Composable
 private fun ReaderContent(
     state: ReaderUiState.Ready,

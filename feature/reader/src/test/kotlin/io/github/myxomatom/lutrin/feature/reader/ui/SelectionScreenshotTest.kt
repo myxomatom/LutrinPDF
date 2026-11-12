@@ -66,7 +66,8 @@ class SelectionScreenshotTest {
         composeRule.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides direction) {
                 LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
-                    ReaderScreen(state, onBack = {}, selection = ReaderSelection(selection = selection))
+                    ReaderScreen(state, onBack = {
+                    }, selection = ReaderSelection(selection = selection, canCopy = canCopy))
                 }
             }
         }

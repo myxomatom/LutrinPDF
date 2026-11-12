@@ -66,7 +66,6 @@ private val PAGE_MARGIN = 16.dp
  * @param onLongPress called on a long press with the page and the point pressed, `null` outside
  *   the page: to select a word (F08).
  * @param selection the text selection (F08), drawn on its page with its handles.
- * @param canCopy whether the selection may be copied (ADR 0024).
  */
 @Composable
 internal fun PdfPagerView(
@@ -85,7 +84,6 @@ internal fun PdfPagerView(
     highlights: SearchHighlights = SearchHighlights.None,
     onLongPress: (PageHit?) -> Unit = {},
     selection: ReaderSelection = ReaderSelection(),
-    canCopy: Boolean = true,
 ) {
     ResetZoomOnPageChange(pagerState, zoom, onZoomChange)
     // Pages follow each other left to right whatever the language of the interface: the
@@ -110,7 +108,7 @@ internal fun PdfPagerView(
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 highlights = highlights,
-                selection = rememberPageSelection(selection, canCopy, index),
+                selection = rememberPageSelection(selection, index),
             )
         }
     }

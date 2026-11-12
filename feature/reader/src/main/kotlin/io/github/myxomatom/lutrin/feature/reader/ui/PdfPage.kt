@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PixelRect
@@ -100,15 +101,11 @@ internal fun PdfPage(
         )
     val density = LocalDensity.current
     val displayedHeight = pageHeightPx(page, displayedWidth)
-    Box(modifier, contentAlignment = Alignment.TopCenter) {
+    // Above the next page while selected: the handles of its last line may hang over it.
+    Box(modifier.zIndex(if (selection != null) 1f else 0f), contentAlignment = Alignment.TopCenter) {
         Box(
             pageModifier
-                .size(
-                    with(density) {
-                        displayedWidth.toDp()
-                    },
-                    with(density) { displayedHeight.toDp() },
-                )
+                .size(with(density) { displayedWidth.toDp() }, with(density) { displayedHeight.toDp() })
                 .shadow(PAGE_ELEVATION)
                 .background(if (nightMode) PAPER_NIGHT else PAPER)
                 .onGloballyPositioned { coordinates = it },

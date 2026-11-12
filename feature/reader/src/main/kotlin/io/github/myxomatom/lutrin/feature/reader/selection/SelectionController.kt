@@ -94,19 +94,20 @@ class SelectionController(
      * @return whether a word was selected; otherwise the press keeps its former meaning.
      */
     suspend fun onLongPress(pageIndex: Int, point: PdfPoint): Boolean {
-        val opened = document() ?: return false
+        val opened = document()
         val word =
             readText {
-                if (opened.isOnText(pageIndex, point)) {
+                if (opened != null && opened.isOnText(pageIndex, point)) {
                     opened.selectText(pageIndex, point, point, SelectionMode.Words)
                 } else {
                     null
                 }
-            }
-        if (word == null || word.isEmpty) return false
-        stopDragging()
-        mutableSelection.value = word
-        return true
+            }?.takeUnless { it.isEmpty }
+        if (word != null) {
+            stopDragging()
+            mutableSelection.value = word
+        }
+        return word != null
     }
 
     /**

@@ -68,7 +68,7 @@ private val FullscreenIndicatorPadding = 16.dp
  * @param selection the text selection (F08, ADR 0024): a long press on a word selects it, a tap
  *   closes it; TalkBack copies the text of the page with an action of the document area.
  */
-@Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
 internal fun ReaderDocumentArea(
     state: ReaderUiState.Ready,
@@ -167,7 +167,6 @@ private fun DocumentPages(
                 highlights = highlights,
                 onLongPress = onLongPress,
                 selection = selection,
-                canCopy = state.canCopyText,
             )
 
         is PagedNavigator ->
@@ -185,54 +184,7 @@ private fun DocumentPages(
                 highlights = highlights,
                 onLongPress = onLongPress,
                 selection = selection,
-                canCopy = state.canCopyText,
             )
-    }
-}
-
-/**
- * A tap on the pages while text is selected only closes the selection (ADR 0024); otherwise it
- * goes to [onTap] (link, or full screen).
- */
-@Composable
-private fun rememberSelectionTap(selection: ReaderSelection, onTap: (PageHit?) -> Unit): (PageHit?) -> Unit {
-    val currentSelection by rememberUpdatedState(selection)
-    val currentOnTap by rememberUpdatedState(onTap)
-    return remember {
-        { hit -> if (currentSelection.selection != null) currentSelection.onClear() else currentOnTap(hit) }
-    }
-}
-
-/**
- * Handles a long press on the pages: selects the word under the finger (F08). Outside the text,
- * or on a page without text, the press does what a tap does ([onTap]), as before the selection
- * existed (ADR 0024).
- */
-@Composable
-private fun rememberPageLongPress(selection: ReaderSelection, onTap: (PageHit?) -> Unit): (PageHit?) -> Unit {
-    val scope = rememberCoroutineScope()
-    val currentSelection by rememberUpdatedState(selection)
-    val currentOnTap by rememberUpdatedState(onTap)
-    return remember {
-        { hit ->
-            scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                val selected = hit != null && currentSelection.onLongPress(hit.pageIndex, hit.point)
-                if (!selected) currentOnTap(hit)
-            }
-        }
-    }
-}
-
-/**
- * « Copier le texte de la page », the TalkBack action of the document area (F08, F18): the whole
- * text of the page shown, without a long press, under the same copy permission (ADR 0024).
- */
-@Composable
-private fun copyPageAction(selection: ReaderSelection, page: Int): CustomAccessibilityAction {
-    val currentSelection by rememberUpdatedState(selection)
-    return CustomAccessibilityAction(stringResource(R.string.reader_selection_copy_page_action)) {
-        currentSelection.onCopyPage(page)
-        true
     }
 }
 

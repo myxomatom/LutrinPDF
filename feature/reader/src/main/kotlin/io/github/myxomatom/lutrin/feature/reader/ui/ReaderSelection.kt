@@ -12,20 +12,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionController
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionEffect
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionHandle
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 
 /**
  * What the reader screen needs for the text selection (F08, ADR 0024), wired by [ReaderRoute] to
@@ -33,6 +39,8 @@ import kotlinx.coroutines.flow.emptyFlow
  * selects nothing.
  *
  * @property selection the selection shown, on one page; `null` when nothing is selected.
+ * @property canCopy whether « Copier » copies (the document allows it, or the setting ignores
+ *   its restriction); otherwise it explains that the author forbids it (ADR 0024).
  * @property effects copies and refusals, collected once by the screen.
  * @property onLongPress a long press on a page, with the page and the point pressed; returns
  *   whether a word was selected.
@@ -47,6 +55,7 @@ import kotlinx.coroutines.flow.emptyFlow
 @Stable
 class ReaderSelection(
     val selection: TextSelection? = null,
+    val canCopy: Boolean = true,
     val effects: Flow<SelectionEffect> = emptyFlow(),
     val onLongPress: suspend (Int, PdfPoint) -> Boolean = { _, _ -> false },
     val onHandleDragStart: (SelectionHandle) -> Unit = {},
@@ -63,20 +72,25 @@ class ReaderSelection(
  *
  * @param controller the selection controller of the ViewModel.
  * @param selection its current selection.
+ * @param canCopy whether the text of the document may be copied now.
  */
-internal fun readerSelection(controller: SelectionController, selection: TextSelection?): ReaderSelection =
-    ReaderSelection(
-        selection = selection,
-        effects = controller.effects,
-        onLongPress = controller::onLongPress,
-        onHandleDragStart = controller::onHandleDragStart,
-        onHandleDrag = controller::onHandleDrag,
-        onHandleDragEnd = controller::onHandleDragEnd,
-        onCopy = controller::onCopy,
-        onSelectAll = controller::onSelectAll,
-        onCopyPage = controller::onCopyPage,
-        onClear = controller::onClear,
-    )
+internal fun readerSelection(
+    controller: SelectionController,
+    selection: TextSelection?,
+    canCopy: Boolean,
+): ReaderSelection = ReaderSelection(
+    selection = selection,
+    canCopy = canCopy,
+    effects = controller.effects,
+    onLongPress = controller::onLongPress,
+    onHandleDragStart = controller::onHandleDragStart,
+    onHandleDrag = controller::onHandleDrag,
+    onHandleDragEnd = controller::onHandleDragEnd,
+    onCopy = controller::onCopy,
+    onSelectAll = controller::onSelectAll,
+    onCopyPage = controller::onCopyPage,
+    onClear = controller::onClear,
+)
 
 /**
  * The clipboard content of a copied selection. From Android 13, the text of a document opened
@@ -157,5 +171,51 @@ internal fun SelectionEffectsHandler(
                 )
             }
         }
+    }
+}
+
+/**
+ * A tap on the pages while text is selected only closes the selection (ADR 0024); otherwise it
+ * goes to [onTap] (link, or full screen).
+ */
+@Composable
+internal fun rememberSelectionTap(selection: ReaderSelection, onTap: (PageHit?) -> Unit): (PageHit?) -> Unit {
+    val currentSelection by rememberUpdatedState(selection)
+    val currentOnTap by rememberUpdatedState(onTap)
+    return remember {
+        { hit -> if (currentSelection.selection != null) currentSelection.onClear() else currentOnTap(hit) }
+    }
+}
+
+/**
+ * Handles a long press on the pages: selects the word under the finger (F08). Outside the text,
+ * or on a page without text, the press does what a tap does ([onTap]), as before the selection
+ * existed (ADR 0024).
+ */
+@Composable
+internal fun rememberPageLongPress(selection: ReaderSelection, onTap: (PageHit?) -> Unit): (PageHit?) -> Unit {
+    val scope = rememberCoroutineScope()
+    val currentSelection by rememberUpdatedState(selection)
+    val currentOnTap by rememberUpdatedState(onTap)
+    return remember {
+        { hit ->
+            scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                val selected = hit != null && currentSelection.onLongPress(hit.pageIndex, hit.point)
+                if (!selected) currentOnTap(hit)
+            }
+        }
+    }
+}
+
+/**
+ * « Copier le texte de la page », the TalkBack action of the document area (F08, F18): the whole
+ * text of the page shown, without a long press, under the same copy permission (ADR 0024).
+ */
+@Composable
+internal fun copyPageAction(selection: ReaderSelection, page: Int): CustomAccessibilityAction {
+    val currentSelection by rememberUpdatedState(selection)
+    return CustomAccessibilityAction(stringResource(R.string.reader_selection_copy_page_action)) {
+        currentSelection.onCopyPage(page)
+        true
     }
 }

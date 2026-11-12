@@ -82,8 +82,9 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
 /**
  * Settings screen (E3, `docs/design/png/E3-Parametres.png`). For now the « Appearance » section
  * with dynamic colours (ADR 0010), the « Reading » section with the page preview of the reader's
- * slider (ADR 0018) and the switch that ignores the copy restriction of documents (ADR 0024), and « Vider les récents » in « Data and privacy », confirmed by a dialog and
- * disabled while the list is empty (ADR 0016); the other settings come with milestone M5.
+ * slider (ADR 0018) and the switch that ignores the copy restriction of documents (ADR 0024),
+ * and « Vider les récents » in « Data and privacy », confirmed by a dialog and disabled while
+ * the list is empty (ADR 0016); the other settings come with milestone M5.
  *
  * @param state what to show.
  * @param dynamicColorSupported whether the device can use dynamic colours (Android 12+);
