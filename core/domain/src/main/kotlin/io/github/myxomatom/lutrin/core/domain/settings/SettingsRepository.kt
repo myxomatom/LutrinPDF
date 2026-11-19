@@ -28,4 +28,11 @@ interface SettingsRepository {
      * @param enabled whether dragging the slider previews the page and moves only on release.
      */
     suspend fun setPagePreview(enabled: Boolean)
+
+    /**
+     * Chooses whether the reader may copy the text of documents whose author forbids it (ADR 0024).
+     *
+     * @param enabled whether the copy restriction of a document is ignored.
+     */
+    suspend fun setIgnoreCopyRestriction(enabled: Boolean)
 }

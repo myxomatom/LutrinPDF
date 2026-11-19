@@ -118,6 +118,14 @@ class DesignTokensTest {
             .isEqualTo(tokenColor(reader.getString("searchHitCurrentOutline")))
     }
 
+    @Test
+    fun `selection colours are the reader tokens`() {
+        val reader = tokens.getJSONObject("color").getJSONObject("reader")
+
+        assertThat(LutrinReaderColors.Selection).isEqualTo(tokenColor(reader.getString("selection")))
+        assertThat(LutrinReaderColors.SelectionHandle).isEqualTo(tokenColor(reader.getString("selectionHandle")))
+    }
+
     private fun styles(typography: Typography): Map<String, TextStyle> = mapOf(
         "displayLarge" to typography.displayLarge,
         "headlineLarge" to typography.headlineLarge,

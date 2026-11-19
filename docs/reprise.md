@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31, mergée) ; lot 5 « recherche » fait (ADR 0023, branche `feat/reader-search`) ; sélection à faire |
+| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31, mergée) ; lot 5 « recherche » fait (ADR 0023, PR #32, mergée) ; lot 6 « sélection et copie » fait (ADR 0024, branche `feat/reader-text-selection`) : **M4 terminé côté code**, essais sur appareil restants |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -99,11 +99,9 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **M4, lot suivant**, sur l'API du lot 1 (ADR 0020) (sommaire, liens et recherche faits,
-   ADR 0021 à 0023) : sélection par appui long (`selectText`, `SelectionMode.Words`), copie
-   refusée si `canCopyText` est faux ; la sélection dessinera ses zones comme le calque de
-   recherche (`SearchHighlightLayer` dans `PdfPage`).
-   Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur appareil (CI seulement).
+0. **Essais sur appareil de tout M4** (lots 2 à 6, voir les paragraphes « M4, lot … » de la
+   section 1), puis **M5**. Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur
+   appareil (CI seulement).
 1. **M3 Fichiers et récents** :
    - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
@@ -195,6 +193,22 @@ premier résultat), `search_many_hits.pdf` (800 résultats sur une page, surlign
 `text_selection.pdf` (mot coupé, arabe), `scanned_images_only.pdf` (aucun résultat), TalkBack
 (annonce du nombre puis du résultat), clavier physique (Entrée), rotation pendant une recherche,
 mode page par page ; test instrumenté `SearchInstrumentedTest` (jamais exécuté sur appareil).
+
+**M4, lot 6 : sélection et copie** (F08, ADR 0024, branche `feat/reader-text-selection`, pas
+encore sur appareil). Un appui long sur un mot le sélectionne (`SelectionController`, paquet
+`selection`, détenu par `ReaderViewModel`) ; deux poignées (`TextSelectionHandles.kt`, cibles de
+48 dp) l'étendent caractère par caractère ; une barre en `Popup` propose « Copier » et « Tout
+sélectionner ». Zones dessinées dans `PdfPage` (`SelectionHighlightLayer`), poignées dans la
+boîte qui entoure la page (non coupée). Fermeture : toucher, retour, autre page, recherche.
+Copie par l'écran (`SelectionEffectsHandler`) : sensible pour un document protégé (Android 13+),
+« Texte copié » avant Android 13 seulement. Permission : `AppSettings.allowsTextCopy` ; réglage
+« Ignorer l'interdiction de copie » dans E3 › Lecture, désactivé par défaut. TalkBack : action
+« Copier le texte de la page ». **À essayer sur appareil** : `text_selection.pdf` (mot latin,
+mot arabe, poignées qui se croisent, « Tout sélectionner »), au zoom et page par page ;
+`encrypted_owner_password_only.pdf` (copie refusée, puis permise par le réglage) ; un PDF chiffré
+avec mot de passe (aperçu du presse-papiers masqué, Android 13+) ; `scanned_images_only.pdf`
+(rien n'est sélectionné) ; confirmation de copie du système (13+) et « Texte copié » (avant 13) ;
+TalkBack ; test instrumenté `SelectionInstrumentedTest` (jamais exécuté sur appareil).
 
 **M4, lot des polices CJK** (ADR 0025, PR #28) : pas de police CJK embarquée. MuPDF dessine le
 texte CJK non incorporé avec les polices du système (`androidfonts.c` lit `/system/fonts`, quel
@@ -436,6 +450,21 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     clavier, sinon le premier retour ne ferme pas la recherche ;
   - l'icône « Rechercher » de la barre du haut a changé les captures du lecteur
     (`reader_*`, `outline_preview_section_light`), réenregistrées.
+- **Tests de la sélection** (lot 6, ADR 0024) :
+  - dans une interface de droite à gauche, `Modifier.offset` inverse x : les poignées, en
+    coordonnées de page, sont posées sous `LocalLayoutDirection` gauche à droite (la barre
+    d'actions retrouve la direction de l'interface) ;
+  - la barre d'actions est une `Popup` : capture avec `captureScreenRoboImage` ;
+  - Robolectric n'a que l'API 36 hors ligne (`@Config(sdk = [32])` échoue, jar absent) : la
+    version est passée en paramètre (`selectionClip(sdkInt)`, `systemConfirmsCopy`) ;
+  - dans `ReaderRoute`, le délai de 400 ms de la recherche tourne sur le looper principal :
+    valider le champ (`performImeAction()`) au lieu d'avancer l'horloge ;
+  - `--tests "*Settings*"` est développé par le shell sous Git Bash (`settings.gradle.kts`) :
+    donner le nom qualifié (`io.github…*Settings*`) ;
+  - les captures des Paramètres ont changé (nouvel interrupteur), réenregistrées ;
+  - `check assembleRelease :dokkaGenerate` ne compile pas les tests instrumentés : une API de
+    test expérimentale sans `@OptIn(ExperimentalTestApi::class)` n'échoue qu'en CI. Lancer aussi
+    `:app:compileDebugAndroidTestKotlin` avant de pousser.
 - **Tests Compose du tiroir** (lot 3) : `@Config(qualifiers = "+fr")` (avec le `+`) ajoute la
   langue à celle de la classe, sans `+` elle échoue (« unrecognized trailing qualifier ») ; pour
   une capture à 200 %, `@Config(fontScale = 2f)` garde la taille des icônes, alors que

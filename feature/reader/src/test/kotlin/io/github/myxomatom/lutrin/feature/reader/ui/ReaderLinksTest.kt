@@ -253,6 +253,8 @@ class ReaderLinksTest {
             "Link: page 3",
             "Link: https://example.org/conditions",
             "Link: javascript:alert(1)",
+            // Text selection (ADR 0024): the text of the page, without a long press.
+            "Copy the text of the page",
         ).inOrder()
         composeRule.runOnUiThread { actions.first().action() }
         composeRule.waitForIdle()
@@ -266,7 +268,9 @@ class ReaderLinksTest {
 
         val config = documentNode(1).fetchSemanticsNode().config
 
-        assertThat(config.getOrNull(SemanticsActions.CustomActions)).isNull()
+        // Only the copy of the text of the page (ADR 0024).
+        assertThat(config.getOrNull(SemanticsActions.CustomActions).orEmpty().map { it.label })
+            .containsExactly("Copy the text of the page")
         assertThat(config.getOrNull(SemanticsProperties.ContentDescription)).containsExactly("Document, page 1 of 5")
     }
 

@@ -113,4 +113,14 @@
     <string name="reader_search_card_page_section">Page %1$d · %2$s</string>
     <!-- Ellipsis around an excerpt cut out of its line. -->
     <string name="reader_search_ellipsis">…</string>
+    <!-- Text selection (F08, ADR 0024). -->
+    <string name="reader_selection_copy">Copy</string>
+    <string name="reader_selection_select_all">Select all</string>
+    <string name="reader_selection_copied">Text copied</string>
+    <string name="reader_selection_copy_forbidden">The author of this document forbids copying its text</string>
+    <string name="reader_selection_copy_forbidden_state">Forbidden by the author</string>
+    <string name="reader_selection_no_text">No text on this page</string>
+    <string name="reader_selection_copy_page_action">Copy the text of the page</string>
+    <string name="reader_selection_start_handle">Start of the selection</string>
+    <string name="reader_selection_end_handle">End of the selection</string>
 </resources>

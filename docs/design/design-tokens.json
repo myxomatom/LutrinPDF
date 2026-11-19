@@ -87,7 +87,9 @@
       "textSepia": "#3D2E14",
       "searchHit": "rgba(255,214,90,0.70)",
       "searchHitCurrent": "rgba(245,166,35,0.75)",
-      "searchHitCurrentOutline": "#B06A00"
+      "searchHitCurrentOutline": "#B06A00",
+      "selection": "rgba(42,91,140,0.30)",
+      "selectionHandle": "#2A5B8C"
     }
   },
   "typography": {

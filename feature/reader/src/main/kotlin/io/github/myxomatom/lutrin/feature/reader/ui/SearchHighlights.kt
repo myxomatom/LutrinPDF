@@ -84,8 +84,8 @@ internal fun SearchHighlightLayer(highlights: PageHighlights?, page: PageSize, m
     )
 }
 
-/** One closed outline per quad, from page points to pixels. */
-private fun List<PdfQuad>.toPath(scale: Float): Path = Path().apply {
+/** One closed outline per quad, from page points to pixels; shared with the selection. */
+internal fun List<PdfQuad>.toPath(scale: Float): Path = Path().apply {
     forEach { quad ->
         moveTo(quad.upperLeft.x * scale, quad.upperLeft.y * scale)
         lineTo(quad.upperRight.x * scale, quad.upperRight.y * scale)

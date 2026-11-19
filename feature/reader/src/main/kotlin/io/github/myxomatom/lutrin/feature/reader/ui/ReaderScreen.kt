@@ -68,6 +68,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val externalLink by viewModel.linkController.externalLink.collectAsStateWithLifecycle()
     val searchState by viewModel.searchController.state.collectAsStateWithLifecycle()
+    val selection by viewModel.selectionController.selection.collectAsStateWithLifecycle()
     val context = LocalContext.current
     ReaderScreen(
         state = state,
@@ -93,6 +94,12 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onOutlineToggle = viewModel::onOutlineToggle,
         onExternalOutlineEntry = viewModel::onExternalOutlineEntry,
         search = readerSearch(viewModel.searchController, searchState),
+        selection =
+            readerSelection(
+                viewModel.selectionController,
+                selection,
+                canCopy = (state as? ReaderUiState.Ready)?.canCopyText == true,
+            ),
     )
 }
 
@@ -122,6 +129,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   the document; the drawer stays open and the confirmation of external links (V7) takes over.
  * @param search the search in the document (F07, V1): while it is open, its bar replaces the top
  *   bar, the excerpt of the current result replaces the floating bar, and back closes it.
+ * @param selection the text selection (F08, ADR 0024): long press, handles, « Copier » and
+ *   « Tout sélectionner ».
  */
 @Composable
 fun ReaderScreen(
@@ -138,6 +147,7 @@ fun ReaderScreen(
     onOutlineToggle: (Int) -> Unit = {},
     onExternalOutlineEntry: (String) -> Unit = {},
     search: ReaderSearch = ReaderSearch(),
+    selection: ReaderSelection = ReaderSelection(),
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -162,6 +172,7 @@ fun ReaderScreen(
                     onOutlineToggle = onOutlineToggle,
                     onExternalOutlineEntry = onExternalOutlineEntry,
                     search = search,
+                    selection = selection,
                 )
         }
     }
@@ -175,7 +186,7 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
     }
 }
 
-@Suppress("LongParameterList") // Plain wiring of the state and callbacks of ReaderScreen.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state and callbacks of ReaderScreen.
 @Composable
 private fun ReaderContent(
     state: ReaderUiState.Ready,
@@ -189,6 +200,7 @@ private fun ReaderContent(
     onOutlineToggle: (Int) -> Unit = {},
     onExternalOutlineEntry: (String) -> Unit = {},
     search: ReaderSearch = ReaderSearch(),
+    selection: ReaderSelection = ReaderSelection(),
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
@@ -226,6 +238,7 @@ private fun ReaderContent(
             pageTransition = pageTransition,
             links = links,
             search = search,
+            selection = selection,
         )
     }
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
@@ -270,6 +283,7 @@ private fun ReaderScaffold(
     pageTransition: DocumentTransition?,
     links: ReaderLinks,
     search: ReaderSearch,
+    selection: ReaderSelection,
 ) {
     SearchHandling(search, navigator)
     Scaffold(
@@ -304,6 +318,7 @@ private fun ReaderScaffold(
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
             pageTransition = pageTransition,
             search = search.state,
+            selection = selection,
         )
     }
 }

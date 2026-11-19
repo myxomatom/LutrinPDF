@@ -143,7 +143,7 @@ private fun CoroutineScope.offerReturn(
 }
 
 /** A short message replacing any message shown; never blocks the effects. */
-private fun CoroutineScope.inform(snackbar: SnackbarHostState, message: String) {
+internal fun CoroutineScope.inform(snackbar: SnackbarHostState, message: String) {
     launch {
         snackbar.currentSnackbarData?.dismiss()
         snackbar.showSnackbar(message)

@@ -66,7 +66,11 @@ internal val PAGE_GUTTER = 16.dp
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
  * @param linkActions TalkBack actions of the document area, one per link of the current page (F09).
  * @param highlights occurrences of the search to highlight on the pages (F07).
+ * @param onLongPress called on a long press with the page and the point pressed, `null` outside
+ *   every page: to select a word (F08).
+ * @param selection the text selection (F08), drawn on its page with its handles.
  */
+@Suppress("LongMethod") // Plain wiring of the gestures and the list.
 @Composable
 internal fun PdfPagesView(
     pageSizes: List<PageSize>,
@@ -82,6 +86,8 @@ internal fun PdfPagesView(
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
     highlights: SearchHighlights = SearchHighlights.None,
+    onLongPress: (PageHit?) -> Unit = {},
+    selection: ReaderSelection = ReaderSelection(),
 ) {
     val horizontal = rememberScrollState()
     var pinch by remember { mutableStateOf<PinchTransform?>(null) }
@@ -104,6 +110,7 @@ internal fun PdfPagesView(
             nightMode = nightMode,
             sharedPage = sharedPage,
             highlights = highlights,
+            selection = selection,
             modifier =
                 Modifier
                     .readerGestures(
@@ -115,6 +122,7 @@ internal fun PdfPagesView(
                         },
                         onDoubleTap = { focus -> onCommit(doubleTapTransform(zoom, focus)) },
                         onTap = { onTap(layout.hit(it, listState, pageSizes, zoom, horizontal.value)) },
+                        onLongPress = { onLongPress(layout.hit(it, listState, pageSizes, zoom, horizontal.value)) },
                     )
                     .documentSemantics(contentDescription, linkActions),
         )
@@ -202,6 +210,7 @@ private fun PagesList(
     nightMode: Boolean,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
+    selection: ReaderSelection,
     modifier: Modifier = Modifier,
 ) {
     var viewport by remember { mutableStateOf<Viewport?>(null) }
@@ -234,6 +243,7 @@ private fun PagesList(
                 modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
                 pageModifier = Modifier.sharedPage(sharedPage, index),
                 highlights = rememberPageHighlights(highlights, index),
+                selection = rememberPageSelection(selection, index),
             )
         }
     }
