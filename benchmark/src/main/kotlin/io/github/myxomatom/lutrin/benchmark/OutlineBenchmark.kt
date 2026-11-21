@@ -27,9 +27,12 @@ class OutlineBenchmark {
         compilationMode = CompilationMode.DEFAULT,
         iterations = ITERATIONS,
         setupBlock = {
+            // A fresh process each time: the jump of the previous iteration left the document far away.
+            killProcess()
             pressHome()
             openLargeDocument(ReadingMode.CONTINUOUS)
             waitForPages()
+            waitForOutlineButton()
         },
     ) {
         jumpToFarOutlineEntry()

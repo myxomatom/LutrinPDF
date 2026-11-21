@@ -131,7 +131,12 @@ private const val LONG_PRESS_STEPS = 200
  */
 private val SEARCH_OPEN = Pattern.compile("Search|Rechercher")
 private val SEARCH_NEXT = Pattern.compile("Next result|Résultat suivant")
-private val SEARCH_POSITION = Pattern.compile("(Result|Résultat) \\d.* (of|sur) .*")
+
+/*
+ * The counter of the search bar ("1 / 1 000+") is described as "1 000 résultats ou plus" /
+ * "1,000 results or more": the digits come first, which tells it from the "Résultat suivant" button.
+ */
+private val SEARCH_COUNTER = Pattern.compile("\\d.*(results?|résultats?).*")
 private val OUTLINE_OPEN = Pattern.compile("Table of contents|Table des matières")
 
 /**
@@ -148,8 +153,20 @@ fun MacrobenchmarkScope.searchFirstResult() {
     }
     field.text = SEARCH_QUERY
     device.pressEnter()
-    checkNotNull(device.wait(Until.findObject(By.desc(SEARCH_POSITION)), SEARCH_TIMEOUT_MS)) {
+    checkNotNull(device.wait(Until.findObject(By.desc(SEARCH_COUNTER)), SEARCH_TIMEOUT_MS)) {
         "No search result for \"$SEARCH_QUERY\""
+    }
+}
+
+/**
+ * Waits until the reader has loaded the outline of the open document: the table of contents
+ * button only appears then, and the outline of a large document is read in the background.
+ *
+ * @throws IllegalStateException if the button does not appear within 30 seconds.
+ */
+fun MacrobenchmarkScope.waitForOutlineButton() {
+    checkNotNull(device.wait(Until.findObject(By.desc(OUTLINE_OPEN)), DOCUMENT_TIMEOUT_MS)) {
+        "The Table of contents button never appeared: does the document have an outline?"
     }
 }
 
