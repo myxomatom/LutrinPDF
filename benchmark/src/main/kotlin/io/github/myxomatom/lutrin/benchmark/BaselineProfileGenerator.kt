@@ -56,6 +56,7 @@ class BaselineProfileGenerator {
         pressHome()
         openLargeDocument(ReadingMode.CONTINUOUS)
         waitForPages()
+        waitForOutlineButton()
         jumpToFarOutlineEntry()
     }
 

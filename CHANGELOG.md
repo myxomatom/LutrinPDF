@@ -9,6 +9,14 @@ changement y est signalé.
 
 ## [Non publié]
 
+### Modifié
+- **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
+  sélecteurs de `SearchBenchmark` et `OutlineBenchmark` corrigés (compteur de recherche décrit
+  « 1 000 résultats ou plus », attente du bouton de la table des matières, processus tué entre
+  deux itérations) ; Baseline Profile régénéré (recherche, tiroir de la table des matières,
+  sélection) ; défilement P90 4,7 ms, ouverture du PDF de 600 pages 819 ms, démarrage à froid
+  427 ms.
+
 ### Ajouté
 - **Scénarios de benchmark de M4** (`:benchmark`, ADR 0012) : `SearchBenchmark` (recherche d'un mot
   fréquent dans le PDF de 600 pages, dix « résultat suivant », défilement pendant le surlignage) et

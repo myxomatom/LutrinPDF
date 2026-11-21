@@ -201,13 +201,17 @@ Générer le profil **avant** de mesurer, puis committer le profil.
 **Vérifier les fichiers de sortie** (la tâche affiche BUILD SUCCESSFUL même si l'installation a
 échoué et qu'aucun test n'a tourné) :
 
-- [ ] `benchmark/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/<appareil>/`
+- [x] `benchmark/build/outputs/connected_android_test_additional_output/benchmarkRelease/connected/<appareil>/`
   contient un `*-benchmarkData.json` récent et des traces `.perfetto-trace` ;
-- [ ] `app/src/release/generated/baselineProfiles/baseline-prof.txt` et `startup-prof.txt` ont
-  changé (`git diff --stat`) et contiennent des classes de `feature.reader.search`, `outline` et
-  `selection` (`grep -c "feature/reader/search" baseline-prof.txt`) ;
-- [ ] aucun test en échec : en cas d'échec d'un sélecteur (« The Search button is missing »), la
+- [x] `app/src/release/generated/baselineProfiles/baseline-prof.txt` et `startup-prof.txt` ont
+  changé (`git diff --stat`) et contiennent des classes de `feature.reader.search`, `ui/Outline*` (le
+  tiroir est dans `ui`) et `selection` (`grep -c "feature/reader/search" baseline-prof.txt`) ;
+- [x] aucun test en échec : en cas d'échec d'un sélecteur (« The Search button is missing »), la
   langue du téléphone n'est ni le français ni l'anglais, ou le document ne s'est pas ouvert.
+  Les sélecteurs de `LutrinTarget.kt` passent par les descriptions de contenu (UiAutomator ne voit
+  pas les `testTag`) : le compteur de recherche est décrit « 1 000 résultats ou plus », pas
+  « Résultat 1 sur … » (celui-ci n'existe que pour TalkBack sur la carte d'extrait) ; le bouton de
+  la table des matières n'apparaît qu'une fois le sommaire lu, d'où `waitForOutlineButton()`.
 
 **Chiffres de référence** (Xiaomi 23013PC75G, Android 15, build `benchmarkRelease`, 2026-11-08,
 ADR 0012) :
@@ -218,10 +222,14 @@ ADR 0012) :
 | `ScrollBenchmark.pageByPage` | P50 3,3 / P90 6,6 / P99 11,8 ms |
 | `OpenDocumentBenchmark.openLargeDocumentCold` | `timeToFullDisplayMs` médiane 1050 ms |
 | `StartupBenchmark` avec profil | à froid 357,8 ms |
-| `SearchBenchmark.nextResultsThenScroll` | **pas de référence** : noter les premières valeurs (objectif : P90 < 16 ms) |
-| `OutlineBenchmark.openAndJump` | **pas de référence** : noter les premières valeurs |
+| `SearchBenchmark.nextResultsThenScroll` | M4 (2026-11-21) : P50 3,4 / P90 5,4 / P99 12,0 ms |
+| `OutlineBenchmark.openAndJump` | M4 (2026-11-21) : P50 3,9 / P90 10,4 / P99 27,1 ms |
 
-- [ ] Reporter les mesures (modèle, version d'Android) dans l'ADR 0012 et `ROADMAP.md` §0 ;
-  les benchmarks existants sont aussi à refaire depuis la refonte du design (PR #24).
+Les chiffres de M4 (défilement, ouverture, démarrage, après la refonte du design) sont dans
+l'ADR 0012, section « Mesures M4, 2026-11-21 ».
+
+- [x] Reporter les mesures (modèle, version d'Android) dans l'ADR 0012 ; les benchmarks existants
+  ont été refaits depuis la refonte du design (PR #24).
+- [ ] Reporter les mesures dans `ROADMAP.md` §0 (à la fermeture de M4, par le mainteneur).
 
 Total : 53 cases à cocher.

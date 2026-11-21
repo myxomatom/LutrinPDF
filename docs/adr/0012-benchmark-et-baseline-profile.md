@@ -154,3 +154,72 @@ distribution (maximum 396 contre 465 ms). Le gain est modeste parce que l'écran
 Le profil généré (`app/src/release/generated/baselineProfiles/baseline-prof.txt`, 17 344 lignes,
 et `startup-prof.txt`, 11 320 lignes) contient aussi des règles pour `BenchmarkReaderActivity`,
 classe absente du build release : ces règles sont ignorées, sans conséquence.
+
+## Mesures M4, 2026-11-21
+
+Appareil : Xiaomi 23013PC75G, Android 15 / HyperOS, build `benchmarkRelease`, après les lots de M4
+(recherche, table des matières, sélection) et la refonte du design (ADR 0018, 0019). Aucun
+benchmark n'a planté. Les anciens scénarios sont refaits (ils étaient dus depuis la PR #24) ; les
+deux nouveaux ont leurs premières valeurs.
+
+| Benchmark | M2 (2026-11-08) | M4 (2026-11-21) |
+|-----------|-----------------|-----------------|
+| `ScrollBenchmark.continuousScroll`, `frameDurationCpuMs` P50 / P90 / P99 | 2,9 / 4,0 / 8,7 ms | 3,4 / 4,7 / 11,7 ms |
+| `ScrollBenchmark.pageByPage`, P90 / P99 | 6,6 / 11,8 ms | 7,6 / 14,6 ms |
+| `OpenDocumentBenchmark.openLargeDocumentCold`, `timeToFullDisplayMs` médiane | 1 050 ms | 819 ms |
+| `StartupBenchmark` à froid, avec le profil de M2 | 357,8 ms | 434,0 ms |
+| `StartupBenchmark` à froid, sans profil | 367,1 ms | 454,6 ms |
+| `StartupBenchmark` à chaud | 117,7 ms | 141,9 ms |
+| `StartupBenchmark` à froid, **avec le profil régénéré** | | 426,8 ms (min 405,9, max 630,8) |
+| `StartupBenchmark` à froid, sans profil (même série) | | 483,4 ms |
+| `StartupBenchmark` à chaud (même série) | | 148,6 ms |
+| `SearchBenchmark.nextResultsThenScroll` | — | `frameDurationCpuMs` P50 3,4 / P90 5,4 / P99 12,0 ms ; `frameOverrunMs` P99 3,3 ms |
+| `OutlineBenchmark.openAndJump` | — | `frameDurationCpuMs` P50 3,9 / P90 10,4 / P99 27,1 ms ; `frameOverrunMs` P90 6,3 / P99 17,1 ms |
+
+Nouveaux scénarios :
+
+- `SearchBenchmark` : l'ouverture de la barre et la recherche de « Contenu » (plus de 1 000
+  résultats, donc le plafond de `MAX_SEARCH_HITS` est atteint, le cas le plus lourd) sont dans la
+  préparation ; la mesure couvre dix « résultat suivant » et un défilement sur les pages
+  surlignées. Environ 2 100 images par itération.
+- `OutlineBenchmark` : ouverture du tiroir (12 parties, 60 chapitres) puis saut à « Partie 12 »
+  (page 551) ; environ 61 images. Le P90 de 10,4 ms reste sous 16 ms ; le P99 de 27 ms est la
+  première image du tiroir et de la transition (liste et animation), sans toucher le défilement.
+- Le générateur du Baseline Profile parcourt en plus `search`, `outline` et `selection`.
+
+**Sélecteurs.** Les deux scénarios échouaient à la première exécution. Cause : (1) la recherche
+attendait une description « Résultat N sur M » alors que le compteur de la barre est décrit
+« 1 000 résultats ou plus » (le texte « Résultat N sur M » ne sert qu'à TalkBack sur la carte
+d'extrait) ; (2) le bouton de la table des matières n'existe qu'une fois le sommaire lu en
+arrière-plan, et `waitForPages()` rend la main avant. Corrections : sélecteur du compteur
+(chiffres puis « résultat(s) » / « result(s) »), `waitForOutlineButton()` dans la préparation, et
+`killProcess()` à chaque itération pour repartir d'un document à la page 1. Le
+`testTagsAsResourceId` n'a pas été activé : les descriptions suffisent et le laisser coupé
+évite de toucher l'application pour un besoin de mesure.
+
+**Profil régénéré** (18 min, installation par APK) : `baseline-prof.txt` passe de 17 344 à 23 620
+lignes, `startup-prof.txt` de 11 320 à 13 078. Il contient désormais 1 104 règles pour
+`feature/reader/` (391 avant), dont `search` (120), `selection` (23) et `ui/OutlineDrawer*`
+(83, contre 0).
+
+**Analyse.**
+
+- Le défilement reste très loin de l'objectif de 16 ms (P90 4,7 ms). Il se dégrade un peu
+  (+0,7 ms au P90, +3 ms au P99), ce qui s'explique par la couche supplémentaire du lecteur
+  (barre flottante, curseur, transitions de l'ADR 0018 et 0019) ; sans enjeu.
+- L'ouverture du PDF de 600 pages s'améliore de 22 % (1 050 à 819 ms). La cause n'a pas été
+  isolée ; la dispersion de M2 (869 à 1 578 ms) était déjà grande.
+- **Le démarrage à froid a régressé d'environ 20 %** (358 à 427 ms avec profil, 367 à 483 ms
+  sans). Le nouveau profil améliore l'écart entre profil et absence de profil (de 2 % à 12 %),
+  sans effacer la régression. Causes plausibles, non vérifiées : `SharedTransitionLayout` sur
+  toute la navigation (ADR 0019), dont le coût se paie au premier affichage, la police Fraunces embarquée
+  (72 Ko, une seule graisse, coût faible attendu), l'initialisation d'un graphe Hilt plus gros et
+  de Room. **Piste qui mérite une tâche** : prendre une trace Perfetto du démarrage à froid
+  (les traces sont déjà produites par `StartupBenchmark`) pour y lire la part de l'inflation,
+  de Hilt et de la première composition, avant de toucher au code ; l'écran de démarrage
+  reste à 427 ms, sous le seuil d'un démarrage perçu comme lent (500 ms), ce qui rend la tâche
+  utile mais pas urgente.
+- Dispersion : la médiane du démarrage à froid varie d'environ 10 ms d'une série à l'autre
+  (434,0 puis 426,8 ms avec le même profil de M2 puis le nouveau) ; la différence entre les deux
+  profils est dans le bruit de mesure pour le démarrage à froid avec profil, mais l'écart avec
+  la série sans profil est net.

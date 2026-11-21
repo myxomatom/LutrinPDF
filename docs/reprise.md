@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 Code terminé (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025), essais sur appareil et benchmarks en cours : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` ajoutés, à exécuter ; liste des essais dans [`verification-appareil-m4.md`](verification-appareil-m4.md) |
+| M4 Navigation, recherche, sélection | 🚧 Code terminé (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025), essais sur appareil et benchmarks en cours : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais dans [`verification-appareil-m4.md`](verification-appareil-m4.md) |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -100,9 +100,8 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
 0. **État au 2026-11-21 : M4 terminé côté code.** Dans l'ordre :
-   1. **Benchmarks sur appareil** (`SearchBenchmark`, `OutlineBenchmark`, génération du Baseline
-      Profile, refaire les anciens depuis la PR #24) : section « Benchmarks et Baseline Profile » de
-      [`verification-appareil-m4.md`](verification-appareil-m4.md) ;
+   1. ~~Benchmarks sur appareil~~ **faits le 2026-11-21** (ADR 0012, « Mesures M4 ») : reste à
+      décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
    2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
       paragraphes « À essayer sur appareil » ci-dessous y sont rassemblés ; la liste fait foi) ;
    3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur.
@@ -147,8 +146,7 @@ branche `ccr-d7c547a8-psu5t2` (pas encore sur appareil) :
    toucher : simple fondu ; un PDF lent : le rond de chargement reste visible ;
 2. Paramètres › Lecture › « Aperçu de la page » : couper, revenir dans un document ouvert, le
    curseur suit le document en continu ; rallumer ;
-3. toujours dus depuis la PR #24 : Macrobenchmarks de l'ADR 0012 et Baseline Profile à refaire
-   (`SharedTransitionLayout` enveloppe toujours toute la navigation) ; clavier physique sur le
+3. toujours dû depuis la PR #24 : clavier physique sur le
    curseur (non couvert par un test) ; retour depuis « Ouvrir avec ».
 
 **Fuite signalée par LeakCanary** (une fois, non reproduite) : un `PopupLayout` de Compose
@@ -353,7 +351,17 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
   - **si l'installation échoue, `connectedBenchmarkReleaseAndroidTest` et
     `generateBaselineProfile` affichent quand même BUILD SUCCESSFUL sans exécuter aucun test** :
     toujours vérifier que les fichiers de sortie existent (`benchmarkData.json`,
-    `baselineProfiles/*.txt`).
+    `baselineProfiles/*.txt`) ;
+  - **sélecteurs UiAutomator** (constaté le 2026-11-21) : seules les descriptions de contenu sont
+    visibles (pas les `testTag`). Le compteur de recherche est décrit « 1 000 résultats ou plus »
+    (le mot « Contenu » dépasse le plafond de 1 000 résultats) ; le bouton de la table des
+    matières n'existe qu'une fois le sommaire lu (`waitForOutlineButton()`) ; chaque itération
+    des scénarios de recherche et de table des matières tue le processus (`killProcess()`), sinon
+    l'itération suivante repart d'un document resté à la page 551. Pour diagnostiquer :
+    `adb shell uiautomator dump /sdcard/x.xml` puis `adb pull` (sous Git Bash, préfixer par
+    `MSYS_NO_PATHCONV=1`, sinon `/sdcard` devient `C:/Program Files/Git/sdcard`) ;
+  - `generateBaselineProfile` dure environ 18 minutes sur le Xiaomi et demande une installation
+    par APK : rester près du téléphone.
 - **Fournisseur de contenu des tests instrumentés** (`TestDocumentProvider`, `app/src/androidTest`) :
   il tourne dans le processus de l'APK de test, qui ne contient pas la bibliothèque standard
   Kotlin (AGP retire les dépendances communes avec l'application). Écrit en Kotlin, il plantait

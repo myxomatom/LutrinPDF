@@ -28,6 +28,8 @@ class SearchBenchmark {
         compilationMode = CompilationMode.DEFAULT,
         iterations = ITERATIONS,
         setupBlock = {
+            // A fresh process each time: the previous iteration left a search open.
+            killProcess()
             pressHome()
             openLargeDocument(ReadingMode.CONTINUOUS)
             waitForPages()
