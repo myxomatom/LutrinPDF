@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-12.**
+> session de travail. **Dernière mise à jour : 2026-11-21.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 En cours : lot 1 « API texte et destinations du moteur » fait (ADR 0020, branche `feat/pdf-text-navigation-api`) ; lot 2 « aller à la page » fait (PR #27, mergée) ; lot 3 « table des matières » fait (ADR 0021, PR #30, mergée) ; lot 4 « liens » fait (ADR 0022, PR #31, mergée) ; lot 5 « recherche » fait (ADR 0023, PR #32, mergée) ; lot 6 « sélection et copie » fait (ADR 0024, branche `feat/reader-text-selection`) : **M4 terminé côté code**, essais sur appareil restants |
+| M4 Navigation, recherche, sélection | 🚧 Code terminé (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025), essais sur appareil et benchmarks en cours : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` ajoutés, à exécuter ; liste des essais dans [`verification-appareil-m4.md`](verification-appareil-m4.md) |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -99,9 +99,18 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **Essais sur appareil de tout M4** (lots 2 à 6, voir les paragraphes « M4, lot … » de la
-   section 1), puis **M5**. Tests instrumentés de `core:pdf` du lot 1 jamais exécutés sur
-   appareil (CI seulement).
+0. **État au 2026-11-21 : M4 terminé côté code.** Dans l'ordre :
+   1. **Benchmarks sur appareil** (`SearchBenchmark`, `OutlineBenchmark`, génération du Baseline
+      Profile, refaire les anciens depuis la PR #24) : section « Benchmarks et Baseline Profile » de
+      [`verification-appareil-m4.md`](verification-appareil-m4.md) ;
+   2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
+      paragraphes « À essayer sur appareil » ci-dessous y sont rassemblés ; la liste fait foi) ;
+   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur.
+   - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
+     ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
+   - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
+     tests Robolectric de `app`, vu sur les PR #31 et #38, disparaît à la relance
+     (`gh run rerun --failed`). Cause probable : code Hilt ou KSP périmé repris d'un cache.
 1. **M3 Fichiers et récents** :
    - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
      URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
