@@ -48,10 +48,23 @@ internal data class PageHit(val pageIndex: Int, val point: PdfPoint, val pointsP
  * @return the hit, or `null` when the tap is outside every page (margins, gaps between pages).
  */
 internal fun hitTest(x: Float, y: Float, placements: List<PagePlacement>, pageSizes: List<PageSize>): PageHit? {
-    val placement =
-        placements.firstOrNull { x >= it.left && x < it.left + it.width && y >= it.top && y < it.top + it.height }
-    val page = placement?.let { pageSizes.getOrNull(it.pageIndex) }
-    if (placement == null || page == null) return null
+    val placement = placements.firstOrNull { it.contains(x, y) } ?: return null
+    return pageSizes.getOrNull(placement.pageIndex)?.let { pageHit(x, y, placement, it) }
+}
+
+/**
+ * The point of one page under ([x], [y]), when the caller already holds that page: page-by-page
+ * mode draws a single page, so it hands over its [placement] and its [page] size without
+ * building a list indexed by page number, which [hitTest] would look up by [PagePlacement.pageIndex].
+ *
+ * @param x horizontal position of the tap in the reading area, in pixels.
+ * @param y vertical position of the tap in the reading area, in pixels.
+ * @param placement where the page is drawn; its [PagePlacement.pageIndex] is only copied to the hit.
+ * @param page size of that page, in points.
+ * @return the hit, or `null` when the tap is outside the page.
+ */
+internal fun pageHit(x: Float, y: Float, placement: PagePlacement, page: PageSize): PageHit? {
+    if (!placement.contains(x, y)) return null
     val pointsPerPixel = page.width / placement.width
     return PageHit(
         pageIndex = placement.pageIndex,
@@ -59,6 +72,9 @@ internal fun hitTest(x: Float, y: Float, placements: List<PagePlacement>, pageSi
         pointsPerPixel = pointsPerPixel,
     )
 }
+
+private fun PagePlacement.contains(x: Float, y: Float): Boolean =
+    x >= left && x < left + width && y >= top && y < top + height
 
 /**
  * A page shown by the continuous list ([PdfPagesView]).

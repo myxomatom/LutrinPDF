@@ -244,6 +244,30 @@ class PageTextTest {
         assertThat(PageText(emptyList()).isOnText(PdfPoint(145f, 106f))).isFalse()
     }
 
+    @Test
+    fun `a point within the tolerance of a line counts as on the text`() {
+        assertThat(page.isOnText(PdfPoint(145f, 116f), 4f)).isTrue() // Between the lines, 4 from each.
+        assertThat(page.isOnText(PdfPoint(145f, 116f), 3f)).isFalse()
+        assertThat(page.isOnText(PdfPoint(120f, 137f), 5f)).isTrue() // Below "deux".
+        assertThat(page.isOnText(PdfPoint(95f, 106f), 5f)).isTrue() // Left margin, 5 from the line.
+        assertThat(page.isOnText(PdfPoint(95f, 106f), 4f)).isFalse()
+    }
+
+    @Test
+    fun `the tolerance is a distance to the line, so a corner is rounded`() {
+        val corner = PdfPoint(95f, 95f) // 5 points left of and above the box: 7.07 away.
+
+        assertThat(page.isOnText(corner, 6f)).isFalse()
+        assertThat(page.isOnText(corner, 8f)).isTrue()
+    }
+
+    @Test
+    fun `a negative tolerance is the exact box, and a page without text has no text within any tolerance`() {
+        assertThat(page.isOnText(PdfPoint(145f, 106f), -5f)).isTrue()
+        assertThat(page.isOnText(PdfPoint(145f, 116f), -5f)).isFalse()
+        assertThat(PageText(emptyList()).isOnText(PdfPoint(145f, 106f), 1000f)).isFalse()
+    }
+
     private companion object {
         const val WIDTH = 10f
         const val HEIGHT = 12f

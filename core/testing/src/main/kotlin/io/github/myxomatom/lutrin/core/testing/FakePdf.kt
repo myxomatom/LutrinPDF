@@ -23,6 +23,7 @@ import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.hypot
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -199,10 +200,14 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
         return selections[index] ?: TextSelection.empty(index)
     }
 
-    /** Whether [point] lies in one of the [textAreas] of the page. */
-    override suspend fun isOnText(index: Int, point: PdfPoint): Boolean {
+    /** Whether [point] lies in one of the [textAreas] of the page, or within [tolerance] of one. */
+    override suspend fun isOnText(index: Int, point: PdfPoint, tolerance: Float): Boolean {
         checkPage(index)
-        return textAreas[index].orEmpty().any { it.contains(point.x, point.y) }
+        return textAreas[index].orEmpty().any { area ->
+            val dx = maxOf(area.left - point.x, 0f, point.x - area.right)
+            val dy = maxOf(area.top - point.y, 0f, point.y - area.bottom)
+            hypot(dx, dy) <= tolerance
+        }
     }
 
     /** Returns the [links] set by the test for the page. */

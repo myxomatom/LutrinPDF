@@ -124,8 +124,8 @@ internal class MuPdfDocument(
     override suspend fun selectText(index: Int, start: PdfPoint, end: PdfPoint, mode: SelectionMode): TextSelection =
         onDocumentThread { pageTexts[index].select(index, start, end, mode) }
 
-    override suspend fun isOnText(index: Int, point: PdfPoint): Boolean =
-        onDocumentThread { pageTexts[index].isOnText(point) }
+    override suspend fun isOnText(index: Int, point: PdfPoint, tolerance: Float): Boolean =
+        onDocumentThread { pageTexts[index].isOnText(point, tolerance) }
 
     override suspend fun links(index: Int): List<PdfLink> = onDocumentThread {
         val links = pages[index].links.orEmpty()

@@ -75,6 +75,19 @@ class SelectionControllerTest {
     }
 
     @Test
+    fun `a long press just beside the text selects the nearest word within the tolerance`() = runTest(dispatcher) {
+        givenText() // The text ends at y = 220.
+        val controller = controller()
+
+        assertThat(controller.onLongPress(1, PdfPoint(110f, 230f))).isFalse()
+        assertThat(controller.onLongPress(1, PdfPoint(110f, 230f), 8f)).isFalse()
+        assertThat(controller.onLongPress(1, PdfPoint(110f, 230f), 10f)).isTrue()
+
+        assertThat(controller.selection.value).isEqualTo(word)
+        assertThat(document.selectionRequests.single().start).isEqualTo(PdfPoint(110f, 230f))
+    }
+
+    @Test
     fun `a long press on a scanned page selects nothing`() = runTest(dispatcher) {
         document.textAreas = mapOf(0 to listOf(PdfRect(0f, 0f, A4.width, A4.height)))
         val controller = controller()

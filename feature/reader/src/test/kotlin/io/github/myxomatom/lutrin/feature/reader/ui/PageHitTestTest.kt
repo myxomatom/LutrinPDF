@@ -98,15 +98,35 @@ class PageHitTestTest {
 
         assertThat(placement.left).isEqualTo(83f)
         assertThat(placement.top).isEqualTo(16f)
-        assertPoint(hitTest(83f + 217f, 16f + 434f, listOf(placement), pages), 0, 100f, 200f)
+        assertPoint(pageHit(83f + 217f, 16f + 434f, placement, page), 0, 100f, 200f)
     }
 
     @Test
     fun `paged, outside the page hits nothing`() {
         val placement = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f).placement(2, page, 1f, 0, 0)
 
-        assertThat(hitTest(40f, 500f, listOf(placement), pages)).isNull()
-        assertThat(hitTest(300f, 950f, listOf(placement), pages)).isNull()
+        assertThat(pageHit(40f, 500f, placement, page)).isNull()
+        assertThat(pageHit(300f, 950f, placement, page)).isNull()
+    }
+
+    @Test
+    fun `paged, a page that is not the first one gives its point with the one size of production`() {
+        // Production passes the size of the page shown only: its index in the document (2) must
+        // not be looked up in that list of one.
+        val placement = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f).placement(2, page, 1f, 0, 0)
+
+        val hit = pageHit(83f + 217f, 16f + 434f, placement, page)
+
+        assertPoint(hit, 2, 100f, 200f)
+        assertThat(hit?.pointsPerPixel).isWithin(TOLERANCE).of(200f / 434f)
+    }
+
+    @Test
+    fun `a list of sizes shorter than the page index finds no page`() {
+        val placement = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f).placement(2, page, 1f, 0, 0)
+
+        assertThat(hitTest(300f, 400f, listOf(placement), listOf(page))).isNull()
+        assertThat(hitTest(300f, 400f, listOf(placement), pages)).isNotNull()
     }
 
     @Test
@@ -117,7 +137,7 @@ class PageHitTestTest {
         // Page 868 × 1736, left edge at 166, top edge at 32; scrolled by (366, 232).
         val placement = layout.placement(0, page, 2f, 366, 232)
 
-        assertPoint(hitTest(0f, 0f, listOf(placement), pages), 0, 200f * 200f / 868f, 200f * 400f / 1736f)
+        assertPoint(pageHit(0f, 0f, placement, page), 0, 200f * 200f / 868f, 200f * 400f / 1736f)
     }
 
     @Test

@@ -17,10 +17,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import io.github.myxomatom.lutrin.feature.reader.R
@@ -34,6 +36,12 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 
 /**
+ * Distance from the text within which a long press still selects the nearest word: a finger
+ * covers more than a line of text, and lines are close (the same idea as the touch slop of links).
+ */
+private val LongPressTouchSlop = 16.dp
+
+/**
  * What the reader screen needs for the text selection (F08, ADR 0024), wired by [ReaderRoute] to
  * the selection controller of the ViewModel. The defaults make a reader in which a long press
  * selects nothing.
@@ -42,8 +50,8 @@ import kotlinx.coroutines.launch
  * @property canCopy whether « Copier » copies (the document allows it, or the setting ignores
  *   its restriction); otherwise it explains that the author forbids it (ADR 0024).
  * @property effects copies and refusals, collected once by the screen.
- * @property onLongPress a long press on a page, with the page and the point pressed; returns
- *   whether a word was selected.
+ * @property onLongPress a long press on a page, with the page, the point pressed and the
+ *   tolerance of the finger in page points; returns whether a word was selected.
  * @property onHandleDragStart a handle starts moving.
  * @property onHandleDrag the dragged handle points at this point of the page of the selection.
  * @property onHandleDragEnd the handle is released.
@@ -57,7 +65,7 @@ class ReaderSelection(
     val selection: TextSelection? = null,
     val canCopy: Boolean = true,
     val effects: Flow<SelectionEffect> = emptyFlow(),
-    val onLongPress: suspend (Int, PdfPoint) -> Boolean = { _, _ -> false },
+    val onLongPress: suspend (Int, PdfPoint, Float) -> Boolean = { _, _, _ -> false },
     val onHandleDragStart: (SelectionHandle) -> Unit = {},
     val onHandleDrag: (PdfPoint) -> Unit = {},
     val onHandleDragEnd: () -> Unit = {},
@@ -188,20 +196,22 @@ internal fun rememberSelectionTap(selection: ReaderSelection, onTap: (PageHit?) 
 }
 
 /**
- * Handles a long press on the pages: selects the word under the finger (F08). Outside the text,
- * or on a page without text, the press does what a tap does ([onTap]), as before the selection
- * existed (ADR 0024).
+ * Handles a long press on the pages: selects the word under the finger, or the nearest one within
+ * [LongPressTouchSlop] of it (F08). Further from the text, or on a page without text, the press
+ * does nothing: it is not a tap, so it neither follows a link nor switches to full screen
+ * (ADR 0024, amended).
  */
 @Composable
-internal fun rememberPageLongPress(selection: ReaderSelection, onTap: (PageHit?) -> Unit): (PageHit?) -> Unit {
+internal fun rememberPageLongPress(selection: ReaderSelection): (PageHit?) -> Unit {
     val scope = rememberCoroutineScope()
+    val slop = with(LocalDensity.current) { LongPressTouchSlop.toPx() }
     val currentSelection by rememberUpdatedState(selection)
-    val currentOnTap by rememberUpdatedState(onTap)
-    return remember {
+    return remember(slop) {
         { hit ->
-            scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                val selected = hit != null && currentSelection.onLongPress(hit.pageIndex, hit.point)
-                if (!selected) currentOnTap(hit)
+            if (hit != null) {
+                scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    currentSelection.onLongPress(hit.pageIndex, hit.point, slop * hit.pointsPerPixel)
+                }
             }
         }
     }

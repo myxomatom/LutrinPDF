@@ -227,6 +227,30 @@ class ReaderLinksTest {
         composeRule.onNodeWithText("You were on page 1.").assertIsDisplayed()
     }
 
+    @Test
+    fun `page by page, a tap on a link of a page other than the first follows it`() {
+        document.links = mapOf(
+            0 to listOf(toPage3),
+            2 to listOf(toPage3.copy(destination = PdfDestination(4))),
+        )
+        showReader(ScrollMode.PAGED)
+        goToPage(3)
+
+        documentNode(3).performTouchInput { tapPaged(250f, 155f) }
+        settleTap()
+
+        documentNode(5).assertIsDisplayed()
+        composeRule.onNodeWithText("You were on page 3.").assertIsDisplayed()
+    }
+
+    /** Follows the link of page 1 to [page] with its TalkBack action, once the links are loaded. */
+    private fun goToPage(page: Int) {
+        fun actions() = documentNode(1).fetchSemanticsNode().config.getOrNull(SemanticsActions.CustomActions).orEmpty()
+        composeRule.waitUntil { actions().any { it.label == "Link: page $page" } }
+        composeRule.runOnUiThread { actions().first { it.label == "Link: page $page" }.action() }
+        composeRule.waitForIdle()
+    }
+
     /**
      * Taps the point ([x], [y]) of the page shown page by page at zoom 1: the page fits whole,
      * 16 dp from the edges, in the area above the floating bar, and is centred in it.

@@ -274,7 +274,7 @@ class ReaderSelectionTest {
     }
 
     @Test
-    fun `a long press on a scanned page selects nothing and acts as a tap`() {
+    fun `a long press on a scanned page selects nothing and does nothing else`() {
         document.textAreas = emptyMap()
         document.selections = emptyMap()
         showReader()
@@ -282,8 +282,69 @@ class ReaderSelectionTest {
         longPressWord()
 
         assertNoSelection()
-        // As before the selection existed: the press switched to full screen.
-        composeRule.onNodeWithContentDescription("Search").assertDoesNotExist()
+        // Not a tap: the controls stay.
+        composeRule.onNodeWithContentDescription("Search").assertIsDisplayed()
+    }
+
+    @Test
+    fun `in continuous scroll, a long press just beside the text selects the nearest word`() {
+        showReader()
+
+        longPressBelowText(NEAR_DP, continuous = true)
+
+        assertSelectionShown()
+        assertThat(document.selectionRequests.single().mode).isEqualTo(SelectionMode.Words)
+    }
+
+    @Test
+    fun `in continuous scroll, a long press far from the text does nothing`() {
+        showReader()
+
+        longPressBelowText(FAR_DP, continuous = true)
+
+        assertNoSelection()
+        assertThat(document.selectionRequests).isEmpty()
+        composeRule.onNodeWithContentDescription("Search").assertIsDisplayed()
+    }
+
+    @Test
+    fun `page by page, a long press just beside the text selects the nearest word`() {
+        showReader(ScrollMode.PAGED)
+
+        longPressBelowText(NEAR_DP, continuous = false)
+
+        assertSelectionShown()
+    }
+
+    @Test
+    fun `page by page, a long press far from the text does nothing`() {
+        showReader(ScrollMode.PAGED)
+
+        longPressBelowText(FAR_DP, continuous = false)
+
+        assertNoSelection()
+        assertThat(document.selectionRequests).isEmpty()
+        composeRule.onNodeWithContentDescription("Search").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a long press on a link does not follow it`() {
+        showReader()
+
+        documentNode(1).performTouchInput { longClick(continuous(250f, 420f)) }
+        composeRule.waitForIdle()
+
+        documentNode(1).assertIsDisplayed()
+        assertNoSelection()
+    }
+
+    /** Long presses [dp] below the line of text (which ends at 220 points), in either mode. */
+    private fun longPressBelowText(dp: Float, continuous: Boolean) {
+        documentNode(1).performTouchInput {
+            val below = Offset(0f, dp.dp.toPx())
+            longClick((if (continuous) continuous(120f, 220f) else paged(120f, 220f)) + below)
+        }
+        composeRule.waitForIdle()
     }
 
     @Test
@@ -328,6 +389,22 @@ class ReaderSelectionTest {
 
         documentNode(3).assertIsDisplayed()
         assertNoSelection()
+    }
+
+    @Test
+    fun `page by page, a long press on a word of page 3 selects it and keeps the controls`() {
+        val line = listOf(PdfRect(72f, 190f, 500f, 220f))
+        document.textAreas = mapOf(0 to line, 2 to line)
+        document.selections = mapOf(0 to word, 2 to word.copy(pageIndex = 2))
+        showReader(ScrollMode.PAGED)
+        goToPage3()
+
+        documentNode(3).performTouchInput { longClick(paged(120f, 207f)) }
+        composeRule.waitForIdle()
+
+        assertSelectionShown()
+        assertThat(document.selectionRequests.single().pageIndex).isEqualTo(2)
+        composeRule.onNodeWithContentDescription("Search").assertIsDisplayed()
     }
 
     @Test
@@ -442,6 +519,8 @@ class ReaderSelectionTest {
 
     private companion object {
         const val DOUBLE_TAP_WAIT_MS = 500L
+        const val NEAR_DP = 8f
+        const val FAR_DP = 60f
         const val START_HANDLE = "Start of the selection"
         const val END_HANDLE = "End of the selection"
     }

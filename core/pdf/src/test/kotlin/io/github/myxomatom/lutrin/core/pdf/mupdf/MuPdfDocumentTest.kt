@@ -372,6 +372,21 @@ class MuPdfDocumentTest {
     }
 
     @Test
+    fun `a point just beside the text is on it within the tolerance`() = runTest {
+        openTestPdf("pdfs/text_selection.pdf").use { document ->
+            // 15 points under the baseline of the last line of the body (generate_test_files.py).
+            val beside = PdfPoint(98f, 195f)
+
+            assertThat(document.isOnText(0, beside)).isFalse()
+            assertThat(document.isOnText(0, beside, 25f)).isTrue()
+            assertThat(document.isOnText(0, PdfPoint(20f, 20f), 25f)).isFalse()
+        }
+        openTestPdf("pdfs/scanned_images_only.pdf").use {
+            assertThat(it.isOnText(0, PdfPoint(100f, 100f), 1000f)).isFalse()
+        }
+    }
+
+    @Test
     fun `places the handles of a selection`() = runTest {
         openTestPdf("pdfs/text_selection.pdf").use { document ->
             val press = PdfPoint(98f, 136f)

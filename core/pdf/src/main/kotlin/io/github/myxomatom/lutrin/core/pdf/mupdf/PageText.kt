@@ -8,6 +8,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.SearchExcerpt
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
 import kotlin.math.abs
+import kotlin.math.hypot
 
 /**
  * One character of a page, as the engine extracted it.
@@ -78,10 +79,13 @@ internal class PageText(private val lines: List<GlyphLine>) {
     val isEmpty: Boolean get() = glyphs.isEmpty()
 
     /**
-     * Whether [point] lies on a line of text, between its first and last characters: `false` in
-     * a margin, between paragraphs or on an image, so that a long press there selects nothing.
+     * Whether [point] lies on a line of text, between its first and last characters, or within
+     * [tolerance] points of its box: `false` in a margin, between paragraphs or on an image, so
+     * that a long press there selects nothing. The tolerance is a distance to the box (a corner
+     * is rounded), so a finger a little beside a word still reaches it.
      */
-    fun isOnText(point: PdfPoint): Boolean = extents.any { it.contains(point) }
+    fun isOnText(point: PdfPoint, tolerance: Float = 0f): Boolean =
+        extents.any { it.distanceTo(point) <= tolerance.coerceAtLeast(0f) }
 
     /**
      * Selects the text between [start] and [end] (in any order), grown according to [mode].
@@ -242,7 +246,8 @@ internal class PageText(private val lines: List<GlyphLine>) {
 
         fun distanceFromMiddle(point: PdfPoint): Float = abs(point.across(direction) - (acrossMin + acrossMax) / 2)
 
-        fun contains(point: PdfPoint): Boolean = distanceAcross(point) == 0f && distanceAlong(point) == 0f
+        /** Distance from [point] to the box of the line; 0 inside it. */
+        fun distanceTo(point: PdfPoint): Float = hypot(distanceAcross(point), distanceAlong(point))
     }
 }
 
