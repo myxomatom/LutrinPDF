@@ -102,7 +102,7 @@ class ReaderViewModelSelectionTest {
             mapOf(0 to TextSelection(0, listOf(area), "bail", PdfPoint(10f, 30f), PdfPoint(100f, 30f)))
         val viewModel = openViewModel()
         val selection = viewModel.selectionController
-        assertThat(selection.onLongPress(0, PdfPoint(50f, 20f))).isTrue()
+        assertThat(selection.onLongPress(0, PdfPoint(50f, 20f), 0f)).isTrue()
 
         selection.effects.test {
             selection.onCopy()

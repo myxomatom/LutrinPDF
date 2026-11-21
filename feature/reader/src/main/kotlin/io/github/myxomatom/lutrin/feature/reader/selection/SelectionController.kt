@@ -89,15 +89,17 @@ class SelectionController(
     /**
      * A long press at [point] of the page at [pageIndex]: selects the word under it, with its
      * handles. A press outside the text (margin, image, scanned page) selects nothing, and the
-     * selection shown, if any, stays.
+     * selection shown, if any, stays. A press a little beside a line, within [tolerance], still
+     * selects the nearest word: a finger is not a pixel.
      *
-     * @return whether a word was selected; otherwise the press keeps its former meaning.
+     * @param tolerance largest distance from the text, in page points; 0 for none.
+     * @return whether a word was selected; otherwise the press does nothing (ADR 0024).
      */
-    suspend fun onLongPress(pageIndex: Int, point: PdfPoint): Boolean {
+    suspend fun onLongPress(pageIndex: Int, point: PdfPoint, tolerance: Float = 0f): Boolean {
         val opened = document()
         val word =
             readText {
-                if (opened != null && opened.isOnText(pageIndex, point)) {
+                if (opened != null && opened.isOnText(pageIndex, point, tolerance)) {
                     opened.selectText(pageIndex, point, point, SelectionMode.Words)
                 } else {
                     null

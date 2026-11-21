@@ -87,7 +87,7 @@ internal fun ReaderDocumentArea(
 ) {
     val page = navigator.currentPage
     val onPageTap = rememberSelectionTap(selection, rememberPageTap(state.links, navigator, onTap, links.onLinkClick))
-    val onPageLongPress = rememberPageLongPress(selection, onPageTap)
+    val onPageLongPress = rememberPageLongPress(selection)
     val pageActions = rememberLinkActions(state.links, page, links.onLinkClick) + copyPageAction(selection, page)
     val snackbar = rememberLinkHandling(links, navigator)
     SelectionHandling(selection, navigator, search.isOpen, snackbar)

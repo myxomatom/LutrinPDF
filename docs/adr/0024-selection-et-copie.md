@@ -52,8 +52,16 @@ permission de copie, et à rendre la copie accessible sans appui long.
    (`Words`) et affiche deux poignées placées sur `TextSelection.start` et `end` ; la poignée de
    début pend du côté opposé au texte sélectionné (à gauche en latin, à droite en arabe), celle de
    fin aussi (`selectionHandles`, testé dans les deux sens). **Appui long hors du texte**
-   (`isOnText` faux) ou sur une page sans texte (document numérisé) : rien n'est sélectionné, et
-   l'appui garde le comportement d'avant, celui d'un toucher (lien, sinon plein écran).
+   (`isOnText` faux) ou sur une page sans texte (document numérisé) : rien n'est sélectionné.
+   *Amendé (correctif `fix/paged-long-press`)* : l'appui long ne garde plus le comportement d'un
+   toucher (lien, sinon plein écran) : il ne fait **rien**. Et il a une **tolérance de doigt**,
+   `LongPressTouchSlop` = 16 dp (comme `LinkTouchSlop` pour les liens) : un appui long à moins de
+   16 dp de la boîte d'une ligne sélectionne le mot le plus proche. Choix de couche : la
+   tolérance est un paramètre de `PdfEngine.isOnText(index, point, tolerance)` (`core:pdf`, en
+   points PDF, 0 par défaut), car seul le moteur connaît la boîte des lignes, y compris tournées ;
+   le lecteur convertit le slop en points avec `PageHit.pointsPerPixel`. La distance est celle à
+   la boîte (un coin est arrondi). `selectText` n'a pas changé : il choisit déjà le caractère le
+   plus proche du point.
 3. **Poignées** (`TextSelectionHandles.kt`) : une goutte de 22 dp dans une cible de 48 dp, nommée
    pour TalkBack (« Début de la sélection », « Fin de la sélection »). Le glissement sélectionne
    caractère par caractère (`Characters`) de l'autre extrémité, fixée au début du geste, jusqu'au
@@ -106,8 +114,9 @@ permission de copie, et à rendre la copie accessible sans appui long.
   - « Tout sélectionner » prend les lignes du coin haut gauche au coin bas droit : sur une page
     dont l'ordre de lecture ne commence pas en haut à gauche, il peut manquer des lignes (le
     moteur n'a pas d'opération « toute la page ») ;
-  - un appui long hors du texte agit comme un toucher, mais au moment de l'appui long et non au
-    relâchement ;
+  - *(amendé)* un appui long hors du texte, au-delà de la tolérance, ne fait rien ; entre deux
+    lignes éloignées de plus de 16 dp, il n'est donc pas une manière de basculer le plein écran
+    (le toucher court reste là pour cela) ;
   - en défilement continu, faire défiler jusqu'à changer de page courante ferme la sélection,
     même si sa page reste visible ;
   - pendant un pincement, la barre d'actions (fenêtre à part) ne suit pas l'échelle visuelle

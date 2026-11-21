@@ -200,7 +200,7 @@ private fun PagedPageLayout.tapHandler(
     onTap: (PageHit?) -> Unit,
 ): (Offset) -> Unit = { position ->
     val placement = placement(pageIndex, page, zoom, horizontal.value, vertical.value)
-    onTap(hitTest(position.x, position.y, listOf(placement), listOf(page))?.copy(pageIndex = pageIndex))
+    onTap(pageHit(position.x, position.y, placement, page))
 }
 
 /** Layout of [page] in the [viewport] at [zoom], with the floating bar [bottomClearance] ([pagedPageLayout]). */

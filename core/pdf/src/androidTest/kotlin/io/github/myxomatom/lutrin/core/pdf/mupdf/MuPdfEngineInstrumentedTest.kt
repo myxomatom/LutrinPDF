@@ -287,6 +287,9 @@ class MuPdfEngineInstrumentedTest {
 
             assertThat(document.isOnText(0, press)).isTrue()
             assertThat(document.isOnText(0, PdfPoint(20f, 20f))).isFalse()
+            // 15 points under the last line of the body: out of the text, then within a tolerance.
+            assertThat(document.isOnText(0, PdfPoint(98f, 195f))).isFalse()
+            assertThat(document.isOnText(0, PdfPoint(98f, 195f), 25f)).isTrue()
             assertThat(document.selectText(0, checkNotNull(selection.start), checkNotNull(selection.end)).text)
                 .isEqualTo("mot")
         }

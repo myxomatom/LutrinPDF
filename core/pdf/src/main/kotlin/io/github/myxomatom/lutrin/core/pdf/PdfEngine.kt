@@ -137,11 +137,16 @@ interface PdfDocument : Closeable {
     ): TextSelection
 
     /**
-     * Whether [point] of the page at [index] lies on a line of text: `false` in a margin,
-     * between paragraphs, on an image or on a page without text layer. Lets the reader ignore a
-     * long press outside the text, which [selectText] would otherwise move to the nearest line.
+     * Whether [point] of the page at [index] lies on a line of text, or within [tolerance] of
+     * one: `false` in a margin, between paragraphs, on an image or on a page without text layer.
+     * Lets the reader ignore a long press outside the text, which [selectText] would otherwise
+     * move to the nearest line.
+     *
+     * @param tolerance largest distance, in page points, from the box of a line (first to last
+     *   character, line height) at which the point still counts: the reader turns the slop of a
+     *   finger, in pixels, into points (ADR 0024). 0 (the default) is the exact box.
      */
-    suspend fun isOnText(index: Int, point: PdfPoint): Boolean
+    suspend fun isOnText(index: Int, point: PdfPoint, tolerance: Float = 0f): Boolean
 
     /**
      * Links of the page at [index] (F09), in document order. Internal links whose destination

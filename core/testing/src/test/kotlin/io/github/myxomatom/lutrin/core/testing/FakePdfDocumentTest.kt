@@ -61,6 +61,8 @@ class FakePdfDocumentTest {
             .isEqualTo(FakePdfDocument.SelectionRequest(1, origin, origin, SelectionMode.Words))
         assertThat(document.isOnText(1, PdfPoint(20f, 15f))).isTrue()
         assertThat(document.isOnText(1, origin)).isFalse()
+        assertThat(document.isOnText(1, PdfPoint(20f, 25f), 2f)).isFalse()
+        assertThat(document.isOnText(1, PdfPoint(20f, 25f), 3f)).isTrue()
         assertThat(document.canCopyText).isFalse()
     }
 
