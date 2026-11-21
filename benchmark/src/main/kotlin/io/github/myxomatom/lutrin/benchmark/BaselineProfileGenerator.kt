@@ -9,8 +9,9 @@ import org.junit.runner.RunWith
 
 /**
  * Generates the app's Baseline Profile from the main journeys: start-up on the library, then
- * reading the large document in both modes. Needs a device on Android 13+ (or a rooted
- * Android 9+). Run with `./gradlew :app:generateBaselineProfile` (ADR 0012); the profile is
+ * reading the large document in both modes, searching, the table of contents and a selection.
+ * Needs a device on Android 13+ (or a rooted Android 9+). Run with
+ * `./gradlew :app:generateBaselineProfile` (ADR 0012); the profile is
  * written under `app/src/release/generated/baselineProfiles/` and must be committed.
  */
 @RunWith(AndroidJUnit4::class)
@@ -36,5 +37,34 @@ class BaselineProfileGenerator {
         // Ends on the default mode, so that the benchmarks that follow start from it.
         openLargeDocument(ReadingMode.CONTINUOUS)
         flingPages(waitForPages())
+    }
+
+    /** Search (F07): a frequent word, ten results, then scrolling over the highlights. */
+    @Test
+    fun search() = rule.collect(packageName = TARGET_PACKAGE) {
+        pressHome()
+        openLargeDocument(ReadingMode.CONTINUOUS)
+        waitForPages()
+        searchFirstResult()
+        nextSearchResults()
+        flingPages(waitForPages())
+    }
+
+    /** Table of contents (F06): opens the drawer and jumps to a distant part. */
+    @Test
+    fun outline() = rule.collect(packageName = TARGET_PACKAGE) {
+        pressHome()
+        openLargeDocument(ReadingMode.CONTINUOUS)
+        waitForPages()
+        jumpToFarOutlineEntry()
+    }
+
+    /** Text selection (F08): a long press on the text of a page. */
+    @Test
+    fun selection() = rule.collect(packageName = TARGET_PACKAGE) {
+        pressHome()
+        openLargeDocument(ReadingMode.CONTINUOUS)
+        waitForPages()
+        longPressText()
     }
 }
