@@ -280,6 +280,13 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Corrigé
+- Lecteur, mode page par page : un appui long sélectionne un mot sur toutes les pages (il ne
+  marchait que sur la première, et basculait le plein écran ailleurs), et un toucher sur un lien
+  est suivi hors de la première page. Cause : le test de position cherchait la taille de la page
+  par son index dans une liste d'une seule page (`pageHit`). Un appui long légèrement à côté du
+  texte (16 dp) sélectionne le mot le plus proche, et un appui long loin du texte ne fait plus
+  rien (ni plein écran, ni lien) ; `PdfEngine.isOnText` prend une tolérance en points
+  (ADR 0024 amendé).
 - Les tests unitaires ne remplissent plus le dossier temporaire du système : Robolectric y
   laissait à chaque exécution son runtime natif (~200 Mo par JVM de test sous Windows). Le
   `java.io.tmpdir` des tâches `Test` est désormais `<module>/build/tmp/robolectric`.

@@ -490,6 +490,14 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
   merge, des tests de `app` peuvent échouer avec `NoSuchMethodException ReaderViewModel.<init>()`
   (code Hilt périmé) : `:app:clean` avant de conclure.
 
+- **Les tests en page par page n'appuyaient que sur la page d'index 0** : `hitTest` cherchait la
+  taille de la page par `PagePlacement.pageIndex` dans la liste reçue, et le mode page par page
+  lui passait une liste d'une page : tout appui (long ou court, lien compris) sur une page
+  d'index ≥ 1 ne donnait aucune position, et l'appui long retombait sur le basculement du plein
+  écran. Corrigé par `pageHit` (un placement, une taille). Pour tout test de geste en page par
+  page, **aller d'abord à la page 3** (action TalkBack « Lien : page 3 ») et appuyer là ; la
+  tolérance de doigt de l'appui long est dans `isOnText` (ADR 0024 amendé).
+
 ## 5. Préparer un conteneur cloud (session Claude Code sur le web)
 
 Le conteneur n'a ni SDK Android ni sources de MuPDF au départ :
