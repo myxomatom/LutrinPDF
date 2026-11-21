@@ -45,6 +45,7 @@ Principes non négociables :
 | F17 | Orientation | Rotation automatique, verrouillage d'orientation (option). |
 | F18 | Accessibilité | Compatible TalkBack (contenus décrits), tailles de cible ≥ 48 dp, contraste AA. |
 | F19 | Internationalisation | Français et anglais au minimum ; toutes les chaînes dans `strings.xml`. |
+| F27 | Rotation de l'affichage | Tourner l'affichage des pages par quarts de tour (90°, 180°, 270°), par exemple pour lire une page numérisée à l'envers ou un tableau en paysage. **Affichage seulement** : le fichier n'est jamais modifié. Rotation retenue par document (comme la dernière page lue). Ajoutée le 2026-11-21 à la demande du mainteneur ; l'enregistrement d'un PDF tourné relèverait des outils (M6), non prévu. |
 
 ### 2.2 v1.x — souhaitable
 
