@@ -10,6 +10,11 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Scénarios de benchmark de M4** (`:benchmark`, ADR 0012) : `SearchBenchmark` (recherche d'un mot
+  fréquent dans le PDF de 600 pages, dix « résultat suivant », défilement pendant le surlignage) et
+  `OutlineBenchmark` (tiroir de la table des matières, saut vers « Partie 12 ») ; le générateur de
+  Baseline Profile parcourt aussi la recherche, la table des matières et un appui long de
+  sélection. À exécuter sur appareil ; sélecteurs par description de contenu (français et anglais).
 - **Sélection et copie du texte** (F08, M4 lot 6, ADR 0024) : un appui long sur un mot le
   sélectionne et affiche deux poignées qui étendent la sélection caractère par caractère (texte
   de droite à gauche compris) ; une barre au-dessus propose « Copier » et « Tout sélectionner »
