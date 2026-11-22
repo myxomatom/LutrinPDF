@@ -13,7 +13,7 @@
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | 🚧 Code terminé (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025), essais sur appareil et benchmarks en cours : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais dans [`verification-appareil-m4.md`](verification-appareil-m4.md) |
+| M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025) : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais [`verification-appareil-m4.md`](verification-appareil-m4.md) entièrement validée par le mainteneur le 2026-11-21 |
 | M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
@@ -99,7 +99,7 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **État au 2026-11-21 : M4 terminé côté code.** Dans l'ordre :
+0. **État au 2026-11-21 : M4 terminé (code, benchmarks et essais sur appareil).** Dans l'ordre :
    1. ~~Benchmarks sur appareil~~ **faits le 2026-11-21** (ADR 0012, « Mesures M4 ») : reste à
       décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
    2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
