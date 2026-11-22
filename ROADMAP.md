@@ -128,6 +128,7 @@ Les durées sont **indicatives**, pour une personne seule assistée d'un agent d
 ### M5 — Finitions MVP (≈ 1 à 2 semaines) — vues E3, E4, V5, V6
 **Objectif :** une application publiable.
 - Thèmes, mode nuit du document, sépia, orientation, paramètres.
+- Rotation de l'affichage des pages par quarts de tour (F27, sans modifier le fichier).
 - Propriétés, partage, impression, À propos et licences.
 - Accessibilité (TalkBack, contrastes, grandes polices), traductions FR/EN.
 - Baseline Profile, tests de captures d'écran de tous les écrans.
