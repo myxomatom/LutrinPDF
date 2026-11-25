@@ -3,8 +3,8 @@
 """Writes the hand-made part of the third-party license list (E4, ADR 0030).
 
 AboutLibraries lists what Gradle resolves (Maven artifacts). It cannot see MuPDF, the native
-libraries compiled into libmupdf_java.so, the hyphenation patterns and the fonts. This script
-writes their description, with the real license texts copied from the MuPDF sources (submodule
+libraries compiled into libmupdf_java.so and the fonts (the hyphenation patterns are compiled
+out, ADR 0030). This script writes their description, with the real license texts copied from the MuPDF sources (submodule
 third-party/mupdf/libmupdf, see scripts/init-mupdf.sh) and from LICENSES/, into
 app/aboutlibraries/libraries/ and app/aboutlibraries/licenses/. Run it again after each update
 of MuPDF or of a font, and commit the result. The output is deterministic (sorted keys, no date).
@@ -43,16 +43,6 @@ BSD_3_CLAUSE = (
     "TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS "
     "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
 )
-
-HYPHEN_NOTE = (
-    "The hyphenation patterns of the tex-hyphen project (hyph-utf8), version CTAN-2025.06.02, "
-    "are compiled into MuPDF (hyph-all.zip). Each language file is published by its authors "
-    "under one or several licenses: MIT, LGPL, GPL, MPL, BSD-3-Clause or LPPL. The copyright "
-    "notice and the license of each language are in the sources of MuPDF, in "
-    "resources/hyphen/license/ (one .info file per language). "
-    "Upstream: https://github.com/hyphenation/tex-hyphen\n"
-)
-
 
 def text(path: Path) -> str:
     return path.read_text(encoding="utf-8").replace("\r\n", "\n").strip() + "\n"
@@ -119,7 +109,6 @@ def native_licenses() -> None:
     license_file("IJG", "IJG License", ijg_terms())
     license_file("ISC-mujs", "ISC", text(THIRD / "mujs" / "COPYING"))
     license_file("BSD-openjpeg", "BSD-2-Clause", text(THIRD / "openjpeg" / "LICENSE"))
-    license_file("Hyphen-patterns", "MIT, LGPL, GPL, MPL, BSD-3-Clause or LPPL, by language", HYPHEN_NOTE)
 
 
 def font_licenses() -> None:
@@ -162,11 +151,6 @@ def native_libraries() -> None:
     library("org.openjpeg:openjpeg", "OpenJPEG", "", f"JPEG 2000 decoder, {from_mupdf}",
             "https://www.openjpeg.org",
             [{"name": "Universite catholique de Louvain and contributors"}], ["BSD-openjpeg"])
-    library("org.tug:tex-hyphen", "Hyphenation patterns (tex-hyphen)", "CTAN-2025.06.02",
-            "Hyphenation dictionaries embedded in MuPDF.",
-            "https://github.com/hyphenation/tex-hyphen",
-            [{"name": "The TeX hyphenation project"}], ["Hyphen-patterns"])
-
 
 def font_libraries() -> None:
     library("com.urwpp:urw-base35", "URW++ Base 35 fonts (the 14 standard PDF fonts)", "",
