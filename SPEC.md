@@ -185,6 +185,7 @@ interface PdfDocument : Closeable {
     suspend fun pageSize(index: Int): PageSize
     suspend fun renderPage(index: Int, target: Bitmap, region: RectF, scale: Float, nightMode: Boolean)
     val canCopyText: Boolean                       // permission de copie (ADR 0020)
+    val canPrint: Boolean                          // permission d'impression (ADR 0026)
     suspend fun outline(): List<OutlineItem>       // destinations avec position (ADR 0020)
     fun search(query: String, options: SearchOptions): Flow<SearchPageResult>  // un résultat par page
     suspend fun selectText(index: Int, start: PdfPoint, end: PdfPoint, mode: SelectionMode): TextSelection

@@ -109,6 +109,10 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     @Volatile
     override var canCopyText: Boolean = true
 
+    /** What [canPrint] returns. */
+    @Volatile
+    override var canPrint: Boolean = true
+
     /** Every call to [search], in order. */
     val searches: MutableList<Search> = CopyOnWriteArrayList()
 

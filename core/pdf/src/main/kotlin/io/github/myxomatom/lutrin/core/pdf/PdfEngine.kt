@@ -80,6 +80,14 @@ interface PdfDocument : Closeable {
      */
     val canCopyText: Boolean
 
+    /**
+     * Whether the document lets its readers print it (F15): `false` when its author restricted
+     * printing through the permissions of an encrypted document (a document opened with its owner
+     * password has every permission). Like [canCopyText], the engine only reports the permission;
+     * enforcing it is the caller's decision (ADR 0026).
+     */
+    val canPrint: Boolean
+
     /** Size of the page at [index], rotation applied, in points. */
     suspend fun pageSize(index: Int): PageSize
 
