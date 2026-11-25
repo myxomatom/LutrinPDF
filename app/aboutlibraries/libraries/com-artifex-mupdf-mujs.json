@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "",
+  "description": "JavaScript interpreter required to build MuPDF. Lutrin never runs the JavaScript of a document.",
+  "developers": [
+    {
+      "name": "Artifex Software, Inc.",
+      "organisationUrl": "https://artifex.com"
+    }
+  ],
+  "licenses": [
+    "ISC-mujs"
+  ],
+  "name": "MuJS",
+  "uniqueId": "com.artifex.mupdf:mujs",
+  "website": "https://mujs.com"
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The list of third-party licenses generated at build time by AboutLibraries (ADR 0030) is read
+     through R.raw.aboutlibraries by AboutModule; AGP 9 shrinks resources aggressively, so the file
+     is kept explicitly, as the AboutLibraries documentation asks. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/aboutlibraries" />

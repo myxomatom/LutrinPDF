@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "JPEG 2000 decoder, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "Universite catholique de Louvain and contributors"
+    }
+  ],
+  "licenses": [
+    "BSD-openjpeg"
+  ],
+  "name": "OpenJPEG",
+  "uniqueId": "org.openjpeg:openjpeg",
+  "website": "https://www.openjpeg.org"
+}

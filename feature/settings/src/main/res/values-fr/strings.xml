@@ -25,4 +25,6 @@
     </plurals>
     <string name="settings_clear_recents_confirm">Vider</string>
     <string name="settings_clear_recents_cancel">Annuler</string>
+    <!-- Opens the About screen (E4, ADR 0030). -->
+    <string name="settings_about">À propos et licences</string>
 </resources>

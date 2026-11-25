@@ -37,6 +37,7 @@ class SettingsScreenTest {
     private val copyChanges = mutableListOf<Boolean>()
     private var backClicks = 0
     private var clearRequests = 0
+    private var aboutRequests = 0
 
     private fun show(state: SettingsUiState, supported: Boolean = true) {
         composeRule.setContent {
@@ -49,6 +50,7 @@ class SettingsScreenTest {
                     onClearRecents = { clearRequests++ },
                     onPagePreviewChange = { previewChanges += it },
                     onIgnoreCopyRestrictionChange = { copyChanges += it },
+                    onOpenAbout = { aboutRequests++ },
                 )
             }
         }
@@ -276,5 +278,21 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("Vider les récents\u00A0?").assertIsDisplayed()
         composeRule.onNodeWithText("Vider").assertIsDisplayed()
         composeRule.onNodeWithText("Annuler").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the last row opens the about screen`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNodeWithText("About and licenses").performScrollTo().assertHasClickAction().performClick()
+
+        assertThat(aboutRequests).isEqualTo(1)
+    }
+
+    @Test
+    fun `the about row is there even while the recent list is empty`() {
+        show(SettingsUiState(loading = false, recentCount = 0))
+
+        composeRule.onNodeWithText("About and licenses").performScrollTo().assertIsDisplayed().assertIsEnabled()
     }
 }

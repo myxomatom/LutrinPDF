@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,11 +62,17 @@ private val isDynamicColorSupported: Boolean get() = Build.VERSION.SDK_INT >= Bu
  * Stateful entry point of the settings screen: connects [SettingsScreen] to its ViewModel.
  *
  * @param onBack called when the user leaves the settings.
+ * @param onOpenAbout called when the user opens « À propos et licences » (E4).
  * @param modifier modifier applied to the screen.
  * @param viewModel state holder, provided by Hilt for the navigation entry.
  */
 @Composable
-fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsRoute(
+    onBack: () -> Unit,
+    onOpenAbout: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         state = state,
@@ -76,6 +83,7 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
         onClearRecents = viewModel::onClearRecents,
         onPagePreviewChange = viewModel::onPagePreviewChange,
         onIgnoreCopyRestrictionChange = viewModel::onIgnoreCopyRestrictionChange,
+        onOpenAbout = onOpenAbout,
     )
 }
 
@@ -96,6 +104,7 @@ fun SettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel: 
  * @param onPagePreviewChange called with the new value of the page preview switch.
  * @param onIgnoreCopyRestrictionChange called with the new value of « Ignorer l'interdiction de
  *   copie ».
+ * @param onOpenAbout called when the user opens « À propos et licences » (E4), the last row.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,6 +117,7 @@ fun SettingsScreen(
     onClearRecents: () -> Unit = {},
     onPagePreviewChange: (Boolean) -> Unit = {},
     onIgnoreCopyRestrictionChange: (Boolean) -> Unit = {},
+    onOpenAbout: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -137,6 +147,7 @@ fun SettingsScreen(
                 onPagePreviewChange = onPagePreviewChange,
                 onIgnoreCopyRestrictionChange = onIgnoreCopyRestrictionChange,
                 onClearRecents = onClearRecents,
+                onOpenAbout = onOpenAbout,
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         }
@@ -152,6 +163,7 @@ private fun SettingsContent(
     onPagePreviewChange: (Boolean) -> Unit,
     onIgnoreCopyRestrictionChange: (Boolean) -> Unit,
     onClearRecents: () -> Unit,
+    onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.verticalScroll(rememberScrollState())) {
@@ -187,7 +199,22 @@ private fun SettingsContent(
         HorizontalDivider()
         SectionTitle(stringResource(R.string.settings_section_data))
         ClearRecentsItem(state.recentCount, onClearRecents)
+        HorizontalDivider()
+        AboutItem(onOpenAbout)
     }
+}
+
+/** « À propos et licences »: opens E4, which has its own module. */
+@Composable
+private fun AboutItem(onOpenAbout: () -> Unit, modifier: Modifier = Modifier) {
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_about)) },
+        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+        modifier =
+            modifier
+                .clickable(role = Role.Button, onClick = onOpenAbout)
+                .padding(horizontal = SettingsGutter - LIST_ITEM_INSET),
+    )
 }
 
 /**

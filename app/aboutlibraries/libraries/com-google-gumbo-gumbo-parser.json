@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "HTML parser, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "Google Inc."
+    }
+  ],
+  "licenses": [
+    "Apache-2.0"
+  ],
+  "name": "Gumbo",
+  "uniqueId": "com.google.gumbo:gumbo-parser",
+  "website": "https://github.com/google/gumbo-parser"
+}

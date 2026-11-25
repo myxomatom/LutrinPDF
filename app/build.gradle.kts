@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.lutrin.android.robolectric)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.baselineprofile)
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 /** Version code of the release; each per-ABI APK derives its own from it (see below). */
@@ -69,6 +70,24 @@ androidComponents {
 
 roborazzi {
     outputDir.set(file("src/test/screenshots"))
+}
+
+// Third-party licenses shown in « À propos » (E4, ADR 0030): the plugin lists the libraries of the
+// release classpath at build time into res/raw/aboutlibraries.json. What Gradle cannot see
+// (MuPDF and its native libraries, fonts) is declared by hand in aboutlibraries/.
+aboutLibraries {
+    // Reproducible builds (F-Droid): no network at build time, so no remote license lookup.
+    offlineMode = true
+    collect {
+        configPath = layout.projectDirectory.dir("aboutlibraries")
+        fetchRemoteLicense = false
+        fetchRemoteFunding = false
+        includePlatform = false
+    }
+    export {
+        prettyPrint = true
+        excludeFields.addAll("funding")
+    }
 }
 
 // Baseline Profile (ADR 0012): generated on a device by the maintainer with
@@ -164,6 +183,7 @@ dependencies {
     implementation(projects.feature.library)
     implementation(projects.feature.reader)
     implementation(projects.feature.settings)
+    implementation(projects.feature.about)
     implementation(projects.feature.tools)
     implementation(projects.feature.assistant)
 

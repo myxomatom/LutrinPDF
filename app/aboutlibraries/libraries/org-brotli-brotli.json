@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Brotli decompression, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "The Brotli Authors"
+    }
+  ],
+  "licenses": [
+    "MIT-brotli"
+  ],
+  "name": "Brotli",
+  "uniqueId": "org.brotli:brotli",
+  "website": "https://github.com/google/brotli"
+}

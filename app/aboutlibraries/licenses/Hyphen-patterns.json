@@ -1,0 +1,6 @@
+{
+  "content": "The hyphenation patterns of the tex-hyphen project (hyph-utf8), version CTAN-2025.06.02, are compiled into MuPDF (hyph-all.zip). Each language file is published by its authors under one or several licenses: MIT, LGPL, GPL, MPL, BSD-3-Clause or LPPL. The copyright notice and the license of each language are in the sources of MuPDF, in resources/hyphen/license/ (one .info file per language). Upstream: https://github.com/hyphenation/tex-hyphen\n",
+  "hash": "Hyphen-patterns",
+  "name": "MIT, LGPL, GPL, MPL, BSD-3-Clause or LPPL, by language",
+  "url": ""
+}
