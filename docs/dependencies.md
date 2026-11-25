@@ -55,9 +55,9 @@ Elles sont compilées depuis les sources par `:third-party:mupdf` et liées dans
 Licensee ne les voit pas (ce ne sont pas des artefacts Maven) : elles sont vérifiées ici à
 chaque mise à jour de MuPDF, et **déclarées pour l'écran E4** dans `app/aboutlibraries/` (script
 `scripts/generate-licenses-config.py`, qui copie le fichier de licence de chaque bibliothèque ;
-à relancer à chaque mise à jour de MuPDF, ADR 0030). Les motifs de césure `hyph-all.zip` (tex-hyphen
-CTAN-2025.06.02, licences variées par langue, MIT le plus souvent, LPPL seule pour sept langues :
-point ouvert 19) sont compilés aussi.
+à relancer à chaque mise à jour de MuPDF, ADR 0030). Les motifs de césure `hyph-all.zip` (tex-hyphen,
+licences variées, LPPL seule pour sept langues) ne sont **plus embarqués** : MuPDF est compilé avec
+`-DFZ_ENABLE_HYPHEN=0` (point ouvert 19, ADR 0030).
 
 | Bibliothèque | Rôle | Licence |
 |--------------|------|---------|

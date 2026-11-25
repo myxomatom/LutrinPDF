@@ -91,7 +91,8 @@ F-Droid doit pouvoir s'en passer et donner le même résultat à chaque fois.
    d'une police) : MuPDF (AGPL-3.0-or-later), Brotli (MIT), cmark-gfm (BSD-2-Clause et autres),
    extract (AGPL), FreeType (FTL ou GPL-2.0-or-later, option GPL), Gumbo (Apache-2.0), HarfBuzz
    (MIT), jbig2dec (AGPL), Little CMS 2 (MIT), libjpeg IJG, MuJS (ISC), OpenJPEG (BSD-2-Clause),
-   motifs de césure tex-hyphen, polices URW++ Base 35 (OFL-1.1) et Fraunces (OFL-1.1). Les textes
+   polices URW++ Base 35 (OFL-1.1) et Fraunces (OFL-1.1). Les motifs de césure n'y sont plus (voir
+   « Amendement »). Les textes
    d'Apache-2.0, de BSD-3-Clause (protobuf, dans AndroidX DataStore) et d'AGPL-3.0-or-later
    sont ceux des fichiers du dépôt. La licence IJG demande de dire que « this software is based
    in part on the work of the Independent JPEG Group » : la phrase est dans la description de
@@ -118,9 +119,25 @@ F-Droid doit pouvoir s'en passer et donner le même résultat à chaque fois.
   test ; seule celle de `release` est publiée.
 - **Sécurité des liens** : E4 n'ouvre jamais rien sans confirmation, et les sites des
   composants ne sont affichés qu'en texte.
-- **À vérifier par le mainteneur** (point ouvert 19) : `hyph-all.zip`, compilé dans MuPDF,
-  réunit les motifs de 48 langues ; sept d'entre elles (ca, hr, is, ru, sv, th, tr) ne sont
-  publiées que sous LPPL, dont la compatibilité avec la GPL v3 et l'AGPL v3 n'est pas établie ici.
-  Ces motifs ne servent qu'à la mise en page HTML/EPUB de MuPDF, pas à la lecture d'un PDF.
-  Retirer `hyph-all.zip` de `MUPDF_EMBEDDED_RESOURCES` (ADR 0013) lèverait la question.
 - Le point ouvert 6 est tranché : E4 dit « GNU GPL v3 ou ultérieure, distribuée sous GNU AGPL v3 ».
+
+## Amendement du 2026-11-25 : motifs de césure retirés (point ouvert 19)
+
+`hyph-all.zip`, compilé dans MuPDF (ADR 0013), réunissait les motifs de césure de 48 langues, dont
+sept (ca, hr, is, ru, sv, th, tr) ne sont publiées que sous LPPL, dont la compatibilité avec la
+GPL v3 et l'AGPL v3 n'est pas établie. Ces motifs ne servent qu'à la mise en page HTML et EPUB de
+MuPDF, que Lutrin ne fait pas : lire un PDF n'y touche pas. **Le mainteneur a décidé de les retirer
+du build pour la v1.0.**
+
+- `hyph-all.zip` sort de `MUPDF_EMBEDDED_RESOURCES` (`build-logic`) : `generateMupdfResources` ne
+  l'écrit plus, et supprime la source déjà générée.
+- MuPDF est compilé avec `-DFZ_ENABLE_HYPHEN=0` (drapeau de `include/mupdf/fitz/config.h`, que
+  `Makefile` reconnaît aussi) : passé à ndk-build par `MUPDF_EXTRA_CFLAGS` dans
+  `third-party/mupdf/build.gradle.kts`, que l'`Android.mk` d'Artifex reprend pour chaque
+  bibliothèque sans être modifié ; et à `make` par `XCFLAGS` dans `build-host-jni.sh` (tests JVM).
+  Le code du hyphénateur est ainsi compilé hors de la bibliothèque : aucun symbole ne pointe vers
+  une ressource absente.
+- Les motifs quittent la liste des licences (`scripts/generate-licenses-config.py`).
+- **Pour M6** (conversion HTML vers PDF), deux options : réintégrer un `hyph-all.zip` réduit aux
+  langues sous licence compatible (sans ca, hr, is, ru, sv, th, tr), généré par `build-logic` et
+  décrit de nouveau dans E4 ; ou rester sans césure.

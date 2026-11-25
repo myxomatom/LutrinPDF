@@ -528,10 +528,13 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
   page, **aller d'abord à la page 3** (action TalkBack « Lien : page 3 ») et appuyer là ; la
   tolérance de doigt de l'appui long est dans `isOnText` (ADR 0024 amendé).
 
+- **Césure de MuPDF retirée (ADR 0030, amendement)** : `-DFZ_ENABLE_HYPHEN=0` (`MUPDF_EXTRA_CFLAGS` d'ndk-build, `XCFLAGS` de `build-host-jni.sh`) et plus de `hyph-all.zip` dans
+  `MUPDF_EMBEDDED_RESOURCES`. Changer ce drapeau recompile toute la bibliothèque native. Pour M6
+  (HTML vers PDF) : un `hyph-all.zip` réduit aux langues sous licence compatible, ou pas de césure.
 - **Licences tierces (E4, ADR 0030)** :
   - la liste est générée à la compilation par le plugin AboutLibraries (`:app`, hors ligne) et
     complétée à la main pour ce que Gradle ne voit pas : MuPDF, ses bibliothèques natives, les
-    motifs de césure, les polices URW et Fraunces (`app/aboutlibraries/`). **Après toute mise à
+    polices URW et Fraunces (`app/aboutlibraries/`). **Après toute mise à
     jour de MuPDF, d'une police ou d'une bibliothèque native**, relancer
     `python scripts/generate-licenses-config.py` (sous-modules MuPDF initialisés) et committer ;
   - le parseur d'AboutLibraries (`Libs.Builder().withJson`) ne lève rien sur un JSON invalide :

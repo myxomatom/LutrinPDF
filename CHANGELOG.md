@@ -34,8 +34,10 @@ changement y est signalé.
   extract, MuJS), les motifs de césure, les polices URW++ et Fraunces. Pas de bouton de don. Chaînes
   FR et EN, TalkBack, grande police, thème sombre. Nouvelles dépendances : `aboutlibraries-core`
   15.3.0 et son plugin Gradle (Apache-2.0), aucune permission.
-- **Point ouvert 19** : sept langues des motifs de césure compilés dans MuPDF ne sont publiées que
-  sous LPPL (compatibilité avec la GPL v3 et l'AGPL v3 non établie).
+- **Motifs de césure de MuPDF retirés** (point ouvert 19 tranché, ADR 0030) : `hyph-all.zip` n'est
+  plus embarqué et MuPDF est compilé avec `-DFZ_ENABLE_HYPHEN=0` (Android et tests JVM). Sept de ses
+  langues n'étaient publiées que sous LPPL, et les motifs ne servent qu'à la mise en page HTML/EPUB,
+  que Lutrin ne fait pas ; la lecture, la recherche et la sélection ne changent pas.
 - **Point ouvert 6 tranché** : la licence affichée dans E4 est « GNU GPL v3 ou ultérieure, distribuée
   sous GNU AGPL v3 ».
 
