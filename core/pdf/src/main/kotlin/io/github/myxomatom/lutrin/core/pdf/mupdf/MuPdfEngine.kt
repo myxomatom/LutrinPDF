@@ -72,8 +72,14 @@ internal class MuPdfEngine @Inject constructor(
         val (document, resources) = load(source)
         return releasingOnFailure(release = { releaseNative(document, resources) }) {
             val metadata = translatingMuPdfErrors { prepare(document, password) }
-            val canCopyText = translatingMuPdfErrors { document.hasPermission(Document.PERMISSION_COPY) }
-            MuPdfDocument(document, dispatcher, metadata, releaseFailures, canCopyText, resources)
+            val permissions =
+                translatingMuPdfErrors {
+                    DocumentPermissions(
+                        canCopyText = document.hasPermission(Document.PERMISSION_COPY),
+                        canPrint = document.hasPermission(Document.PERMISSION_PRINT),
+                    )
+                }
+            MuPdfDocument(document, dispatcher, metadata, releaseFailures, permissions, resources)
         }
     }
 

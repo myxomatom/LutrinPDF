@@ -71,10 +71,10 @@ private val BarMargin = 16.dp
 /** Padding before the page indicator, inside the bar. */
 private val BarStartPadding = 20.dp
 
-/** Padding after the fit button, inside the bar. */
+/** Padding after the print button, inside the bar. */
 private val BarEndPadding = 8.dp
 
-/** Gap between the indicator, the slider and the fit button. */
+/** Gap between the indicator, the slider and the print button. */
 private val BarSpacing = 12.dp
 
 /** Shadow lifting the bar off the document that scrolls beneath it. */
@@ -94,6 +94,9 @@ private val ActiveThumbSize = 24.dp
 
 /** Diameter of the halo around the thumb while it is dragged. */
 private val HaloSize = 40.dp
+
+/** Opacity of the print button when the author of the document forbids printing (ADR 0026). */
+private const val FORBIDDEN_ALPHA = 0.38f
 
 /** Opacity of the primary colour in the halo of the thumb. */
 private const val HALO_ALPHA = 0.2f
@@ -119,7 +122,8 @@ internal fun floatingPageBarClearance(): Dp =
 
 /**
  * Floating bar of the reader (E2, ADR 0018): a pill above the document with « page / count »,
- * a thin slider to jump through the document (F05) and the fit button (F04). The document
+ * a thin slider to jump through the document (F05) and the print button (F15, ADR 0026), which
+ * replaced the fit button of the mockup (fitting moves to the display options). The document
  * scrolls beneath it. With the page preview on, dragging the slider shows a card above the
  * thumb with the page aimed at ([PagePreviewCard]); the document moves on release
  * ([PageScrubber]).
@@ -133,12 +137,13 @@ internal fun floatingPageBarClearance(): Dp =
  * @param scrubber state of the slider gesture, shared with the screen that dims the document.
  * @param onGoTo shows a zero-based page in the document, without animation.
  * @param onIndicatorClick called by a tap on the page indicator, which opens « Aller à la page » (V3).
- * @param fitLabel description of the fit button: « fit to width » or « fit page ».
- * @param onFit brings the zoom back to 1.
+ * @param onPrint called by a tap on the print button, whether printing is allowed or not.
  * @param previewMaxHeight tallest page in the preview card, so that it fits above the bar.
  * @param modifier modifier applied to the bar and its preview.
  * @param sectionTitle title of the section of a page, shown under « Page N » in the preview when
  *   the document has an outline (milestone M4); `null` shows none.
+ * @param canPrint whether the document may be printed; otherwise the print button is dimmed and
+ *   read as forbidden, but still answers a tap, so that the reader can explain why.
  */
 @Suppress("LongParameterList") // The bar gathers three controls and the preview of the slider.
 @Composable
@@ -149,11 +154,11 @@ internal fun FloatingPageBar(
     scrubber: PageScrubber,
     onGoTo: (Int) -> Unit,
     onIndicatorClick: () -> Unit,
-    fitLabel: String,
-    onFit: () -> Unit,
+    onPrint: () -> Unit,
     previewMaxHeight: Dp,
     modifier: Modifier = Modifier,
     sectionTitle: (Int) -> String? = { null },
+    canPrint: Boolean = true,
 ) {
     // A bar removed in the middle of a gesture (full screen, new document) does not move the document.
     DisposableEffect(scrubber) { onDispose { scrubber.cancel() } }
@@ -176,11 +181,14 @@ internal fun FloatingPageBar(
             )
             Spacer(Modifier.height(PreviewGap))
         }
-        Bar(page, pageSizes.size, scrubber, onGoTo, onIndicatorClick, fitLabel, onFit, thumbAnchor)
+        Bar(page, pageSizes.size, scrubber, onGoTo, onIndicatorClick, PrintAction(canPrint, onPrint), thumbAnchor)
     }
 }
 
-/** The pill itself: indicator, slider and fit button. */
+/** What the print button does: [onPrint] on a tap, dimmed when not [canPrint]. */
+private class PrintAction(val canPrint: Boolean, val onPrint: () -> Unit)
+
+/** The pill itself: indicator, slider and print button. */
 @Suppress("LongParameterList") // Plain wiring of the state of FloatingPageBar.
 @Composable
 private fun Bar(
@@ -189,8 +197,7 @@ private fun Bar(
     scrubber: PageScrubber,
     onGoTo: (Int) -> Unit,
     onIndicatorClick: () -> Unit,
-    fitLabel: String,
-    onFit: () -> Unit,
+    print: PrintAction,
     thumbAnchor: ThumbAnchor,
 ) {
     Surface(
@@ -210,13 +217,28 @@ private fun Bar(
             } else {
                 Box(Modifier.weight(1f))
             }
-            IconButton(
-                onClick = onFit,
-                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-            ) {
-                Icon(painterResource(R.drawable.ic_fit_width), contentDescription = fitLabel)
-            }
+            PrintButton(print)
         }
+    }
+}
+
+/**
+ * « Imprimer » (F15, ADR 0026). When the author forbids printing, the button stays reachable but
+ * dimmed, and TalkBack reads it as disabled and why; a tap then explains it (`AGENTS.md` §11).
+ */
+@Composable
+private fun PrintButton(print: PrintAction) {
+    val forbidden = stringResource(R.string.reader_print_forbidden_state)
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    IconButton(
+        onClick = print.onPrint,
+        modifier = if (print.canPrint) Modifier else Modifier.semantics { stateDescription = forbidden },
+        colors =
+            IconButtonDefaults.iconButtonColors(
+                contentColor = if (print.canPrint) color else color.copy(alpha = FORBIDDEN_ALPHA),
+            ),
+    ) {
+        Icon(painterResource(R.drawable.ic_print), contentDescription = stringResource(R.string.reader_print))
     }
 }
 

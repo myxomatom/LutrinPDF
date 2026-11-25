@@ -100,4 +100,22 @@ class MuPdfEncryptionTest {
             openTestPdf(path, password).use { assertThat(it.canCopyText).isTrue() }
         }
     }
+
+    @Test
+    fun `reports that the author forbids printing`() = runTest {
+        // Its permissions allow accessibility only (core/testing/README.md): no printing either.
+        openTestPdf("pdfs/encrypted_owner_password_only.pdf").use { document ->
+            assertThat(document.canPrint).isFalse()
+            // Reported, not enforced (ADR 0026): the pages are still rendered for the screen.
+            assertThat(document.allText()).contains("Document restreint")
+        }
+    }
+
+    @Test
+    fun `allows printing documents without restriction`() = runTest {
+        openTestPdf("pdfs/simple_1page.pdf").use { assertThat(it.canPrint).isTrue() }
+        userPasswords.forEach { (path, password) ->
+            openTestPdf(path, password).use { assertThat(it.canPrint).isTrue() }
+        }
+    }
 }

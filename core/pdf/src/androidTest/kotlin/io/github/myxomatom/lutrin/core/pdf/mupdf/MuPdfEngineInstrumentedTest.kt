@@ -148,6 +148,8 @@ class MuPdfEngineInstrumentedTest {
             assertThat(document.pageCount).isEqualTo(1)
             // Its author restricted copying (ADR 0020): reported, not enforced, by the engine.
             assertThat(document.canCopyText).isFalse()
+            // Printing too (ADR 0026): its permissions allow accessibility only.
+            assertThat(document.canPrint).isFalse()
             assertThat(document.allText()).contains("Document restreint")
         }
     }
@@ -155,6 +157,11 @@ class MuPdfEngineInstrumentedTest {
     @Test
     fun allowsCopyingTheTextOfAnUnrestrictedDocument() = runTest {
         open(TestFiles.Pdf.SIMPLE).use { assertThat(it.canCopyText).isTrue() }
+    }
+
+    @Test
+    fun allowsPrintingAnUnrestrictedDocument() = runTest {
+        open(TestFiles.Pdf.SIMPLE).use { assertThat(it.canPrint).isTrue() }
     }
 
     @Test

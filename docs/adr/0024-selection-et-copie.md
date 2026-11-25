@@ -92,7 +92,11 @@ permission de copie, et à rendre la copie accessible sans appui long.
    document interdit la copie du texte ». La sélection visuelle reste possible. Le PDF du jeu de
    test `encrypted_owner_password_only.pdf` interdit la copie (vérifié par
    `MuPdfEncryptionTest` et `SelectionInstrumentedTest`).
-9. **Réglage « Ignorer l'interdiction de copie »** (E3, section « Lecture ») : désactivé par
+9. *Amendé par l'ADR 0026 (impression)* : le réglage s'appelle désormais **« Ignorer les
+   restrictions du document »** et couvre la copie **et** l'impression ; identifiants renommés
+   (`ignoreDocumentRestrictions`, `SetIgnoreDocumentRestrictionsUseCase`), **même clé DataStore**
+   `ignore_copy_restriction` (pas de migration, la valeur choisie est gardée). Texte d'origine :
+   **Réglage « Ignorer l'interdiction de copie »** (E3, section « Lecture ») : désactivé par
    défaut, avec un texte d'explication qui rappelle les droits de l'auteur. Stocké dans DataStore
    (`ignore_copy_restriction`, absent = désactivé : pas de migration), exposé par `AppSettings`,
    `SettingsRepository`, `SetIgnoreCopyRestrictionUseCase` et `SettingsViewModel`. Le lecteur le

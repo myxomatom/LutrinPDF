@@ -58,6 +58,7 @@ class ReaderViewModelSelectionTest {
             SavedStateHandle(mapOf(READER_URI_ARG to "content://com.example.provider/document/a.pdf")),
             FakePdfEngine(Result.success(document)),
             dispatcher,
+            dispatcher,
             ObserveSettingsUseCase(settings),
             SetScrollModeUseCase(settings),
             ReadingHistory(
@@ -85,11 +86,11 @@ class ReaderViewModelSelectionTest {
         val viewModel = openViewModel()
         assertThat(viewModel.canCopy()).isFalse()
 
-        settings.setIgnoreCopyRestriction(true)
+        settings.setIgnoreDocumentRestrictions(true)
         advanceUntilIdle()
         assertThat(viewModel.canCopy()).isTrue()
 
-        settings.setIgnoreCopyRestriction(false)
+        settings.setIgnoreDocumentRestrictions(false)
         advanceUntilIdle()
         assertThat(viewModel.canCopy()).isFalse()
     }
@@ -107,7 +108,7 @@ class ReaderViewModelSelectionTest {
         selection.effects.test {
             selection.onCopy()
             assertThat(awaitItem()).isEqualTo(SelectionEffect.CopyRefused)
-            settings.setIgnoreCopyRestriction(true)
+            settings.setIgnoreDocumentRestrictions(true)
             advanceUntilIdle()
             selection.onCopy()
             // Opened without a password: copied as is.

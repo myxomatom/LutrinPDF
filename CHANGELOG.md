@@ -10,6 +10,13 @@ changement y est signalé.
 ## [Non publié]
 
 ### Modifié
+- **Réglage « Ignorer les restrictions du document »** (E3 › Lecture, ADR 0026), ancien « Ignorer
+  l'interdiction de copie » : il couvre la copie et l'impression ; même clé DataStore, la valeur
+  choisie est gardée. API interne renommée (`ignoreDocumentRestrictions`,
+  `SetIgnoreDocumentRestrictionsUseCase`).
+- **Barre flottante du lecteur** (E2, ADR 0026) : le bouton « pleine largeur » laisse la place au
+  bouton « Imprimer » ; l'ajustement à la largeur rejoindra la feuille « Affichage » (M5, lot 4).
+  Le double toucher zoome et revient au zoom d'origine comme avant.
 - **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
   sélecteurs de `SearchBenchmark` et `OutlineBenchmark` corrigés (compteur de recherche décrit
   « 1 000 résultats ou plus », attente du bouton de la table des matières, processus tué entre
@@ -18,6 +25,15 @@ changement y est signalé.
   427 ms.
 
 ### Ajouté
+- **Impression** (F15, M5 lot 1, ADR 0026) : bouton « Imprimer » de la barre flottante, boîte
+  d'impression du système, travail nommé d'après le document. Un document ouvert sans mot de passe
+  est envoyé tel quel (fichier d'origine, le service d'impression garde les pages choisies) ; un
+  document ouvert avec son mot de passe est imprimé en images de ses pages (150 ppp, une page en
+  mémoire à la fois, `ImagePdfWriter`), sans jamais écrire le PDF déchiffré. L'interdiction
+  d'impression du document (`PdfDocument.canPrint`, `core:pdf`) est respectée par défaut : bouton
+  atténué, lu « Désactivé, interdit par l'auteur », qui explique pourquoi. La rotation de
+  l'affichage (F27) ne s'applique jamais à l'impression. Test instrumenté de la boîte
+  d'impression (UiAutomator).
 - **Scénarios de benchmark de M4** (`:benchmark`, ADR 0012) : `SearchBenchmark` (recherche d'un mot
   fréquent dans le PDF de 600 pages, dix « résultat suivant », défilement pendant le surlignage) et
   `OutlineBenchmark` (tiroir de la table des matières, saut vers « Partie 12 ») ; le générateur de

@@ -110,6 +110,7 @@ class ReaderSelectionTest {
                 SavedStateHandle(mapOf(READER_URI_ARG to "content://com.example.provider/document/a.pdf")),
                 FakePdfEngine(Result.success(document)),
                 Dispatchers.Unconfined,
+                Dispatchers.Unconfined,
                 ObserveSettingsUseCase(settings),
                 SetScrollModeUseCase(settings),
                 ReadingHistory(
@@ -265,7 +266,7 @@ class ReaderSelectionTest {
         assertThat(copied()).isNull()
         assertSelectionShown()
 
-        runBlocking { settings.setIgnoreCopyRestriction(true) }
+        runBlocking { settings.setIgnoreDocumentRestrictions(true) }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Copy").performClick()
         composeRule.waitForIdle()

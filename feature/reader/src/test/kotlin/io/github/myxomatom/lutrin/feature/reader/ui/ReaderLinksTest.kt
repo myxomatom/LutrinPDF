@@ -82,6 +82,7 @@ class ReaderLinksTest {
                 SavedStateHandle(mapOf(READER_URI_ARG to "content://com.example.provider/document/a.pdf")),
                 FakePdfEngine(Result.success(document)),
                 Dispatchers.Unconfined,
+                Dispatchers.Unconfined,
                 ObserveSettingsUseCase(settings),
                 SetScrollModeUseCase(settings),
                 ReadingHistory(
