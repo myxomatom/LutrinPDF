@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-21.**
+> session de travail. **Dernière mise à jour : 2026-11-25.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -14,7 +14,8 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025) : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais [`verification-appareil-m4.md`](verification-appareil-m4.md) entièrement validée par le mainteneur le 2026-11-21 |
-| M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
+| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026, branche `feat/reader-print`, pas encore sur appareil) ; « À propos » en parallèle |
+| M6 à M8 | ⏳ À faire |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
 
@@ -104,7 +105,17 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
       décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
    2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
       paragraphes « À essayer sur appareil » ci-dessous y sont rassemblés ; la liste fait foi) ;
-   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur.
+   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur : **faite**
+      (ADR 0026, branche `feat/reader-print`). **À essayer sur appareil** : imprimer
+      `simple_1page.pdf` et le PDF de 600 pages vers une vraie imprimante et vers « Enregistrer au
+      format PDF » (pages choisies « 2-5 » : le fichier d'origine est envoyé entier, le service
+      doit garder la plage) ; un PDF chiffré ouvert avec son mot de passe (images à 150 ppp, aperçu
+      qui arrive après le dessin de toutes les pages, mémoire stable) ;
+      `encrypted_owner_password_only.pdf` (bouton atténué, message), puis E3 › Lecture › « Ignorer
+      les restrictions du document » (impression permise) ; TalkBack sur le bouton ; quitter le
+      lecteur pendant l'impression d'un document protégé (échec propre attendu) ; test
+      instrumenté `PrintInstrumentedTest`. L'ajustement à la largeur n'a plus de bouton : il ira
+      dans la feuille « Affichage » au lot 4.
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -467,6 +478,19 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     clavier, sinon le premier retour ne ferme pas la recherche ;
   - l'icône « Rechercher » de la barre du haut a changé les captures du lecteur
     (`reader_*`, `outline_preview_section_light`), réenregistrées.
+- **Impression** (M5 lot 1, ADR 0026) :
+  - `android.graphics.pdf.PdfDocument` garde chaque page (une `SkPicture` avec une copie du
+    bitmap) jusqu'à `writeTo` : sa mémoire croît avec le document. Le PDF d'images d'un document
+    protégé est donc écrit en flux par `ImagePdfWriter` (paquet `print`) ;
+  - les constructeurs de `PrintDocumentAdapter.LayoutResultCallback` et `WriteResultCallback` sont
+    cachés : les faux des tests sont dans le paquet `android.print` (`src/test/kotlin/android/print`) ;
+  - `CoroutineStart.ATOMIC` est une API « delicate » (avertissement, donc erreur) : la réponse à
+    une écriture annulée avant son début passe par `invokeOnCompletion` ;
+  - captures Roborazzi sous Windows : `recordRoborazziDebug` a pu ne réécrire aucune image (tâche
+    de test reprise du cache) ; `verifyRoborazziDebug` puis copier les `build/outputs/roborazzi/*_actual.png`
+    des seuls tests en échec marche, et confirme que Windows et la CI dessinent pareil (les autres
+    captures n'ont pas bougé). Pour comparer deux PNG avec Pillow, convertir en `RGB` :
+    `getbbox()` d'une image `RGBA` ne regarde que l'alpha.
 - **Tests de la sélection** (lot 6, ADR 0024) :
   - dans une interface de droite à gauche, `Modifier.offset` inverse x : les poignées, en
     coordonnées de page, sont posées sous `LocalLayoutDirection` gauche à droite (la barre
