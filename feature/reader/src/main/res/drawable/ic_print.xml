@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Double horizontal arrow of the "fit to width" button (mockup E2). -->
+<!-- Printer of the "print" button of the floating bar (F15, ADR 0026), drawn in the stroke of the mockup E2 icons. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,7 +8,7 @@
     android:viewportHeight="24">
     <path
         android:fillColor="#00000000"
-        android:pathData="M3,12h18M7,8l-4,4 4,4M17,8l4,4 -4,4"
+        android:pathData="M7,8V3h10v5M7,17H5a2,2 0,0 1,-2 -2v-5a2,2 0,0 1,2 -2h14a2,2 0,0 1,2 2v5a2,2 0,0 1,-2 2h-2M7,14h10v7H7z"
         android:strokeWidth="1.8"
         android:strokeColor="#FF000000"
         android:strokeLineCap="round"

@@ -70,6 +70,7 @@ class ReaderViewModelOutlineTest {
             SavedStateHandle(mapOf(READER_URI_ARG to uri)),
             FakePdfEngine(Result.success(document)),
             work,
+            work,
             ObserveSettingsUseCase(settings),
             SetScrollModeUseCase(settings),
             ReadingHistory(

@@ -140,7 +140,7 @@ class ReaderScreenTest {
 
         composeRule.onNodeWithText("Contrat de location").assertIsDisplayed()
         composeRule.onNodeWithText("1 / 3").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Fit to width").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Print").assertIsDisplayed()
         composeRule.waitUntil { document.renders.isNotEmpty() }
         assertThat(document.renders.first().pageIndex).isEqualTo(0)
     }
@@ -276,16 +276,16 @@ class ReaderScreenTest {
     }
 
     @Test
-    fun `page by page, a tap switches to full screen and the fit button fits the whole page`() {
+    fun `page by page, a tap switches to full screen, without the print button`() {
         show(ready(scrollMode = ScrollMode.PAGED))
-        composeRule.onNodeWithContentDescription("Fit page to screen").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Fit to width").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Print").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("Document, page 1 of 3").performTouchInput { click(center) }
         composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_WAIT_MS)
 
         composeRule.onNodeWithText("Page 1 / 3").assertIsDisplayed()
         composeRule.onNodeWithText("Contrat de location").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Print").assertDoesNotExist()
     }
 
     @Test

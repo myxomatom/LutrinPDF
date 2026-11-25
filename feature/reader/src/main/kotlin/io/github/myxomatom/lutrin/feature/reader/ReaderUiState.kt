@@ -53,6 +53,8 @@ sealed interface ReaderUiState {
      *   document without one.
      * @property canCopyText whether selected text may be copied (F08, ADR 0024): the document allows
      *   it, or the user chose to ignore its restriction in the settings; followed live.
+     * @property canPrint whether the document may be printed (F15, ADR 0026): the document allows
+     *   it, or the user chose to ignore its restrictions in the settings; followed live.
      */
     data class Ready(
         val title: String,
@@ -64,6 +66,7 @@ sealed interface ReaderUiState {
         val links: PageLinks = PageLinks(document = null, dispatcher = Dispatchers.Unconfined),
         val outline: ReaderOutline = ReaderOutline(),
         val canCopyText: Boolean = true,
+        val canPrint: Boolean = true,
     ) : ReaderUiState
 }
 

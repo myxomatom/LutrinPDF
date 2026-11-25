@@ -8,9 +8,7 @@
     <string name="reader_page_slider">Aller à la page</string>
     <string name="reader_page_slider_value">Page %1$d sur %2$d</string>
     <string name="reader_page_preview_caption">Page %1$d</string>
-    <string name="reader_fit_width">Ajuster à la largeur</string>
     <string name="reader_more_options">Plus d’options</string>
-    <string name="reader_fit_page">Ajuster la page à l’écran</string>
     <string name="reader_options_title">Affichage</string>
     <string name="reader_options_scrolling">Défilement</string>
     <string name="reader_scroll_continuous">Continu</string>
@@ -124,4 +122,12 @@
     <string name="reader_selection_copy_page_action">Copier le texte de la page</string>
     <string name="reader_selection_start_handle">Début de la sélection</string>
     <string name="reader_selection_end_handle">Fin de la sélection</string>
+    <!-- Print button of the floating bar (F15, ADR 0026). -->
+    <string name="reader_print">Imprimer</string>
+    <!-- State of the print button read by TalkBack when the author forbids printing (ADR 0026). -->
+    <string name="reader_print_forbidden_state">Désactivé, interdit par l’auteur</string>
+    <!-- Message of a tap on the print button when the author forbids printing (ADR 0026). -->
+    <string name="reader_print_forbidden">L’auteur de ce document interdit son impression</string>
+    <!-- Message of a tap on the print button on a device without print service (ADR 0026). -->
+    <string name="reader_print_unavailable">L’impression n’est pas disponible sur cet appareil</string>
 </resources>

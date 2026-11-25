@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
+import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
@@ -21,6 +22,8 @@ import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
 import io.github.myxomatom.lutrin.feature.reader.links.LinkController
 import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
+import io.github.myxomatom.lutrin.feature.reader.print.PrintJob
+import io.github.myxomatom.lutrin.feature.reader.print.PrintSource
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.search.SearchController
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionController
@@ -57,8 +60,10 @@ import kotlinx.coroutines.withContext
  * engine checks it. After a rotation the question is asked again with an empty field; after the
  * death of the process the document is opened again from its URI and asks again.
  *
- * @param observeSettings reads the scroll mode and the page preview setting, shared by every
- *   document (ADR 0011, ADR 0018).
+ * @param renderDispatcher where pages are drawn and text is searched.
+ * @param ioDispatcher where a print job copies or writes the document (F15, ADR 0026).
+ * @param observeSettings reads the scroll mode, the page preview and the document restrictions
+ *   settings, shared by every document (ADR 0011, ADR 0018, ADR 0024).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param history the recent list and the reading position of this document.
  * @param checkExternalLink decides which external links may be offered to another app (ADR 0022).
@@ -66,7 +71,7 @@ import kotlinx.coroutines.withContext
  * The links of the document (F09, ADR 0022) are followed by [linkController]; their effects
  * are handled by the screen, since the ViewModel never sees a `Context`. The search (F07, ADR
  * 0023) is run by [searchController], the text selection and its copy (F08, ADR 0024) by
- * [selectionController].
+ * [selectionController]. Printing (F15, ADR 0026) is started by the screen with [printJob].
  */
 @Suppress("LongParameterList", "TooManyFunctions") // Hilt dependencies; one short handler per user action.
 @HiltViewModel
@@ -76,6 +81,7 @@ constructor(
     savedStateHandle: SavedStateHandle,
     private val engine: PdfEngine,
     @param:DefaultDispatcher private val renderDispatcher: CoroutineDispatcher,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
     private val history: ReadingHistory,
@@ -88,8 +94,14 @@ constructor(
     private val outline = MutableStateFlow(ReaderOutline())
     private var document: PdfDocument? = null
 
-    /** Whether the document was opened with its password: its copied text is flagged sensitive. */
+    /**
+     * Whether the document was opened with its password: its copied text is flagged sensitive, and
+     * it is printed as images, never as the decrypted PDF (ADR 0026).
+     */
     private var isProtected = false
+
+    /** Name of the document for a print job: its name in the recent list, without « .pdf ». */
+    private var printName: String = ""
 
     /** The settings, followed as long as the ViewModel lives (scroll mode, preview, copy). */
     private val settings: StateFlow<AppSettings> =
@@ -142,6 +154,7 @@ constructor(
                     currentPage = page,
                     outline = outline.withCurrentSection(page),
                     canCopyText = settings.allowsTextCopy(document?.canCopyText ?: true),
+                    canPrint = settings.allowsPrinting(document?.canPrint ?: true),
                 )
             } else {
                 state
@@ -242,6 +255,26 @@ constructor(
             .onFailure { error -> documentState.value = failureState(error) }
     }
 
+    /**
+     * What to print (F15, ADR 0026), or `null` when the document is not open or its author
+     * forbids printing and the setting does not ignore it (the screen then explains why). A
+     * document opened with its password is printed as images of its pages; any other document is
+     * sent as is, from its URI. Display options, such as the rotation of F27, are never applied.
+     * The screen hands the job to the system print service: the ViewModel never sees a `Context`.
+     */
+    internal fun printJob(): PrintJob? {
+        val opened = document?.takeIf { settings.value.allowsPrinting(it.canPrint) }
+        val ready = documentState.value as? ReaderUiState.Ready
+        if (opened == null || ready == null) return null
+        val source =
+            if (isProtected) {
+                PrintSource.Rendered(opened, ready.pageSizes)
+            } else {
+                PrintSource.Original(uri.toUri(), opened.pageCount)
+            }
+        return PrintJob(printName, source, ioDispatcher)
+    }
+
     /** Whether selected text may be copied now (ADR 0024); `false` before the document is open. */
     private fun canCopyText(): Boolean = document?.let { settings.value.allowsTextCopy(it.canCopyText) } ?: false
 
@@ -252,6 +285,7 @@ constructor(
         val title = opened.metadata.title ?: displayName(uri)
         // Before the Ready state: the screen starts on the page of its first Ready state.
         currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
+        printName = displayName(uri).removeSuffix(PDF_EXTENSION)
         documentState.value =
             ReaderUiState.Ready(
                 title = title,
@@ -262,6 +296,8 @@ constructor(
         val opening = DocumentOpening(uri, opened.pageCount, currentPage.value, title, isProtected)
         viewModelScope.launch { history.follow(opening, currentPage) }
         viewModelScope.launch { loadOutline(opened) }
+        // After the Ready state: the name of the provider must not delay the first page.
+        viewModelScope.launch { history.documentName(uri)?.let { printName = it.removeSuffix(PDF_EXTENSION) } }
     }
 
     /**

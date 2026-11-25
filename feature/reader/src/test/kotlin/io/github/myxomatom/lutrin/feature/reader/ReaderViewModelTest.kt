@@ -64,6 +64,7 @@ class ReaderViewModelTest {
         SavedStateHandle(listOfNotNull(READER_URI_ARG to uri, page?.let { READER_PAGE_ARG to it }).toMap()),
         engine,
         dispatcher,
+        dispatcher,
         ObserveSettingsUseCase(settings),
         SetScrollModeUseCase(settings),
         ReadingHistory(
