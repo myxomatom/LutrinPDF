@@ -74,9 +74,6 @@ private val CardMargin = 16.dp
 private val CardPadding = 16.dp
 private val CardGap = 12.dp
 
-/** Vertical space around a row of the list of third-party licenses. */
-private val ComponentRowPadding = 10.dp
-
 /**
  * Stateful entry point of E4: connects [AboutScreen] to its ViewModel, hands the source code
  * address to another app once confirmed, and tells when no app can open it.
@@ -337,64 +334,6 @@ internal fun SectionTitle(text: String, modifier: Modifier = Modifier) {
         modifier = modifier.padding(start = AboutGutter, end = AboutGutter, top = 8.dp, bottom = 4.dp)
             .semantics { heading() },
     )
-}
-
-/** The rows of the list of third-party licenses, or what replaces them while loading or on failure. */
-private fun LazyListScope.licenseItems(licenses: LicensesState, onOpenComponent: (String) -> Unit) {
-    when (licenses) {
-        LicensesState.Loading -> item(key = "loading") { LoadingRow() }
-
-        LicensesState.Unavailable ->
-            item(key = "unavailable") {
-                Text(
-                    text = stringResource(R.string.about_licenses_unavailable),
-                    modifier = Modifier.padding(horizontal = AboutGutter, vertical = ComponentRowPadding),
-                )
-            }
-
-        is LicensesState.Loaded ->
-            items(licenses.components, key = { it.id }) { component ->
-                ComponentRow(component, onClick = { onOpenComponent(component.id) })
-            }
-    }
-}
-
-@Composable
-private fun LoadingRow(modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.about_licenses_loading)
-    Box(modifier.fillMaxWidth().padding(vertical = CardPadding), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(Modifier.semantics { contentDescription = description })
-    }
-}
-
-/**
- * A row of the list (E4 mockup): the name on the start side, the license on the end side; with a
- * large font the license goes under the name. Read as « name, license » by TalkBack.
- */
-@Composable
-private fun ComponentRow(component: LicensedComponent, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    FlowRow(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .heightIn(min = LutrinDimens.TouchTargetMin)
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = AboutGutter, vertical = ComponentRowPadding),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalArrangement = Arrangement.Center,
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = component.name,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(end = CardGap),
-        )
-        Text(
-            text = component.licenseSummary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
 @Preview

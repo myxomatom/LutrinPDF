@@ -7,7 +7,7 @@
 
 ## 0. État d'avancement
 
-> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-21**. Pour reprendre le travail
+> Mis à jour à chaque jalon. Dernière mise à jour : **2026-11-25**. Pour reprendre le travail
 > dans une nouvelle session : [`docs/reprise.md`](docs/reprise.md). Détail des constats :
 > [`docs/audits/2026-11-04-audit-m1.md`](docs/audits/2026-11-04-audit-m1.md).
 
@@ -18,7 +18,7 @@
 | M2 Lecteur de base | ✅ Terminé (mesuré le 2026-11-08 sur un Xiaomi 23013PC75G, Android 15 / HyperOS, build `benchmarkRelease`) | Défilement continu (PDF de 600 pages) : `frameDurationCpuMs` P50 2,9 / P90 4,0 / P99 8,7 ms, objectif P90 < 16 ms atteint ; page par page : P90 6,6 ms ; ouverture à froid du gros PDF : `timeToFullDisplayMs` médiane 1050 ms ; aucun plantage. Baseline Profile committé ; gain au démarrage à froid d'environ 2,5 % (357,8 contre 367,1 ms), voir ADR 0012 |
 | M3 Fichiers et récents | ✅ Terminé (validé le 2026-11-10 sur un Xiaomi 23013PC75G, Android 15 / HyperOS) | Tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts sur l'appareil ; essais manuels du mainteneur réussis, dont un vrai PDF chiffré. F01 « Ouvrir avec » et partage entrant faits (ADR 0014) ; permissions persistantes, récents avec vignettes (Room) et reprise de la dernière page faits (ADR 0015), testés sous Robolectric. « Retirer des récents » (menu de ligne avec annulation, V8) et « Vider les récents » (E3) faits (ADR 0016). Dialogue de mot de passe (V4) fait, documents protégés dans les récents avec cadenas (schéma Room 2, ADR 0017). Non essayée sur appareil : la migration Room 1→2 d'une base existante. Reportés : copie dans `cacheDir` des URI non seekables (point ouvert 11) ; zoom et décalage de F12 et empreinte des documents (point ouvert 16) reportés |
 | M4 Navigation, recherche, sélection | ✅ Terminé (validé le 2026-11-21 sur un Xiaomi 23013PC75G, Android 15 / HyperOS) | Lots 1 à 6 faits (API texte et destinations, ADR 0020 ; aller à la page, V3 ; table des matières, V2, ADR 0021 ; liens, V7, ADR 0022 ; recherche, V1, ADR 0023 ; sélection et copie, F08, ADR 0024 amendé par la PR #39, avec le réglage « Ignorer l'interdiction de copie » ; polices CJK du système, ADR 0025). Tests instrumentés de `core:pdf` (21) et de `app` (12) verts sur appareil le 2026-11-21 (Xiaomi 23013PC75G, Android 15). Benchmarks M4 et Baseline Profile régénéré le 2026-11-21 (PR #41, ADR 0012 « Mesures M4 ») ; liste [`docs/verification-appareil-m4.md`](docs/verification-appareil-m4.md) entièrement validée par le mainteneur. Points à suivre : démarrage à froid +20 % depuis M2, P99 de 27 ms à l'ouverture de la table des matières |
-| M5 à M8 | ⏳ À faire | — |
+| M5 à M8 | ⏳ À faire (M5 commencé : E4 « À propos et licences » faite, ADR 0030) | — |
 
 ### Vues
 
@@ -34,7 +34,8 @@
 | E3 Paramètres | 🟡 Partielle | Section « Apparence » : couleurs dynamiques (ADR 0010) ; « Données et confidentialité » : « Vider les récents » avec confirmation (ADR 0016) ; thème, rendu, lecture en M5 |
 | V7 Lien externe | ✅ Faite | Confirmation d'un lien `http`, `https` ou `mailto` (lien complet, copier, annuler, ouvrir par `ACTION_VIEW`) ; autres schémas refusés ; liens internes avec « Revenir » ; actions TalkBack (ADR 0022) |
 | V1 Recherche | ✅ Faite | Icône « Rechercher » de la barre du haut ; barre de recherche, options « Respecter la casse » et « Respecter les accents » (session), recherche 400 ms après la frappe ou à la validation, depuis la page courante avec bouclage, résultats au fil de l'eau avec progression, « 1 000+ », suivant et précédent avec bouclage, résultat centré, surlignage dans les deux modes, carte d'extrait, annonces TalkBack (ADR 0023) |
-| Autres (E4–E10, V5, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
+| E4 À propos et licences | ✅ Faite | Module `feature:about`, ligne « À propos et licences » en bas de E3 : version, « Aucune donnée collectée », licence (GPL v3 ou ultérieure, distribuée sous AGPL v3 à cause de MuPDF), code source confirmé avant ouverture, politique de confidentialité locale, liste des licences tierces générée par AboutLibraries avec MuPDF, ses bibliothèques natives, les polices URW et Fraunces ajoutées à la main ; fiche avec le texte de chaque licence ; pas de bouton de don (ADR 0030) |
+| Autres (E5–E10, V5, V9, V10) | ⏳ | Maquettes dans `docs/design/` |
 
 **Pourquoi l'APK ne ressemblait pas aux maquettes** : les écrans n'étaient pas encore codés
 (écran d'accueil provisoire), et sur Android 12+ les couleurs dynamiques remplacent la palette

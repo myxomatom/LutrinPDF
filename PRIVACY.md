@@ -1,5 +1,8 @@
 # Politique de confidentialité — Lutrin
 
+<!-- Ce texte est recopié, en français et en anglais, dans les chaînes `about_privacy_*` de
+     `feature/about` (écran « À propos », ADR 0030) : le modifier ici, c'est le modifier là-bas. -->
+
 *Dernière mise à jour : 3 novembre 2026*
 
 **Lutrin ne collecte, ne transmet et ne vend aucune donnée.**

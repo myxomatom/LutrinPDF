@@ -213,7 +213,8 @@ Les opérations longues des outils s'exécutent dans un **WorkManager** (ou un s
 :core:testing            -> fakes, utilitaires de test, PDF de test
 :feature:library         -> écran d'accueil / fichiers récents
 :feature:reader          -> visionneuse, recherche, table des matières
-:feature:settings        -> préférences, à propos, licences
+:feature:settings        -> préférences
+:feature:about           -> à propos, licences tierces (ADR 0030)
 :feature:tools           -> écrans fusion, extraction, conversion
 :feature:assistant       -> AppFunctions, intents et raccourcis pour assistants IA
 ```
@@ -226,7 +227,7 @@ Les opérations longues des outils s'exécutent dans un **WorkManager** (ou un s
 2. **Lecteur** : document, barre supérieure (titre, recherche, menu), barre inférieure (page x / n, curseur), panneau table des matières.
 3. **Recherche** : champ dans la barre supérieure, résultats surlignés, compteur, flèches suivant/précédent.
 4. **Paramètres** : thème, mode nuit du document, mode de défilement, maintien de l'écran allumé, orientation, langue, vider les récents.
-5. **À propos** : version, licence, lien vers le code source, liste des licences tierces.
+5. **À propos** : version, licence, lien vers le code source, politique de confidentialité, liste des licences tierces (ADR 0030).
 6. **Outils** : accès à la fusion, à l'extraction et à la conversion ; écran de sélection et d'ordre des fichiers, options, progression, résultat (ouvrir / partager).
 
 ---

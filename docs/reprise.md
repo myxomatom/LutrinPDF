@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-21.**
+> session de travail. **Dernière mise à jour : 2026-11-25.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -14,7 +14,8 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025) : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais [`verification-appareil-m4.md`](verification-appareil-m4.md) entièrement validée par le mainteneur le 2026-11-21 |
-| M5 à M8 | ⏳ À faire (E3 existe déjà en partie) |
+| M5 Finitions MVP | 🟡 Commencé : **E4 « À propos et licences » faite le 2026-11-25** (ADR 0030, branche `feat/about`, pas encore sur appareil) ; le reste de M5 (thèmes, propriétés, partage, impression, V5, V6 complète) est à faire |
+| M6 à M8 | ⏳ À faire |
 
 Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
 
@@ -104,7 +105,8 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
       décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
    2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
       paragraphes « À essayer sur appareil » ci-dessous y sont rassemblés ; la liste fait foi) ;
-   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur.
+   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur ; **E4 fait**
+      (ADR 0030) : reste à l'essayer sur appareil (liste ci-dessous, « E4 sur appareil »).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -127,6 +129,17 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
 3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
+
+**E4 sur appareil (ADR 0030, branche `feat/about`, pas encore essayée sur appareil)** :
+Paramètres › « À propos et licences » (dernière ligne). Version affichée, phrase « Aucune donnée
+collectée », licence « GNU GPL v3 ou ultérieure, distribuée sous GNU AGPL v3 » avec son
+explication, « Code source » (une confirmation s'ouvre, « Annuler » n'ouvre rien, « Ouvrir »
+lance le navigateur du téléphone), « Politique de confidentialité » (texte local ; retour par la
+flèche et par le geste), liste des licences tierces : MuPDF, FreeType, HarfBuzz, les polices
+URW++ et Fraunces y sont ; une fiche montre le texte complet de la licence (OFL, AGPL…) ; avec
+TalkBack, grande police (200 %) et thème sombre ; sur un build `release`, la liste est présente
+(ressource `aboutlibraries` non retirée par R8) ; `adb shell dumpsys package` ne montre aucune
+permission réseau.
 
 **Nouveau design visuel (ADR 0018 et 0019), fusionné dans `main` le 2026-11-10 (PR #24)** et
 essayé sur appareil par le mainteneur : globalement validé. Deux retours corrigés ensuite sur la
@@ -514,6 +527,19 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
   écran. Corrigé par `pageHit` (un placement, une taille). Pour tout test de geste en page par
   page, **aller d'abord à la page 3** (action TalkBack « Lien : page 3 ») et appuyer là ; la
   tolérance de doigt de l'appui long est dans `isOnText` (ADR 0024 amendé).
+
+- **Licences tierces (E4, ADR 0030)** :
+  - la liste est générée à la compilation par le plugin AboutLibraries (`:app`, hors ligne) et
+    complétée à la main pour ce que Gradle ne voit pas : MuPDF, ses bibliothèques natives, les
+    motifs de césure, les polices URW et Fraunces (`app/aboutlibraries/`). **Après toute mise à
+    jour de MuPDF, d'une police ou d'une bibliothèque native**, relancer
+    `python scripts/generate-licenses-config.py` (sous-modules MuPDF initialisés) et committer ;
+  - le parseur d'AboutLibraries (`Libs.Builder().withJson`) ne lève rien sur un JSON invalide :
+    il écrit dans `Log.e` et rend une liste vide ; sur JVM nue, `Log.e` lève `not mocked` : les
+    tests qui l'appellent tournent sous Robolectric ;
+  - AGP 9 retire les ressources inutilisées : `res/raw/keep.xml` garde `aboutlibraries` ;
+  - ajouter une dépendance sans licence connue du plugin fait apparaître un avertissement
+    (« does not contain the license text ») : fournir un fichier dans `app/aboutlibraries/licenses/`.
 
 ## 5. Préparer un conteneur cloud (session Claude Code sur le web)
 

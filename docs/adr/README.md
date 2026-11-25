@@ -31,6 +31,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0023](0023-recherche-dans-le-lecteur.md) | Recherche dans le lecteur : contrôleur dédié, 400 ms après la frappe, depuis la page courante, résultats en ordre du document, calque de surlignage dans chaque page, carte d'extrait, annonces TalkBack sans répétition | Accepté |
 | [0024](0024-selection-et-copie.md) | Sélection et copie : appui long sur un mot, poignées, « Copier » / « Tout sélectionner », une page à la fois, permission de copie respectée sauf réglage « Ignorer l'interdiction de copie », contenu sensible si protégé, action TalkBack « Copier le texte de la page » | Accepté |
 | [0025](0025-police-de-secours-cjk.md) | Texte CJK non incorporé : polices CJK du système, pas de police embarquée (DroidSansFallback mesurée puis écartée) | Accepté |
+| [0030](0030-ecran-a-propos-et-licences.md) | Écran « À propos et licences » (E4) : module `feature:about`, licence GPL distribuée sous AGPL, liste générée par AboutLibraries (hors ligne) complétée à la main pour MuPDF, ses bibliothèques natives et les polices, lien source confirmé, confidentialité locale | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

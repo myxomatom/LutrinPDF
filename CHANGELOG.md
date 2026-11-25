@@ -10,6 +10,8 @@ changement y est signalé.
 ## [Non publié]
 
 ### Modifié
+- `settingsScreen` et `SettingsRoute` (`feature:settings`) prennent un rappel `onOpenAbout` : E3 a une
+  ligne « À propos et licences » qui ouvre E4, la navigation restant dans `app`.
 - **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
   sélecteurs de `SearchBenchmark` et `OutlineBenchmark` corrigés (compteur de recherche décrit
   « 1 000 résultats ou plus », attente du bouton de la table des matières, processus tué entre
@@ -18,6 +20,25 @@ changement y est signalé.
   427 ms.
 
 ### Ajouté
+- **Écran « À propos et licences »** (E4, M5, ADR 0030) : nouveau module `feature:about`, atteint par
+  la dernière ligne de Paramètres. Il affiche le nom, la version, « Aucune donnée collectée », la
+  licence (GNU GPL v3 ou ultérieure, **distribuée sous GNU AGPL v3 à cause de MuPDF**, ce que la
+  maquette ne disait pas : elle citait PDFium), le lien vers le code source
+  (`https://github.com/myxomatom/LutrinPDF`, ouvert par `ACTION_VIEW` seulement après confirmation,
+  sur le principe de V7 : Lutrin n'accède toujours pas au réseau), la politique de confidentialité
+  en texte local (reprise de `PRIVACY.md`) et la liste des licences tierces. Une fiche par composant
+  donne sa version, ses auteurs et le texte complet de ses licences. La liste est générée à la
+  compilation par le plugin AboutLibraries (15.3.0, hors ligne, sortie identique à chaque génération)
+  et complétée à la main (`scripts/generate-licenses-config.py`) pour MuPDF, ses bibliothèques
+  natives (FreeType, HarfBuzz, jbig2dec, Little CMS 2, libjpeg, OpenJPEG, Brotli, cmark-gfm, Gumbo,
+  extract, MuJS), les motifs de césure, les polices URW++ et Fraunces. Pas de bouton de don. Chaînes
+  FR et EN, TalkBack, grande police, thème sombre. Nouvelles dépendances : `aboutlibraries-core`
+  15.3.0 et son plugin Gradle (Apache-2.0), aucune permission.
+- **Point ouvert 19** : sept langues des motifs de césure compilés dans MuPDF ne sont publiées que
+  sous LPPL (compatibilité avec la GPL v3 et l'AGPL v3 non établie).
+- **Point ouvert 6 tranché** : la licence affichée dans E4 est « GNU GPL v3 ou ultérieure, distribuée
+  sous GNU AGPL v3 ».
+
 - **Scénarios de benchmark de M4** (`:benchmark`, ADR 0012) : `SearchBenchmark` (recherche d'un mot
   fréquent dans le PDF de 600 pages, dix « résultat suivant », défilement pendant le surlignage) et
   `OutlineBenchmark` (tiroir de la table des matières, saut vers « Partie 12 ») ; le générateur de
