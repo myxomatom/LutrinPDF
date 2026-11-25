@@ -78,6 +78,10 @@ class AboutTest {
             ).setup()
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Settings").performClick()
+        // The settings are read by DataStore on a real I/O thread: wait for their rows.
+        composeRule.waitUntil(TIMEOUT_MS) {
+            composeRule.onAllNodesWithText("About and licenses").fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText("About and licenses").performScrollTo().performClick()
     }
 
@@ -130,6 +134,9 @@ class AboutTest {
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("MuPDF"))
         composeRule.onNodeWithText("MuPDF").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Back").performClick()
+        composeRule.waitUntil(TIMEOUT_MS) {
+            composeRule.onAllNodesWithText("Appearance").fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithText("Appearance").assertIsDisplayed()
         assertThat(composeRule.onAllNodesWithText("No data collected").fetchSemanticsNodes()).isEmpty()
     }
@@ -137,5 +144,6 @@ class AboutTest {
     private companion object {
         /** Maven libraries of the release classpath, plus the hand-made entries: well over this. */
         const val MIN_COMPONENTS = 50
+        const val TIMEOUT_MS = 5_000L
     }
 }
