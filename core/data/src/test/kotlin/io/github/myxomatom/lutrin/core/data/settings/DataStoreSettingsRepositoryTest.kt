@@ -192,11 +192,11 @@ class DataStoreSettingsRepositoryTest {
         val repository = repository()
 
         repository.settings.test {
-            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
-            repository.setIgnoreCopyRestriction(true)
-            assertThat(awaitItem()).isEqualTo(AppSettings(ignoreCopyRestriction = true))
-            repository.setIgnoreCopyRestriction(false)
-            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+            assertThat(awaitItem().ignoreDocumentRestrictions).isFalse()
+            repository.setIgnoreDocumentRestrictions(true)
+            assertThat(awaitItem()).isEqualTo(AppSettings(ignoreDocumentRestrictions = true))
+            repository.setIgnoreDocumentRestrictions(false)
+            assertThat(awaitItem().ignoreDocumentRestrictions).isFalse()
         }
     }
 
@@ -214,7 +214,7 @@ class DataStoreSettingsRepositoryTest {
             val settings = DataStoreSettingsRepository(dataStore).settings.first()
 
             assertThat(settings).isEqualTo(AppSettings(dynamicColor = false, pagePreview = false))
-            assertThat(settings.ignoreCopyRestriction).isFalse()
+            assertThat(settings.ignoreDocumentRestrictions).isFalse()
         }
 
     @Test
@@ -224,7 +224,7 @@ class DataStoreSettingsRepositoryTest {
         val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
         dataStore.edit { it[booleanPreferencesKey("ignore_copy_restriction")] = true }
 
-        assertThat(DataStoreSettingsRepository(dataStore).settings.first().ignoreCopyRestriction).isTrue()
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first().ignoreDocumentRestrictions).isTrue()
     }
 
     @Test
@@ -232,9 +232,9 @@ class DataStoreSettingsRepositoryTest {
         val repository = repository()
 
         repository.setScrollMode(ScrollMode.PAGED)
-        repository.setIgnoreCopyRestriction(true)
+        repository.setIgnoreDocumentRestrictions(true)
 
-        val expected = AppSettings(scrollMode = ScrollMode.PAGED, ignoreCopyRestriction = true)
+        val expected = AppSettings(scrollMode = ScrollMode.PAGED, ignoreDocumentRestrictions = true)
         assertThat(repository.settings.first()).isEqualTo(expected)
     }
 }
