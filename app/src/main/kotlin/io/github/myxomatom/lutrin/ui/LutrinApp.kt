@@ -44,6 +44,8 @@ import io.github.myxomatom.lutrin.core.ui.transition.DocumentLink
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionDestination
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionLayout
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionPolicy
+import io.github.myxomatom.lutrin.feature.about.aboutScreen
+import io.github.myxomatom.lutrin.feature.about.navigateToAbout
 import io.github.myxomatom.lutrin.feature.library.LibraryScreen
 import io.github.myxomatom.lutrin.feature.library.LibraryUiState
 import io.github.myxomatom.lutrin.feature.library.PendingRemoval
@@ -67,8 +69,8 @@ private const val PDF_MIME_TYPE = "application/pdf"
 private val NoPendingRemoval: StateFlow<PendingRemoval?> = MutableStateFlow(null)
 
 /**
- * Root composable: the navigation graph between the library (E1), the reader (E2) and the
- * settings (E3), and the routing of documents sent by other apps (F01, ADR 0014).
+ * Root composable: the navigation graph between the library (E1), the reader (E2), the
+ * settings (E3) and « À propos et licences » (E4), and the routing of documents sent by other apps (F01, ADR 0014).
  *
  * A document sent by another app replaces the whole back stack with its reader: back from it
  * leaves the activity and returns to that app. A refused request brings back the library, with
@@ -160,7 +162,7 @@ private fun LinkOnceSettled(navController: NavHostController, onSettle: (onLibra
 }
 
 /**
- * The navigation graph: library (E1), reader (E2) and settings (E3), fading into each other.
+ * The navigation graph: library (E1), reader (E2), settings (E3) and about (E4), fading into each other.
  *
  * @param onLinkDocument called with the document whose thumbnail grows into the reader, or
  *   `null` when the reader opens another way.
@@ -202,7 +204,8 @@ private fun LutrinNavHost(
             }
         }
         readerScreen(onBack = { navController.goBack(onExit) })
-        settingsScreen(onBack = navController::popBackStack)
+        settingsScreen(onBack = navController::popBackStack, onOpenAbout = navController::navigateToAbout)
+        aboutScreen(onBack = navController::popBackStack)
     }
 }
 

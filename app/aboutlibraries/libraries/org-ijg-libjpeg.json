@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "JPEG decoder, compiled into MuPDF. This software is based in part on the work of the Independent JPEG Group.",
+  "developers": [
+    {
+      "name": "Independent JPEG Group"
+    }
+  ],
+  "licenses": [
+    "IJG"
+  ],
+  "name": "libjpeg (IJG)",
+  "uniqueId": "org.ijg:libjpeg",
+  "website": "https://www.ijg.org"
+}

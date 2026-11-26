@@ -27,7 +27,8 @@
 | `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) ; expose `core:pdf` (`api`) |
 | `:feature:library` | Bibliothèque / récents (E1) |
 | `:feature:reader` | Lecteur, recherche, table des matières, liens, sélection, impression, dialogues (E2, V1–V8) |
-| `:feature:settings` | Paramètres, À propos, licences (E3, E4, E10) |
+| `:feature:settings` | Paramètres (E3, E10) ; la ligne « À propos et licences » ouvre E4 par un rappel que `:app` branche |
+| `:feature:about` | À propos et licences tierces (E4, ADR 0030) |
 | `:feature:tools` | Fusion, extraction, conversion, progression (E5–E9) |
 | `:feature:assistant` | AppFunctions, intents et raccourcis pour assistants IA |
 | `:benchmark` | Module de test (`com.android.test`) : Macrobenchmark et générateur du Baseline Profile, lancés sur appareil contre les builds `benchmarkRelease` / `nonMinifiedRelease` de `:app` (ADR 0012) |
@@ -39,6 +40,7 @@ flowchart TD
     app[":app"] --> fl[":feature:library"]
     app --> fr[":feature:reader"]
     app --> fs[":feature:settings"]
+    app --> fb[":feature:about"]
     app --> ft[":feature:tools"]
     app --> fa[":feature:assistant"]
     app --> data[":core:data"]
@@ -46,8 +48,8 @@ flowchart TD
     app --> ui
     app --> domain
 
-    fl & fr & fs & ft & fa --> ui[":core:ui"]
-    fl & fr & fs & ft & fa --> domain[":core:domain"]
+    fl & fr & fs & fb & ft & fa --> ui[":core:ui"]
+    fl & fr & fs & fb & ft & fa --> domain[":core:domain"]
     fr -->|"rendu, texte, impression"| pdf
 
     data --> domain

@@ -21,9 +21,11 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 > - impression (F15, ADR 0026), fusionnée dans `main` (PR #50) mais **pas encore essayée sur
 >   appareil** ;
 > - paramètres : couleurs dynamiques, aperçu de la page, « Ignorer les restrictions du
->   document », mode de défilement (réglé depuis le lecteur).
+>   document », mode de défilement (réglé depuis le lecteur) ;
+> - « À propos et licences » (E4, ADR 0030) : version, licence (GPL v3 ou ultérieure, distribuée
+>   sous AGPL v3 à cause de MuPDF), code source, confidentialité et licences tierces (PR #49).
 >
-> À venir en M5 : « À propos », partage, propriétés, thèmes. Le README ne contient pas encore
+> À venir en M5 : partage, propriétés, thèmes. Le README ne contient pas encore
 > de captures d'écran. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet

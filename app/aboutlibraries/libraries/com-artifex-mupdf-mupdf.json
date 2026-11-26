@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "1.28.6",
+  "description": "PDF rendering and writing engine, compiled from source into the app.",
+  "developers": [
+    {
+      "name": "Artifex Software, Inc.",
+      "organisationUrl": "https://artifex.com"
+    }
+  ],
+  "licenses": [
+    "AGPL-3.0-or-later"
+  ],
+  "name": "MuPDF",
+  "uniqueId": "com.artifex.mupdf:mupdf",
+  "website": "https://mupdf.com"
+}

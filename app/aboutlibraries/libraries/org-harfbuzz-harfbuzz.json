@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Complex text shaping, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "The HarfBuzz authors"
+    }
+  ],
+  "licenses": [
+    "MIT-harfbuzz"
+  ],
+  "name": "HarfBuzz",
+  "uniqueId": "org.harfbuzz:harfbuzz",
+  "website": "https://harfbuzz.github.io"
+}

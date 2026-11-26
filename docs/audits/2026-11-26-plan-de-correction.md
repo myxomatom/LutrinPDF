@@ -700,8 +700,8 @@ Aucun changement de comportement : les tests existants et les captures ne bougen
   `PdfWriter`, dans `core:pdf`, est **à faire en M6**, avec l'interface `PdfWriter`. Ne rien
   migrer dans ces lots, mais ne pas aggraver l'écart : les lots 1 et 2 ne touchent à
   `DocumentPrintAdapter` que pour le KDoc de A4.
-- **S5** (écran E4 « À propos et licences », notices Apache, MIT, IJG et OFL) : jalon **M5**,
-  bloquant pour la v1.0.
+- **S5** (écran E4 « À propos et licences », notices Apache, MIT, IJG et OFL) : **fait** en M5
+  (PR #49, ADR 0030).
 - **A6** (URI non adressables, repli par copie dans `cacheDir`) : point ouvert **n° 11** de
   `docs/open-questions.md`, échéance repoussée à la publication v1.0.
 - **B1 à B5** (documentation) : corrigés dans une PR de documentation séparée. Ne pas les

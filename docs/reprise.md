@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; « À propos » en parallèle ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -80,7 +80,9 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
       TalkBack sur le bouton ; quitter le lecteur pendant l'impression d'un document protégé
       (échec propre attendu) ; test instrumenté `PrintInstrumentedTest`. L'ajustement à la largeur
       n'a plus de bouton : il ira dans la feuille « Affichage » au lot 4 ;
-   5. lots suivants de M5 (voir `ROADMAP.md`) : À propos et licences (E4), propriétés (V5),
+   5. **E4 « À propos et licences »** : dans `main` (PR #49), à essayer sur appareil (paragraphe
+      « E4 sur appareil » ci-dessous) ;
+   6. lots suivants de M5 (voir `ROADMAP.md`) : propriétés (V5),
       partage, thèmes, feuille « Affichage » (lot 4), rotation F27 (lot 5).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
@@ -103,6 +105,17 @@ M4 n'a rien signalé) : un `PopupLayout` de Compose retenu par la passe *lookahe
 `SharedTransitionLayout`, probablement le menu « ⋮ » des récents. Documentée, pas corrigée :
 analyse et pistes au point ouvert 17 de `docs/open-questions.md`.
 
+**E4 sur appareil (ADR 0030, dans `main` par la PR #49, pas encore essayée sur appareil)** :
+Paramètres › « À propos et licences » (dernière ligne). Version affichée, phrase « Aucune donnée
+collectée », licence « GNU GPL v3 ou ultérieure, distribuée sous GNU AGPL v3 » avec son
+explication, « Code source » (une confirmation s'ouvre, « Annuler » n'ouvre rien, « Ouvrir »
+lance le navigateur du téléphone), « Politique de confidentialité » (texte local ; retour par la
+flèche et par le geste), liste des licences tierces : MuPDF, FreeType, HarfBuzz, les polices
+URW++ et Fraunces y sont ; une fiche montre le texte complet de la licence (OFL, AGPL…) ; avec
+TalkBack, grande police (200 %) et thème sombre ; sur un build `release`, la liste est présente
+(ressource `aboutlibraries` non retirée par R8) ; `adb shell dumpsys package` ne montre aucune
+permission réseau.
+
 **Repères sur le code de M4 et M5** (les détails sont dans les ADR) :
 
 - `PageNavigator.goTo(page, yOffset)` : décalage en points PDF depuis le haut de la page, appliqué
@@ -114,15 +127,15 @@ analyse et pistes au point ouvert 17 de `docs/open-questions.md`.
   « Ignorer les restrictions du document » (copie et impression, ADR 0026 qui renomme l'ancien
   « Ignorer l'interdiction de copie » de l'ADR 0024).
 - Polices CJK (ADR 0025) : pas de police embarquée, carrés sur un appareil sans police CJK (limite
-  connue) ; limite de taille de `SPEC.md` gardée à 15 Mo. **L'écran des licences (M5) doit citer
-  les polices URW** (`docs/dependencies.md`). Pas encore de vérification automatique de la taille
+  connue) ; limite de taille de `SPEC.md` gardée à 15 Mo. L'écran des licences (E4, PR #49) cite
+  les polices URW (`docs/dependencies.md`). Pas encore de vérification automatique de la taille
   des APK (proposition dans l'ADR 0025).
 - Un document protégé ouvert avec son mot de passe : récents avec cadenas et sans vignette (schéma
   Room 2, ADR 0017) ; jeu de test chiffré dans `core/testing/README.md`.
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0026) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0026, et 0030) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -422,6 +435,22 @@ analyse et pistes au point ouvert 17 de `docs/open-questions.md`.
   écran. Corrigé par `pageHit` (un placement, une taille). Pour tout test de geste en page par
   page, **aller d'abord à la page 3** (action TalkBack « Lien : page 3 ») et appuyer là ; la
   tolérance de doigt de l'appui long est dans `isOnText` (ADR 0024 amendé).
+
+- **Césure de MuPDF retirée (ADR 0030, amendement)** : `-DFZ_ENABLE_HYPHEN=0` (`MUPDF_EXTRA_CFLAGS` d'ndk-build, `XCFLAGS` de `build-host-jni.sh`) et plus de `hyph-all.zip` dans
+  `MUPDF_EMBEDDED_RESOURCES`. Changer ce drapeau recompile toute la bibliothèque native. Pour M6
+  (HTML vers PDF) : un `hyph-all.zip` réduit aux langues sous licence compatible, ou pas de césure.
+- **Licences tierces (E4, ADR 0030)** :
+  - la liste est générée à la compilation par le plugin AboutLibraries (`:app`, hors ligne) et
+    complétée à la main pour ce que Gradle ne voit pas : MuPDF, ses bibliothèques natives, les
+    polices URW et Fraunces (`app/aboutlibraries/`). **Après toute mise à
+    jour de MuPDF, d'une police ou d'une bibliothèque native**, relancer
+    `python scripts/generate-licenses-config.py` (sous-modules MuPDF initialisés) et committer ;
+  - le parseur d'AboutLibraries (`Libs.Builder().withJson`) ne lève rien sur un JSON invalide :
+    il écrit dans `Log.e` et rend une liste vide ; sur JVM nue, `Log.e` lève `not mocked` : les
+    tests qui l'appellent tournent sous Robolectric ;
+  - AGP 9 retire les ressources inutilisées : `res/raw/keep.xml` garde `aboutlibraries` ;
+  - ajouter une dépendance sans licence connue du plugin fait apparaître un avertissement
+    (« does not contain the license text ») : fournir un fichier dans `app/aboutlibraries/licenses/`.
 
 ## 5. Préparer un conteneur cloud (session Claude Code sur le web)
 

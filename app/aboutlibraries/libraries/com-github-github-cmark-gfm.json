@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Markdown parser, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "John MacFarlane and contributors"
+    }
+  ],
+  "licenses": [
+    "BSD-cmark-gfm"
+  ],
+  "name": "cmark-gfm",
+  "uniqueId": "com.github.github:cmark-gfm",
+  "website": "https://github.com/github/cmark-gfm"
+}

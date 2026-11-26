@@ -57,7 +57,7 @@ La gravité moyenne a été retenue parce que l'écart est délibéré et en par
 | S2 | Basse | `IncomingIntents.kt:28,36` lit les extras sans `try/catch` : un extra `Parcelable` inconnu peut faire planter l'activité exportée. À confirmer sur API 26-32 | ⏳ |
 | S3 | Basse | La vérification des permissions est une liste noire de 8 noms, pas une liste blanche. Il n'existe ni garde-fou nominal contre GMS ou Firebase, ni contrôle des composants exportés du manifeste fusionné (`ProfileInstallReceiver`), ni règle detekt contre `Log` et `println` | ⏳ |
 | S4 | Basse | Pas de `FLAG_SECURE` ni de `setRecentsScreenshotEnabled(false)` pour un document protégé : sa page apparaît dans l'aperçu des applications récentes. `mailto:…?attach=` est accepté par les liens externes | ⏳ |
-| S5 | Basse | L'écran E4 « À propos et licences » n'existe pas encore : les notices Apache, MIT, IJG et OFL (polices de MuPDF) ne sont pas livrées. Bloquant pour la v1.0 | 📌 M5 |
+| S5 | Basse | L'écran E4 « À propos et licences » n'existe pas encore : les notices Apache, MIT, IJG et OFL (polices de MuPDF) ne sont pas livrées. Bloquant pour la v1.0 | ✅ E4 livrée par la PR #49 (ADR 0030) |
 
 Conformes : aucune pub, télémétrie ou dépendance propriétaire ; aucun `<uses-permission>`, avec un
 contrôle branché sur `check` ; en-tête SPDX partout ; aucun secret ; mot de passe ni persisté ni
