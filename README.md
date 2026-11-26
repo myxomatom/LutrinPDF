@@ -15,7 +15,9 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 > et au retour la page se replie vers sa vignette ;
 > un document se retire de la liste (menu « ⋮ » ou écran d'erreur) et la liste se vide depuis
 > les paramètres. Un PDF protégé par mot de passe s'ouvre après saisie du mot de passe, qui
-> n'est jamais enregistré. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
+> n'est jamais enregistré. Paramètres › « À propos et licences » donne la version, la licence
+> (GPL v3 ou ultérieure, distribuée sous AGPL v3 à cause de MuPDF), le code source, la politique de
+> confidentialité et les licences tierces (ADR 0030). État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.

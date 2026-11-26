@@ -32,6 +32,7 @@ Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
 | [0024](0024-selection-et-copie.md) | Sélection et copie : appui long sur un mot, poignées, « Copier » / « Tout sélectionner », une page à la fois, permission de copie respectée sauf réglage « Ignorer l'interdiction de copie » (devenu « Ignorer les restrictions du document », ADR 0026), contenu sensible si protégé, action TalkBack « Copier le texte de la page » | Accepté |
 | [0025](0025-police-de-secours-cjk.md) | Texte CJK non incorporé : polices CJK du système, pas de police embarquée (DroidSansFallback mesurée puis écartée) | Accepté |
 | [0026](0026-impression.md) | Impression : bouton « Imprimer » à la place de « pleine largeur » dans la barre flottante, PDF d'origine ou images des pages d'un document protégé (écrivain de PDF d'images en flux, jamais le PDF déchiffré), interdiction d'impression respectée sauf réglage « Ignorer les restrictions du document » (amende l'ADR 0024) | Accepté |
+| [0030](0030-ecran-a-propos-et-licences.md) | Écran « À propos et licences » (E4) : module `feature:about`, licence GPL distribuée sous AGPL, liste générée par AboutLibraries (hors ligne) complétée à la main pour MuPDF, ses bibliothèques natives et les polices, lien source confirmé, confidentialité locale | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "",
+  "description": "JBIG2 image decoder, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "Artifex Software, Inc.",
+      "organisationUrl": "https://artifex.com"
+    }
+  ],
+  "licenses": [
+    "AGPL-3.0-or-later"
+  ],
+  "name": "jbig2dec",
+  "uniqueId": "com.artifex.mupdf:jbig2dec",
+  "website": "https://jbig2dec.com"
+}

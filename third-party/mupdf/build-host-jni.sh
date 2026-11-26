@@ -16,9 +16,11 @@ JOBS=${2:-4}
 MUPDF=$(cd "$(dirname "$0")/libmupdf" && pwd)
 : "${JAVA_HOME:?JAVA_HOME must point to a JDK}"
 FONT_FLAGS="-DTOFU_NOTO -DTOFU_CJK -DTOFU_SIL"
+# No hyphenation, as in the Android build (ADR 0030): the patterns are neither generated nor linked.
+HYPHEN_FLAGS="-DFZ_ENABLE_HYPHEN=0"
 
 mkdir -p "$OUT"
-make -s -C "$MUPDF" -j"$JOBS" OUT="$OUT" build=release XCFLAGS="-fPIC $FONT_FLAGS" \
+make -s -C "$MUPDF" -j"$JOBS" OUT="$OUT" build=release XCFLAGS="-fPIC $FONT_FLAGS $HYPHEN_FLAGS" \
     USE_SYSTEM_FREETYPE=yes USE_SYSTEM_ZLIB=yes libs
 cc -c "$MUPDF/platform/java/mupdf_native.c" -o "$OUT/mupdf_native.o" -fPIC -O2 -DNDEBUG -w \
     -I "$MUPDF/include" -I "$JAVA_HOME/include" -I "$JAVA_HOME/include/linux" \

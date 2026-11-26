@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Colour management, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "Marti Maria Saguer"
+    }
+  ],
+  "licenses": [
+    "MIT-lcms2"
+  ],
+  "name": "Little CMS 2",
+  "uniqueId": "com.littlecms:lcms2",
+  "website": "https://www.littlecms.com"
+}

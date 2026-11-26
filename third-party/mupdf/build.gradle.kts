@@ -36,6 +36,11 @@ android {
         externalNativeBuild {
             ndkBuild {
                 arguments += "-j$buildJobs"
+                // No hyphenation: the patterns (hyph-all.zip) are not embedded and the hyphenator is
+                // compiled out, so that no symbol points to a resource that is absent. Lutrin does
+                // not lay out HTML or EPUB, the only use of the patterns (ADR 0030). Artifex's
+                // Android.mk is left unchanged: it passes this variable to every library it builds.
+                arguments += "MUPDF_EXTRA_CFLAGS=-DFZ_ENABLE_HYPHEN=0"
                 // Windows limits a command line to 32 767 characters; the archive command of
                 // libmupdf_core.a lists hundreds of objects by absolute path and fails with
                 // "make (e=87)". Short commands pass the object lists through response files.
@@ -82,7 +87,8 @@ val verifyMupdfVersion =
         }
     }
 
-// MuPDF embeds fonts and hyphenation patterns as generated C sources (libmupdf/generated/).
+// MuPDF embeds its fonts as generated C sources (libmupdf/generated/); the hyphenation patterns
+// are compiled out (-DFZ_ENABLE_HYPHEN=0 above, ADR 0030).
 // Written by a Gradle task of build-logic instead of `make generate`, so that the build needs
 // neither make nor bash (ADR 0013).
 val generateMupdfResources = tasks.named("generateMupdfResources")

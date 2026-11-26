@@ -16,7 +16,9 @@ fun NavController.navigateToSettings() {
  * Adds the settings destination (E3) to a navigation graph.
  *
  * @param onBack called when the user leaves the settings.
+ * @param onOpenAbout called when the user opens « À propos et licences » (E4), which lives in
+ *   `feature:about`: the app module does the navigation, as a feature never depends on another.
  */
-fun NavGraphBuilder.settingsScreen(onBack: () -> Unit) {
-    composable(SETTINGS_ROUTE) { SettingsRoute(onBack = onBack) }
+fun NavGraphBuilder.settingsScreen(onBack: () -> Unit, onOpenAbout: () -> Unit) {
+    composable(SETTINGS_ROUTE) { SettingsRoute(onBack = onBack, onOpenAbout = onOpenAbout) }
 }

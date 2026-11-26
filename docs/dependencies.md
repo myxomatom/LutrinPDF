@@ -31,6 +31,8 @@ Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt
 | Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte, liste, chevrons, croix) ; le tracé « lien externe » de la table des matières (`OutlineIcons.kt`, Material Symbols, Apache-2.0) y est recopié plutôt que d'ajouter `material-icons-extended` (ADR 0021) |
 | AndroidX ProfileInstaller | 1.4.1 | Apache-2.0 | `app` | Installe le Baseline Profile sur les appareils sans Google Play (F-Droid, installation directe) ; aucune permission demandée (ADR 0012) |
 | AndroidX Activity Compose (`ReportDrawnWhen`) | 1.13.0 | Apache-2.0 | `feature:reader` | Signale la fin de l'ouverture d'un document (premières pages rendues), mesurée par `:benchmark` (ADR 0012) |
+| AboutLibraries Core (`com.mikepenz:aboutlibraries-core`) | 15.3.0 | Apache-2.0 (POM publié, `LICENSE` du dépôt mikepenz/AboutLibraries) | `feature:about` | Lit le `aboutlibraries.json` généré à la compilation, pour la liste des licences tierces de E4 ; seule la bibliothèque `core` est embarquée, l'interface est celle de Lutrin (ADR 0030). Tire `kotlinx-serialization-json` 1.11.0 et `kotlinx-serialization-core` (Apache-2.0, JetBrains). Aucune permission : `verifyReleasePermissions` passe. Licence vérifiée le 2026-11-25 dans le POM publié (Maven Central) |
+| AndroidX Activity Compose (`BackHandler`), Core KTX | 1.13.0 / 1.19.1 | Apache-2.0 | `feature:about` | Retour d'une sous-page de E4 à sa page principale ; `Uri.toUri` du lien du code source (déjà embarquées par ailleurs) |
 
 ### Police embarquée (ressource, pas une dépendance Maven)
 
@@ -51,7 +53,11 @@ Le rapport complet (108 artefacts, tous Apache-2.0 au jalon M0) est produit par
 
 Elles sont compilées depuis les sources par `:third-party:mupdf` et liées dans `libmupdf_java.so`.
 Licensee ne les voit pas (ce ne sont pas des artefacts Maven) : elles sont vérifiées ici à
-chaque mise à jour de MuPDF.
+chaque mise à jour de MuPDF, et **déclarées pour l'écran E4** dans `app/aboutlibraries/` (script
+`scripts/generate-licenses-config.py`, qui copie le fichier de licence de chaque bibliothèque ;
+à relancer à chaque mise à jour de MuPDF, ADR 0030). Les motifs de césure `hyph-all.zip` (tex-hyphen,
+licences variées, LPPL seule pour sept langues) ne sont **plus embarqués** : MuPDF est compilé avec
+`-DFZ_ENABLE_HYPHEN=0` (point ouvert 19, ADR 0030).
 
 | Bibliothèque | Rôle | Licence |
 |--------------|------|---------|
@@ -81,8 +87,10 @@ CJK non incorporé utilise les polices du système (ADR 0025).
 | URW Base 35 réduites aux 14 polices du PDF et Nimbus Boxes (`urw/*.cff`) | OFL-1.1 (« Copyright 2016 by (URW)++ Design & Development », `urw/OFL.txt`) | 611 954 octets | Les 14 polices standard du PDF (Base 14), toujours présentes |
 
 OFL-1.1 est compatible avec la GPL v3 et l'AGPL v3 pour une police embarquée ; elle demande de
-joindre la mention de copyright et le texte de la licence : **l'écran des licences (E4, jalon M5,
-ADR 0003) doit citer ces polices**, qu'AboutLibraries ne détecte pas.
+joindre la mention de copyright et le texte de la licence : **l'écran des licences (E4, ADR 0030)
+cite ces polices**, que le plugin AboutLibraries ne détecte pas : elles sont décrites dans
+`app/aboutlibraries/`, écrit par `scripts/generate-licenses-config.py` avec le texte de
+`libmupdf/resources/fonts/urw/OFL.txt`.
 
 ## Debug uniquement (jamais dans l'APK publié)
 
@@ -122,6 +130,7 @@ ADR 0003) doit citer ces polices**, qu'AboutLibraries ne détecte pas.
 | Kover | 0.9.11 | Apache-2.0 |
 | Dokka | 2.2.0 | Apache-2.0 |
 | Licensee | 1.14.1 | Apache-2.0 |
+| Plugin Gradle AboutLibraries (`com.mikepenz.aboutlibraries.plugin.android`) | 15.3.0 | Apache-2.0 (génère `res/raw/aboutlibraries.json` de `:app`, hors ligne : `offlineMode = true`, aucune récupération distante ; dépend d'Apache Ivy 2.6.0 et de maven-model-builder 3.10.0, Apache-2.0, dans le classpath du build seulement ; sortie identique à chaque génération, ADR 0030) |
 | Plugin Gradle Baseline Profile (`androidx.baselineprofile`) | 1.5.0 | Apache-2.0 (testé avec AGP < 10.0.0-alpha01) |
 | PyMuPDF / Pillow (génération des fichiers de test) | 2.1 / 13.0.0 | AGPL-3.0 / MIT-CMU |
 | Android NDK | 28.2.13676358 | Apache-2.0 (licence du SDK Android pour la distribution des binaires de l'outil) |
@@ -133,9 +142,3 @@ ADR 0003) doit citer ces polices**, qu'AboutLibraries ne détecte pas.
 |-----------|---------|-------------|
 | Roboto, Roboto Mono | OFL-1.1 | `docs/design/assets/fonts/` |
 | Fraunces 500 et 600, sous-ensemble latin en WOFF2 (`@fontsource/fraunces` 5.3.0, pour les maquettes seulement ; l'application embarque le TTF ci-dessus) | OFL-1.1 | `docs/design/proposals/fonts/` |
-
-## Prévues
-
-| Dépendance | Jalon | Licence | Usage |
-|------------|-------|---------|-------|
-| AboutLibraries | M5 | Apache-2.0 | Écran des licences tierces (ADR 0003) |

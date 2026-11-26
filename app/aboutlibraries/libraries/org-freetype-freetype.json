@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Font rendering, compiled into MuPDF. Used under the GPL-2.0-or-later option.",
+  "developers": [
+    {
+      "name": "The FreeType Project"
+    }
+  ],
+  "licenses": [
+    "FTL-freetype"
+  ],
+  "name": "FreeType",
+  "uniqueId": "org.freetype:freetype",
+  "website": "https://freetype.org"
+}

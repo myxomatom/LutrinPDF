@@ -1,0 +1,16 @@
+{
+  "artifactVersion": "",
+  "description": "Document structure extraction, compiled into MuPDF.",
+  "developers": [
+    {
+      "name": "Artifex Software, Inc.",
+      "organisationUrl": "https://artifex.com"
+    }
+  ],
+  "licenses": [
+    "AGPL-3.0-or-later"
+  ],
+  "name": "extract",
+  "uniqueId": "com.artifex.mupdf:extract",
+  "website": "https://ghostscript.com"
+}

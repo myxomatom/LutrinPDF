@@ -21,12 +21,15 @@ class MupdfResourcesTest {
     }
 
     @Test
-    fun `embedded resources cover the fonts and hyphenation patterns of make generate`() {
-        assertThat(MUPDF_EMBEDDED_RESOURCES).containsAtLeast(
-            "resources/fonts/urw/*.cff",
-            "resources/hyphen/hyph-all.zip",
-        )
+    fun `embedded resources cover the fonts of make generate`() {
+        assertThat(MUPDF_EMBEDDED_RESOURCES).contains("resources/fonts/urw/*.cff")
         assertThat(MUPDF_EMBEDDED_RESOURCES.all { it.startsWith("resources/") }).isTrue()
+    }
+
+    @Test
+    fun `embedded resources leave out the hyphenation patterns, compiled out by FZ_ENABLE_HYPHEN=0`() {
+        // ADR 0030: some patterns are LPPL only, and Lutrin does not lay out HTML or EPUB.
+        assertThat(MUPDF_EMBEDDED_RESOURCES.filter { it.contains("hyph") }).isEmpty()
     }
 
     @Test

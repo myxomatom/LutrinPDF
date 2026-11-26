@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="about_title">About</string>
+    <string name="about_back">Back</string>
+    <string name="about_app_name" translatable="false">Lutrin</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_tagline">Free PDF reader, with no ads and no trackers.</string>
+
+    <string name="about_no_data_title">No data collected</string>
+    <string name="about_no_data_message">No network permission, no ads, no telemetry. Everything stays on your device.</string>
+
+    <!-- The app is GPL-3.0-or-later but distributed under the AGPL v3 because of MuPDF (ADR 0030). -->
+    <string name="about_license_title">Licence</string>
+    <string name="about_license_summary">GNU GPL v3 or later, distributed under the GNU AGPL v3</string>
+    <string name="about_license_explanation">The code of Lutrin is released under the GNU GPL v3 or later. The app includes MuPDF, which is under the GNU AGPL v3: the app as a whole is therefore distributed under the GNU AGPL v3, and its source code is available to everyone.</string>
+
+    <string name="about_source_title">Source code</string>
+    <string name="about_source_url" translatable="false">https://github.com/myxomatom/LutrinPDF</string>
+    <string name="about_source_dialog_title">Open the source code?</string>
+    <string name="about_source_dialog_message">Lutrin does not access the internet. The page will open in the app of your choice.</string>
+    <string name="about_source_open">Open</string>
+    <string name="about_source_cancel">Cancel</string>
+    <string name="about_source_no_app">No app can open this link.</string>
+
+    <string name="about_privacy_title">Privacy policy</string>
+    <string name="about_licenses_title">Third-party licenses</string>
+    <string name="about_licenses_loading">Loading the licenses</string>
+    <string name="about_licenses_unavailable">The list of licenses could not be read.</string>
+    <string name="about_component_version">Version %1$s</string>
+    <string name="about_component_authors">By %1$s</string>
+    <string name="about_component_website">Website: %1$s</string>
+    <string name="about_component_not_found">This component is no longer in the list.</string>
+    <string name="about_license_text_missing">The text of this license is not available.</string>
+
+    <!-- Privacy policy: local copy of PRIVACY.md, to keep in sync with it (ADR 0030). -->
+    <string name="about_privacy_updated">Last updated: November 3, 2026</string>
+    <string name="about_privacy_summary">Lutrin does not collect, transmit or sell any data.</string>
+    <string name="about_privacy_network">The app does not ask for the permission to access the internet: it technically cannot send anything. You can check it in the information of the app or in the manifest published with the source code.</string>
+    <string name="about_privacy_no_tracking">No ads, no trackers, no telemetry, no remote crash reports.</string>
+    <string name="about_privacy_local_data">The only data saved is saved on your device: the list of recent documents and their thumbnails, the last reading position, the preferences, and (from version 1.1) the local history of the actions requested by an assistant, without any document content. You can erase them from the settings or by uninstalling the app.</string>
+    <string name="about_privacy_passwords">The passwords of protected PDFs are never saved or offered to password managers. A protected document appears in the recent list (name, page reached) without a thumbnail of its first page, and its password is asked again each time it is opened.</string>
+    <string name="about_privacy_files">The app only accesses the files you choose (system picker, “Open with”, sharing).</string>
+    <string name="about_privacy_links">The external links of a document are only opened after your confirmation, by another app (a browser) that you choose.</string>
+    <string name="about_privacy_assistants_title">AI assistants (version 1.1)</string>
+    <string name="about_privacy_assistants_intro">If you use an assistant (for example Gemini) to drive Lutrin, the assistant receives the answers of Lutrin and may pass them on to an online service, according to its own privacy policy. For this reason:</string>
+    <string name="about_privacy_assistants_content">reading the content of documents by an assistant is turned off by default;</string>
+    <string name="about_privacy_assistants_off">access by assistants can be turned off entirely in the settings;</string>
+    <string name="about_privacy_assistants_password">the password of a PDF is never asked for or passed on through an assistant.</string>
+    <string name="about_privacy_contact_title">Contact</string>
+    <string name="about_privacy_contact">For any question, open an issue at https://github.com/myxomatom/LutrinPDF/issues</string>
+</resources>

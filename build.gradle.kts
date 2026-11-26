@@ -15,6 +15,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.licensee) apply false
+    alias(libs.plugins.aboutlibraries.android) apply false
     alias(libs.plugins.roborazzi) apply false
     alias(libs.plugins.room) apply false
     alias(libs.plugins.kover)
@@ -33,6 +34,7 @@ val lutrinModules =
         ":feature:library",
         ":feature:reader",
         ":feature:settings",
+        ":feature:about",
         ":feature:tools",
         ":feature:assistant",
     )

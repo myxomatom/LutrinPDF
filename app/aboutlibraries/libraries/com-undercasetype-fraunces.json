@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "1.000",
+  "description": "Font of the titles of Lutrin (SemiBold).",
+  "developers": [
+    {
+      "name": "The Fraunces Project Authors"
+    }
+  ],
+  "licenses": [
+    "OFL-1.1-Fraunces"
+  ],
+  "name": "Fraunces",
+  "uniqueId": "com.undercasetype:fraunces",
+  "website": "https://github.com/undercasetype/Fraunces"
+}

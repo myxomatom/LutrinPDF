@@ -47,9 +47,9 @@ class GenerateMupdfResourcesTaskTest {
         .build()
 
     @Test
-    fun `generates a C source for each embedded resource only`() {
+    fun `generates a C source for each embedded resource only, hyphenation patterns excluded`() {
         val font = resource("resources/fonts/urw/Dingbats.cff", 1, 2, 3)
-        val patterns = resource("resources/hyphen/hyph-all.zip", 0xff)
+        resource("resources/hyphen/hyph-all.zip", 0xff)
         resource("resources/fonts/urw/input", 9)
         resource("resources/hyphen/hyph-std.zip", 9)
 
@@ -57,7 +57,8 @@ class GenerateMupdfResourcesTaskTest {
 
         assertThat(result.task(":generateMupdfResources")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
         assertThat(generated("resources/fonts/urw/Dingbats.cff").readBytes()).isEqualTo(expectedDump(font))
-        assertThat(generated("resources/hyphen/hyph-all.zip").readBytes()).isEqualTo(expectedDump(patterns))
+        // The hyphenation patterns are not embedded (ADR 0030).
+        assertThat(generated("resources/hyphen/hyph-all.zip").exists()).isFalse()
         assertThat(generated("resources/fonts/urw/input").exists()).isFalse()
         assertThat(generated("resources/hyphen/hyph-std.zip").exists()).isFalse()
     }

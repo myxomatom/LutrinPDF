@@ -66,6 +66,8 @@ ktlint = "1.8.0"
 kover = "0.9.11"
 dokka = "2.3.0"
 licensee = "1.14.1"
+# Generates the list of third-party licenses shown in « À propos » (ADR 0003, ADR 0030).
+aboutLibraries = "15.3.0"
 
 [libraries]
 # Build logic (convention plugins)
@@ -106,6 +108,7 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
 
 # Hilt
@@ -151,6 +154,7 @@ kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 licensee = { id = "app.cash.licensee", version.ref = "licensee" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutLibraries" }
 room = { id = "androidx.room", version.ref = "room" }
 
 # Convention plugins (build-logic)

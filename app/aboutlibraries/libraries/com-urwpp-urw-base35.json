@@ -1,0 +1,15 @@
+{
+  "artifactVersion": "",
+  "description": "Nimbus Roman, Sans and Mono, Standard Symbols, Dingbats and Nimbus Boxes, embedded in MuPDF.",
+  "developers": [
+    {
+      "name": "(URW)++ Design & Development"
+    }
+  ],
+  "licenses": [
+    "OFL-1.1-URW"
+  ],
+  "name": "URW++ Base 35 fonts (the 14 standard PDF fonts)",
+  "uniqueId": "com.urwpp:urw-base35",
+  "website": "https://github.com/ArtifexSoftware/urw-base35-fonts"
+}
