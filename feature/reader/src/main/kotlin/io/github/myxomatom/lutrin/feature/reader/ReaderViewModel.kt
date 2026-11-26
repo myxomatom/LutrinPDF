@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
@@ -278,10 +279,20 @@ constructor(
     /** Whether selected text may be copied now (ADR 0024); `false` before the document is open. */
     private fun canCopyText(): Boolean = document?.let { settings.value.allowsTextCopy(it.canCopyText) } ?: false
 
+    /**
+     * Shows the opened document. A document without any readable page is closed and reported as
+     * unreadable, like one that does not open; any other one is shown, its damaged pages included
+     * (ADR 0031).
+     */
     private suspend fun show(opened: PdfDocument, isProtected: Boolean) {
+        val sizes = opened.pageSizesOrFallback()
+        if (sizes == null) {
+            opened.close()
+            documentState.value = failureState(PdfError.Unreadable())
+            return
+        }
         document = opened
         this.isProtected = isProtected
-        val sizes = (0 until opened.pageCount).map { opened.pageSize(it) }
         val title = opened.metadata.title ?: displayName(uri)
         // Before the Ready state: the screen starts on the page of its first Ready state.
         currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
@@ -345,6 +356,30 @@ internal fun displayName(uri: String): String = Uri.decode(uri.substringAfterLas
 
 /** Extension removed from a name taken from the URI, as the library does (ADR 0015). */
 private const val PDF_EXTENSION = ".pdf"
+
+/** Size given to an unreadable first page: A4 portrait, in points. */
+private val FALLBACK_PAGE_SIZE = PageSize(width = 595f, height = 842f)
+
+/**
+ * Size of every page, a damaged page taking the size of the page before it, or A4 for the first
+ * one (ADR 0031): the reader lays it out among the others and shows it as damaged. Only
+ * [PdfError.Unreadable] is replaced; [PdfError.Closed] and cancellation are thrown.
+ *
+ * @return the sizes, or `null` when no page at all can be read.
+ */
+private suspend fun PdfDocument.pageSizesOrFallback(): List<PageSize>? {
+    val sizes = (0 until pageCount).map { index -> sizeOrNull(index) }
+    if (sizes.all { it == null }) return null
+    var previous = FALLBACK_PAGE_SIZE
+    return sizes.map { size -> (size ?: previous).also { previous = it } }
+}
+
+/** Size of the page at [index], or `null` when the engine cannot read that page. */
+private suspend fun PdfDocument.sizeOrNull(index: Int): PageSize? = try {
+    pageSize(index)
+} catch (ignored: PdfError.Unreadable) {
+    null
+}
 
 /**
  * Maps an engine failure to what the error screen explains. The password errors never reach it:

@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.core.pdf.mupdf
 
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import java.io.File
@@ -168,8 +169,57 @@ class MuPdfEngineTest {
         assertThat(openDescriptorsTo(file)).isEqualTo(0)
     }
 
+    // page_tree_count_mismatch.pdf declares /Count 3 but its page tree holds 2 pages (A1, ADR 0031).
+
+    @Test
+    fun `opens a PDF whose page count exceeds its page tree`() = runTest {
+        openTestPdf(COUNT_MISMATCH).use { assertThat(it.pageCount).isEqualTo(3) }
+    }
+
+    @Test
+    fun `reports a page missing from the page tree as unreadable`() = runTest {
+        openTestPdf(COUNT_MISMATCH).use { document ->
+            val failures =
+                listOf<suspend () -> Unit>(
+                    { document.pageSize(2) },
+                    { document.renderPixels(2, RenderSpec(wholePage, 0.1f, 60, 84, nightMode = false)) },
+                    { document.links(2) },
+                    { document.allText(2) },
+                ).map { call -> runCatching { call() }.exceptionOrNull() }
+
+            failures.forEach { assertThat(it).isInstanceOf(PdfError.Unreadable::class.java) }
+        }
+    }
+
+    @Test
+    fun `the document stays usable after an unreadable page`() = runTest {
+        val dispatchers = RecordingDispatcherFactory()
+        val reported = RecordingReleaseFailures()
+        val opened = engine(dispatchers, reported).open(TestAssets.source(COUNT_MISMATCH))
+        val document = opened.getOrThrow() as MuPdfDocument
+        runCatching { document.pageSize(2) }
+
+        val size = document.pageSize(0)
+        val pixels = document.renderPixels(1, RenderSpec(wholePage, 0.5f, 298, 421, nightMode = false))
+        val text = document.allText(1)
+        document.close()
+
+        assertThat(size).isEqualTo(PageSize(595f, 842f))
+        assertThat(pixels.any { it != WHITE }).isTrue()
+        assertThat(text).contains("Page 2")
+        dispatchers.awaitTermination()
+        assertThat(reported.failures).isEmpty()
+    }
+
     private fun copyOfTestPdf(path: String): File = TestAssets.file(path).copyTo(File(folder.root, File(path).name))
 
     private fun java.util.concurrent.Executor.isShutdownExecutor() =
         (this as java.util.concurrent.ExecutorService).isShutdown
+
+    private companion object {
+        const val COUNT_MISMATCH = "pdfs/page_tree_count_mismatch.pdf"
+
+        /** Opaque white, 0xFFFFFFFF. */
+        const val WHITE = -1
+    }
 }

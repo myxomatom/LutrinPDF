@@ -108,6 +108,25 @@ class FloatingPageBarTest {
     }
 
     @Test
+    fun `previewing an unreadable page does not crash and shows a blank page`() {
+        val damaged = FakePdfDocument().apply { unreadablePages = setOf(1) }
+        show(ready(damaged))
+
+        slider.performTouchInput {
+            down(trackStart)
+            slideTo(center)
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag(PAGE_PREVIEW_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("Page 2").assertIsDisplayed()
+        assertThat(damaged.renders.map { it.pageIndex }).doesNotContain(1)
+        slider.performTouchInput { slideTo(trackEnd) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Page 3").assertIsDisplayed()
+    }
+
+    @Test
     fun `with the preview on, the release goes to the page aimed at`() {
         val reported = show(ready())
 

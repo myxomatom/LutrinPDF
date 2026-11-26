@@ -8,6 +8,8 @@
     <string name="reader_page_slider">Aller à la page</string>
     <string name="reader_page_slider_value">Page %1$d sur %2$d</string>
     <string name="reader_page_preview_caption">Page %1$d</string>
+    <string name="reader_page_damaged_title">Page endommagée</string>
+    <string name="reader_page_damaged_text">Ce fichier PDF contient une erreur qui empêche d’afficher cette page. Les autres pages restent lisibles.</string>
     <string name="reader_more_options">Plus d’options</string>
     <string name="reader_options_title">Affichage</string>
     <string name="reader_options_scrolling">Défilement</string>

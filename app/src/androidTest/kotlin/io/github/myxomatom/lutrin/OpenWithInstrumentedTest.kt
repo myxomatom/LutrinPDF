@@ -81,6 +81,15 @@ class OpenWithInstrumentedTest {
     }
 
     @Test
+    fun aPageMissingFromThePageTreeShowsAsDamagedAndTheReaderStays() {
+        // Regression (A1): the reader used to crash on a page the engine cannot load (ADR 0031).
+        launch(view(TestFiles.Pdf.PAGE_TREE_COUNT_MISMATCH).putExtra(EXTRA_PAGE, 3)).use {
+            waitForDescription(targetContext.getString(ReaderR.string.reader_document, 3, COUNT_MISMATCH_PAGES))
+            waitForText(targetContext.getString(ReaderR.string.reader_page_damaged_title))
+        }
+    }
+
+    @Test
     fun aFileThatIsNotAPdfShowsTheErrorScreen() {
         launch(view(TestFiles.Pdf.NOT_A_PDF)).use {
             waitForText(targetContext.getString(ReaderR.string.reader_error_unsupported))
@@ -97,6 +106,9 @@ class OpenWithInstrumentedTest {
     private companion object {
         const val PDF = "application/pdf"
         const val NESTED_OUTLINE_PAGES = 6
+
+        /** Pages declared by TestFiles.Pdf.PAGE_TREE_COUNT_MISMATCH, the last one missing. */
+        const val COUNT_MISMATCH_PAGES = 3
         const val TIMEOUT_MS = 15_000L
     }
 }

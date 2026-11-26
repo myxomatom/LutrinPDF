@@ -34,6 +34,7 @@ python3 -m venv .venv && .venv/bin/pip install -r core/testing/scripts/requireme
 | `cjk_not_embedded.pdf` | Chinois simplifié et traditionnel, japonais (kana compris), coréen, en quatre polices CID **non incorporées** (orderings GB1, CNS1, Japan1, Korea1) | Texte dessiné avec la police CJK de l'appareil (ADR 0025) ; carrés ou glyphes faux sur un appareil sans police CJK, comme la bibliothèque des tests JVM |
 | `corrupted_truncated.pdf` | Fichier valide coupé en deux | Réparé par le moteur ou message clair, jamais de crash |
 | `corrupted_garbage.pdf` | En-tête `%PDF` suivi de données aléatoires | « Impossible d'ouvrir ce document » (`SPEC.md` §6) |
+| `page_tree_count_mismatch.pdf` | `/Count` 3, 2 pages réelles (« Page 1 », « Page 2 ») ; écrit octet par octet (décalages xref calculés), car pymupdf pourrait corriger `/Count` à l'enregistrement | La page 3 est illisible (`PdfError.Unreadable`), le document reste lisible : la page 3 affiche « Page endommagée » (ADR 0031). Comportement de MuPDF 1.28 attendu d'après ses sources (`pdf_count_pages`, `pdf_lookup_page_loc`) : ouverture avec 3 pages, échec au chargement de la page 3 ; vérifié par les tests JVM et instrumentés de `core:pdf` |
 | `not_a_pdf.pdf` | Fichier texte renommé en `.pdf` | Message « type de fichier non PDF » |
 
 Les mots de passe `lutrin`, `lutrin-rc4`, `lutrin-aes128` et `lutrin-owner` (et les mots de

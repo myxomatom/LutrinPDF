@@ -19,6 +19,7 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
@@ -143,6 +144,44 @@ class ReaderScreenTest {
         composeRule.onNodeWithContentDescription("Print").assertIsDisplayed()
         composeRule.waitUntil { document.renders.isNotEmpty() }
         assertThat(document.renders.first().pageIndex).isEqualTo(0)
+    }
+
+    @Test
+    fun `an unreadable page shows the damaged page message in continuous mode, the others are drawn`() {
+        // Short pages, so that the three of them are on screen.
+        val damaged = FakePdfDocument(pageSizes = List(3) { SHORT_PAGE }).apply { unreadablePages = setOf(1) }
+        show(ready(doc = damaged))
+
+        composeRule.waitUntil { damaged.renders.map { it.pageIndex }.containsAll(listOf(0, 2)) }
+
+        composeRule.onNodeWithText(DAMAGED_PAGE_TITLE).assertIsDisplayed()
+        composeRule.onNodeWithText(DAMAGED_PAGE_TEXT).assertIsDisplayed()
+        assertThat(damaged.renders.map { it.pageIndex }).doesNotContain(1)
+    }
+
+    @Test
+    fun `page by page, an unreadable page shows the damaged page message and the next page is drawn`() {
+        val damaged = FakePdfDocument().apply { unreadablePages = setOf(1) }
+        showConnected(ready(scrollMode = ScrollMode.PAGED, currentPage = 1, doc = damaged))
+
+        composeRule.onNodeWithText(DAMAGED_PAGE_TITLE).assertIsDisplayed()
+        swipeDocument(page = 2)
+
+        composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
+        composeRule.waitUntil { damaged.renders.any { it.pageIndex == 2 } }
+        composeRule.onNodeWithText(DAMAGED_PAGE_TITLE).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the damaged page message is translated into French`() {
+        val damaged = FakePdfDocument().apply { unreadablePages = setOf(0) }
+        show(ready(doc = damaged))
+
+        composeRule.onNodeWithText("Page endommagée").assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Ce fichier PDF contient une erreur qui empêche d’afficher cette page.", substring = true)
+            .assertIsDisplayed()
     }
 
     @Test
@@ -354,5 +393,12 @@ class ReaderScreenTest {
 
     private companion object {
         const val DOUBLE_TAP_WAIT_MS = 500L
+        const val DAMAGED_PAGE_TITLE = "Damaged page"
+        const val DAMAGED_PAGE_TEXT =
+            "This PDF file contains an error that prevents this page from being displayed. " +
+                "The other pages can still be read."
+
+        /** A page a third as tall as A4. */
+        val SHORT_PAGE = PageSize(595f, 280f)
     }
 }

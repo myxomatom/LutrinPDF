@@ -48,7 +48,8 @@ val A4: PageSize = PageSize(595f, 842f)
  * ```
  *
  * Like the real engine, the functions taking a page index throw [PdfError.PageOutOfRange]
- * outside the document, and every function throws [PdfError.Closed] once [close] is called.
+ * outside the document and [PdfError.Unreadable] for the [unreadablePages], and every function
+ * throws [PdfError.Closed] once [close] is called.
  *
  * @property pageSizes size of each page.
  */
@@ -70,6 +71,13 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
 
     /** Whether every opening of the document has been closed ([close]). */
     val isClosed: Boolean get() = openHandles.get() <= 0
+
+    /**
+     * Zero-based pages that cannot be loaded, like a page missing from the page tree of a damaged
+     * file: every function taking one of these page indexes throws [PdfError.Unreadable].
+     */
+    @Volatile
+    var unreadablePages: Set<Int> = emptySet()
 
     /** What [outline] returns. */
     @Volatile
@@ -232,6 +240,7 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     private fun checkPage(index: Int) {
         ensureOpen()
         if (index !in 0 until pageCount) throw PdfError.PageOutOfRange(index, pageCount)
+        if (index in unreadablePages) throw PdfError.Unreadable()
     }
 }
 

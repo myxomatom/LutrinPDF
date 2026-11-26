@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader.ui
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
@@ -14,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
@@ -47,15 +49,15 @@ class ReaderScreenshotTest {
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
-    private fun ready(scrollMode: ScrollMode = ScrollMode.CONTINUOUS): ReaderUiState {
-        val document = FakePdfDocument()
-        return ReaderUiState.Ready(
-            "Contrat de location",
-            document.pageSizes,
-            PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
-            scrollMode,
-        )
-    }
+    private fun ready(
+        scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
+        document: FakePdfDocument = FakePdfDocument(),
+    ): ReaderUiState = ReaderUiState.Ready(
+        "Contrat de location",
+        document.pageSizes,
+        PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
+        scrollMode,
+    )
 
     /** The display options sheet (V6) over the reader; the sheet is a separate window. */
     @OptIn(ExperimentalRoborazziApi::class)
@@ -121,6 +123,60 @@ class ReaderScreenshotTest {
     @Test
     fun optionsDark() = captureOptions("reader_options_dark", darkTheme = true)
 
+    // A page the engine cannot read, in a document that opens (ADR 0031): its message on the paper.
+
+    private fun damaged(scrollMode: ScrollMode = ScrollMode.CONTINUOUS) =
+        ready(scrollMode, FakePdfDocument().apply { unreadablePages = setOf(0) })
+
+    @Test
+    fun damagedPage() = capture("reader_damaged_page_light", damaged())
+
+    @Test
+    fun damagedPageDark() = capture("reader_damaged_page_dark", damaged(), darkTheme = true)
+
+    @Test
+    fun damagedPageLargeFont() = capture("reader_damaged_page_light_font200", damaged(), fontScale = 2f)
+
+    @Test
+    fun damagedPagePaged() = capture("reader_damaged_page_paged_light", damaged(ScrollMode.PAGED))
+
+    @Test
+    fun damagedPagePagedDark() = capture("reader_damaged_page_paged_dark", damaged(ScrollMode.PAGED), darkTheme = true)
+
+    @Test
+    fun damagedPagePagedLargeFont() =
+        capture("reader_damaged_page_paged_light_font200", damaged(ScrollMode.PAGED), fontScale = 2f)
+
+    /** Short pages: the message shrinks with the page and stays inside it, even at 200 %. */
+    @Test
+    fun damagedShortPageLargeFont() = capture(
+        "reader_damaged_short_page_light_font200",
+        ready(document = FakePdfDocument(List(3) { SHORT_PAGE }).apply { unreadablePages = setOf(1) }),
+        fontScale = 2f,
+    )
+
+    /** In night mode (F13) the message is drawn in light colours on the dark paper. */
+    @Test
+    fun damagedPageNight() {
+        val document = FakePdfDocument().apply { unreadablePages = setOf(0) }
+        composeRule.setContent {
+            LutrinTheme(darkTheme = true, dynamicColor = false) {
+                PdfPagesView(
+                    pageSizes = document.pageSizes,
+                    renderer = PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
+                    listState = rememberLazyListState(),
+                    zoom = 1f,
+                    onZoomChange = {},
+                    onTap = {},
+                    contentDescription = "Document",
+                    nightMode = true,
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/reader_damaged_page_night.png")
+    }
+
     @Test
     fun error() = capture("reader_error_light", ReaderUiState.Error(ReaderError.UNREADABLE))
 
@@ -146,6 +202,9 @@ class ReaderScreenshotTest {
     fun errorRecentFrench() = capture("reader_error_recent_fr", recentError)
 
     private companion object {
+        /** A page a third as tall as A4. */
+        val SHORT_PAGE = PageSize(595f, 280f)
+
         /** The document of the mockup: 8 pages, read on page 3, the slider aimed at page 6. */
         const val MOCKUP_PAGES = 8
         const val MOCKUP_START_PAGE = 2

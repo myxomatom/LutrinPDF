@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.feature.reader.render
 import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,6 +20,11 @@ private const val PREVIEW_CACHE_BYTES = 8L * 1024 * 1024
  * they never push the pages on screen out of theirs. Renderings are cancelled with the calling
  * coroutine, e.g. when a page leaves the screen or the slider aims at another page.
  *
+ * A page the engine cannot read ([PdfError.Unreadable], ADR 0031) gives
+ * [RenderResult.Unreadable] instead of an exception, and is never cached: the reader stays open
+ * and shows the page as damaged. Other engine errors ([PdfError.Closed] once the reader is leaving,
+ * [PdfError.PageOutOfRange] for a programming error) and cancellation are thrown as before.
+ *
  * @param dispatcher where bitmaps are allocated (CPU-bound work, off the main thread).
  * @param cache base renderings of the pages.
  * @param previewCache previews of the slider, bounded to [PREVIEW_CACHE_BYTES] by default.
@@ -33,16 +39,17 @@ class PageRenderer(
     /**
      * Renders the whole page at [widthPx] pixels wide, or returns it from the cache.
      *
-     * @return the bitmap, or `null` if memory ran out (the cache is then emptied, `SPEC.md` §6).
+     * @return the rendering; [RenderResult.OutOfMemory] empties the caches (`SPEC.md` §6), and
+     *   [RenderResult.Unreadable] reports a page the engine cannot read.
      */
-    suspend fun renderPage(pageIndex: Int, widthPx: Int, nightMode: Boolean): Bitmap? {
+    suspend fun renderPage(pageIndex: Int, widthPx: Int, nightMode: Boolean): RenderResult {
         val key = RenderKey(pageIndex, widthPx, nightMode)
-        cache[key]?.let { return it }
+        cache[key]?.let { return RenderResult.Rendered(it) }
         val page = pageSizes[pageIndex]
-        val bitmap =
+        val result =
             render(pageIndex, PdfRect(0f, 0f, page.width, page.height), widthPx, pageHeightPx(page, widthPx), nightMode)
-        bitmap?.let { cache[key] = it }
-        return bitmap
+        result.bitmapOrNull?.let { cache[key] = it }
+        return result
     }
 
     /**
@@ -52,16 +59,16 @@ class PageRenderer(
      * @param pageIndex zero-based page.
      * @param widthPx width of the preview, in pixels; its height follows the page.
      * @param nightMode whether colours are inverted, like the pages.
-     * @return the bitmap, or `null` if memory ran out (both caches are then emptied).
+     * @return the rendering, like [renderPage]; out of memory empties both caches.
      */
-    suspend fun renderPreview(pageIndex: Int, widthPx: Int, nightMode: Boolean = false): Bitmap? {
+    suspend fun renderPreview(pageIndex: Int, widthPx: Int, nightMode: Boolean = false): RenderResult {
         val key = RenderKey(pageIndex, widthPx, nightMode)
-        previewCache[key]?.let { return it }
+        previewCache[key]?.let { return RenderResult.Rendered(it) }
         val page = pageSizes[pageIndex]
-        val bitmap =
+        val result =
             render(pageIndex, PdfRect(0f, 0f, page.width, page.height), widthPx, pageHeightPx(page, widthPx), nightMode)
-        bitmap?.let { previewCache[key] = it }
-        return bitmap
+        result.bitmapOrNull?.let { previewCache[key] = it }
+        return result
     }
 
     /**
@@ -74,9 +81,9 @@ class PageRenderer(
     /**
      * Renders only [part] of a page displayed [pageWidthPx] wide, at full sharpness.
      *
-     * @return the bitmap of [part] (its size), or `null` if memory ran out.
+     * @return the rendering of [part] (its size), uncached, like [renderPage].
      */
-    suspend fun renderPart(pageIndex: Int, pageWidthPx: Int, part: PixelRect, nightMode: Boolean): Bitmap? {
+    suspend fun renderPart(pageIndex: Int, pageWidthPx: Int, part: PixelRect, nightMode: Boolean): RenderResult {
         val page = pageSizes[pageIndex]
         val region = part.toPageRect(page, pageWidthPx)
         return render(pageIndex, region, part.width, part.height, nightMode, scale = pageWidthPx / page.width)
@@ -90,13 +97,19 @@ class PageRenderer(
         height: Int,
         nightMode: Boolean,
         scale: Float = width / region.width,
-    ): Bitmap? {
+    ): RenderResult {
         val bitmap =
             withContext(dispatcher) {
                 allocateOrNull(width, height)
-            } ?: return null
-        document.renderPage(pageIndex, bitmap, region, scale, nightMode)
-        return bitmap
+            } ?: return RenderResult.OutOfMemory
+        return try {
+            document.renderPage(pageIndex, bitmap, region, scale, nightMode)
+            RenderResult.Rendered(bitmap)
+        } catch (ignored: PdfError.Unreadable) {
+            // A damaged page is an expected outcome (SPEC.md §3): free its pixels at once.
+            bitmap.recycle()
+            RenderResult.Unreadable
+        }
     }
 
     // Out of memory is an expected outcome on large pages: free the cache, skip this rendering

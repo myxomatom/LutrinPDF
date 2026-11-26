@@ -22,7 +22,7 @@ class PageRendererTest {
 
     @Test
     fun `renders a whole page at the requested width`() = runTest {
-        val bitmap = renderer().renderPage(pageIndex = 1, widthPx = 595, nightMode = false)
+        val bitmap = renderer().renderPage(pageIndex = 1, widthPx = 595, nightMode = false).bitmapOrNull
 
         assertThat(bitmap?.width).isEqualTo(595)
         assertThat(bitmap?.height).isEqualTo(842)
@@ -35,8 +35,8 @@ class PageRendererTest {
     fun `serves a repeated base rendering from the cache`() = runTest {
         val renderer = renderer()
 
-        val first = renderer.renderPage(0, 300, nightMode = false)
-        val second = renderer.renderPage(0, 300, nightMode = false)
+        val first = renderer.renderPage(0, 300, nightMode = false).bitmapOrNull
+        val second = renderer.renderPage(0, 300, nightMode = false).bitmapOrNull
         renderer.renderPage(0, 300, nightMode = true)
 
         assertThat(second).isSameInstanceAs(first)
@@ -51,7 +51,7 @@ class PageRendererTest {
             pageWidthPx = 1190,
             part = PixelRect(595, 842, 1190, 1684),
             nightMode = false,
-        )
+        ).bitmapOrNull
 
         assertThat(bitmap?.width).isEqualTo(595)
         assertThat(bitmap?.height).isEqualTo(842)
@@ -59,6 +59,37 @@ class PageRendererTest {
             assertThat(region).isEqualTo(PdfRect(297.5f, 421f, 595f, 842f))
             assertThat(scale).isEqualTo(2f)
         }
+    }
+
+    @Test
+    fun `renderPage returns no image for an unreadable page and caches nothing`() = runTest {
+        document.unreadablePages = setOf(1)
+        val cache = BitmapCache(maxBytes = 64L * 1024 * 1024)
+
+        val result = renderer(cache).renderPage(1, 300, nightMode = false)
+
+        assertThat(result).isEqualTo(RenderResult.Unreadable)
+        assertThat(cache.sizeBytes).isEqualTo(0)
+    }
+
+    @Test
+    fun `renderPart returns no image for an unreadable page`() = runTest {
+        document.unreadablePages = setOf(0)
+
+        val result = renderer().renderPart(0, pageWidthPx = 1190, part = PixelRect(0, 0, 595, 842), nightMode = false)
+
+        assertThat(result).isEqualTo(RenderResult.Unreadable)
+    }
+
+    @Test
+    fun `renderPreview returns no image for an unreadable page and caches nothing`() = runTest {
+        document.unreadablePages = setOf(2)
+        val renderer = renderer()
+
+        val result = renderer.renderPreview(2, 128)
+
+        assertThat(result).isEqualTo(RenderResult.Unreadable)
+        assertThat(renderer.cachedPreview(2, 128)).isNull()
     }
 
     @Test
@@ -86,7 +117,7 @@ class PageRendererTest {
     fun `renders a preview at its width, with the height of the page`() = runTest {
         val renderer = renderer()
 
-        val preview = renderer.renderPreview(pageIndex = 2, widthPx = 128)
+        val preview = renderer.renderPreview(pageIndex = 2, widthPx = 128).bitmapOrNull
 
         assertThat(preview?.width).isEqualTo(128)
         assertThat(preview?.height).isEqualTo(181)
@@ -105,8 +136,8 @@ class PageRendererTest {
             PageRenderer(document, document.pageSizes, StandardTestDispatcher(testScheduler), pages, previews)
         assertThat(renderer.cachedPreview(0, 128)).isNull()
 
-        val first = renderer.renderPreview(0, 128)
-        val second = renderer.renderPreview(0, 128)
+        val first = renderer.renderPreview(0, 128).bitmapOrNull
+        val second = renderer.renderPreview(0, 128).bitmapOrNull
 
         assertThat(second).isSameInstanceAs(first)
         assertThat(renderer.cachedPreview(0, 128)).isSameInstanceAs(first)
@@ -114,7 +145,7 @@ class PageRendererTest {
         assertThat(pages.sizeBytes).isEqualTo(0)
         assertThat(previews.sizeBytes).isEqualTo(128 * 181 * 4)
         // A page rendered at the same width is not taken for its preview, nor the other way round.
-        assertThat(renderer.renderPage(0, 128, nightMode = false)).isNotSameInstanceAs(first)
+        assertThat(renderer.renderPage(0, 128, nightMode = false).bitmapOrNull).isNotSameInstanceAs(first)
         assertThat(document.renders).hasSize(2)
     }
 

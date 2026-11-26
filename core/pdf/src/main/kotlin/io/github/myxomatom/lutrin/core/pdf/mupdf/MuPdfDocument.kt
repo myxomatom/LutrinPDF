@@ -84,6 +84,7 @@ internal class MuPdfDocument(
      * Owning it here guarantees it outlives the drawing and is destroyed exactly once.
      *
      * @throws PdfError.PageOutOfRange if [index] is not a page of the document.
+     * @throws PdfError.Unreadable if the page cannot be loaded or drawn.
      * @throws PdfError.Closed if the document is closed.
      */
     internal suspend fun renderPixels(index: Int, spec: RenderSpec): IntArray {

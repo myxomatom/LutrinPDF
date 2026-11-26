@@ -41,6 +41,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.ui.theme.titleMediumSerif
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
+import io.github.myxomatom.lutrin.feature.reader.render.bitmapOrNull
 import io.github.myxomatom.lutrin.feature.reader.render.fitPageWidth
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 
@@ -83,7 +84,9 @@ private val PaperEdge = Color(0xFFC3C6CF)
  * title of its section.
  *
  * The page is rendered by the engine through [renderer], off the main thread, at the size it is
- * shown; a blank sheet of paper stands in until it arrives. Aiming at another page cancels the
+ * shown; a blank sheet of paper stands in until it arrives, and stays for a page the engine
+ * cannot read (ADR 0031: the message of a damaged page would be unreadable at the size of the
+ * card; the page itself shows it once reached). Aiming at another page cancels the
  * rendering under way. TalkBack does not announce the card on its own: the slider already reads
  * the page aimed at as its value.
  *
@@ -166,13 +169,14 @@ private fun PreviewPage(pageIndex: Int, page: PageSize, renderer: PageRenderer, 
 }
 
 /**
- * The preview of [pageIndex], at once when it is in the cache, otherwise once rendered. Leaving
- * the composition, or another page, cancels the rendering.
+ * The preview of [pageIndex], at once when it is in the cache, otherwise once rendered; `null`
+ * while it renders, and for a page that cannot be rendered. Leaving the composition, or another
+ * page, cancels the rendering.
  */
 @Composable
 private fun rememberPreview(renderer: PageRenderer, pageIndex: Int, widthPx: Int): Bitmap? {
     val preview by produceState(renderer.cachedPreview(pageIndex, widthPx), renderer, pageIndex, widthPx) {
-        if (value == null) value = renderer.renderPreview(pageIndex, widthPx)
+        if (value == null) value = renderer.renderPreview(pageIndex, widthPx).bitmapOrNull
     }
     return preview
 }

@@ -64,6 +64,13 @@ sealed interface DocumentSource {
  * serialised on a thread dedicated to the document. Functions taking a page index throw
  * [PdfError.PageOutOfRange] when it is outside `0 until pageCount`, and every function throws
  * [PdfError.Closed] after [close].
+ *
+ * A document that opens may still hold pages that cannot be loaded: a damaged page, a page
+ * missing from a page tree whose `/Count` claims more pages than it has, or native memory
+ * exhausted while loading it. Every function taking a page index ([pageSize], [renderPage],
+ * [selectText], [isOnText], [links]) then throws [PdfError.Unreadable] for that page, and the
+ * document stays usable: the other pages can still be read, and [close] releases it normally.
+ * Callers must expect it (`SPEC.md` §3, ADR 0031).
  */
 interface PdfDocument : Closeable {
     /** Number of pages, at least 1. */
@@ -88,7 +95,11 @@ interface PdfDocument : Closeable {
      */
     val canPrint: Boolean
 
-    /** Size of the page at [index], rotation applied, in points. */
+    /**
+     * Size of the page at [index], rotation applied, in points.
+     *
+     * @throws PdfError.Unreadable if the page cannot be loaded.
+     */
     suspend fun pageSize(index: Int): PageSize
 
     /**
@@ -100,6 +111,8 @@ interface PdfDocument : Closeable {
      * @param region area of the page to draw, in page coordinates.
      * @param scale pixels per point (1 = 72 dpi).
      * @param nightMode whether to invert the lightness of the result (F13), keeping hues.
+     * @throws PdfError.Unreadable if the page cannot be loaded or drawn; [target] is then left
+     *   unchanged.
      */
     suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean)
 
@@ -136,6 +149,7 @@ interface PdfDocument : Closeable {
      *   long press; [SelectionMode.Characters] gives an empty selection when both points are equal.
      * @return the selection, empty when the page has no text layer (scanned page). Its
      *   [TextSelection.start] and [TextSelection.end] place the handles, in reading order.
+     * @throws PdfError.Unreadable if the page cannot be loaded.
      */
     suspend fun selectText(
         index: Int,
@@ -153,6 +167,7 @@ interface PdfDocument : Closeable {
      * @param tolerance largest distance, in page points, from the box of a line (first to last
      *   character, line height) at which the point still counts: the reader turns the slop of a
      *   finger, in pixels, into points (ADR 0024). 0 (the default) is the exact box.
+     * @throws PdfError.Unreadable if the page cannot be loaded.
      */
     suspend fun isOnText(index: Int, point: PdfPoint, tolerance: Float = 0f): Boolean
 
@@ -160,6 +175,8 @@ interface PdfDocument : Closeable {
      * Links of the page at [index] (F09), in document order. Internal links whose destination
      * does not resolve are left out; external ones keep their URI as written, whatever its
      * scheme (ADR 0020).
+     *
+     * @throws PdfError.Unreadable if the page cannot be loaded.
      */
     suspend fun links(index: Int): List<PdfLink>
 }
