@@ -68,7 +68,7 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
    3. **Corrections de l'audit du 2026-11-26** : les corrections de code sont décrites dans
       [`docs/audits/2026-11-26-plan-de-correction.md`](audits/2026-11-26-plan-de-correction.md) ;
       **à faire en premier**. Lot 1 (**A1**, page illisible) : branche `fix/unreadable-page`,
-      PR à fusionner une fois la CI verte (ADR 0031 ; décision D1 du mainteneur : message
+      PR #52 à fusionner une fois la CI verte (ADR 0031 ; décision D1 du mainteneur : message
       « Page endommagée » sur la page). **À essayer sur appareil** : ouvrir
       `page_tree_count_mismatch.pdf`, aller à la page 3, faire glisser le curseur, zoomer, passer
       en page par page, TalkBack sur le message : aucun plantage, pages 1 et 2 dessinées. Ensuite
