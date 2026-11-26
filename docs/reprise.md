@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 En cours : lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -87,8 +87,16 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
       n'a plus de bouton : il ira dans la feuille « Affichage » au lot 4 ;
    5. **E4 « À propos et licences »** : dans `main` (PR #49), à essayer sur appareil (paragraphe
       « E4 sur appareil » ci-dessous) ;
-   6. lots suivants de M5 (voir `ROADMAP.md`) : propriétés (V5),
-      partage, thèmes, feuille « Affichage » (lot 4), rotation F27 (lot 5).
+   6. **M5 lot 2, partage et propriétés (F15, F16, V5)** : PR `feat/share-properties` (ADR 0027), pas
+      encore essayé sur appareil. **À essayer** : ⋮ › « Partager » vers une messagerie, un
+      gestionnaire de fichiers et « Enregistrer sur l'appareil », pour un document ouvert par le
+      sélecteur, par « Ouvrir avec » et pour un PDF protégé (il part chiffré) ; une application ou
+      un fournisseur qui refuse l'URI (message « Ce fichier ne peut pas être partagé ») ; ⋮ ›
+      « Propriétés » (valeurs, « Non renseigné », dates dans la langue et le fuseau du téléphone,
+      grande police, TalkBack, rotation de l'écran) ; « Imprimer » depuis la feuille, y compris sur
+      `encrypted_owner_password_only.pdf` ; `ShareInstrumentedTest` ;
+   7. lots suivants de M5 (voir `ROADMAP.md`) : thèmes, feuille « Affichage » (lot 4, ouverte par
+      ⋮ › « Affichage » depuis le lot 2), rotation F27 (lot 5).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -140,7 +148,7 @@ permission réseau.
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0026, 0030 et 0031) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0027, 0030 et 0031) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0031** : page illisible dans un document qui s'ouvre : taille de repli, message
@@ -385,6 +393,19 @@ permission réseau.
     clavier, sinon le premier retour ne ferme pas la recherche ;
   - l'icône « Rechercher » de la barre du haut a changé les captures du lecteur
     (`reader_*`, `outline_preview_section_light`), réenregistrées.
+- **Partage et propriétés** (M5 lot 2, ADR 0027) :
+  - le bouton ⋮ ouvre un menu (« Affichage », « Partager », « Propriétés ») : un test qui voulait
+    la feuille « Affichage » clique « Plus d'options » **puis** « Display » ; les messages du menu
+    et des feuilles passent par le `SnackbarHostState` de `ReaderContent`, partagé avec la zone du
+    document ;
+  - la feuille « Propriétés » est une fenêtre à part : un test Robolectric qui clique ses boutons
+    doit annoncer un écran assez haut (`@Config(qualifiers = "w360dp-h800dp")`), sinon les boutons
+    sortent de l'écran ; un `@Config(qualifiers = …)` sur une méthode **remplace** celui de la
+    classe (écrire `fr-w360dp-h800dp`) ;
+  - `startActivity` depuis le contexte de l'application exige `FLAG_ACTIVITY_NEW_TASK` : le test
+    de `startSharing` passe par une activité (`Robolectric.buildActivity`) ;
+  - les captures de V5 forcent le fuseau UTC (`TimeZone.setDefault`) : les dates dépendent sinon de la
+    machine ; les dates et la taille suivent la langue (« 422 ko », « 12 sept. 2026 10:14 »).
 - **Impression** (M5 lot 1, ADR 0026) :
   - `android.graphics.pdf.PdfDocument` garde chaque page (une `SkPicture` avec une copie du
     bitmap) jusqu'à `writeTo` : sa mémoire croît avec le document. Le PDF d'images d'un document

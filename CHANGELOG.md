@@ -19,6 +19,18 @@ changement y est signalé.
   atténué, lu « Désactivé, interdit par l'auteur », qui explique pourquoi. La rotation de
   l'affichage (F27) ne s'applique jamais à l'impression. Test instrumenté de la boîte
   d'impression (UiAutomator).
+- **Partage et propriétés du document** (F15 et F16, M5 lot 2, ADR 0027) : le bouton « Plus
+  d'options » du lecteur ouvre désormais un menu (« Affichage », « Partager », « Propriétés »)
+  au lieu d'ouvrir directement la feuille « Affichage ». « Partager » envoie le fichier tel quel
+  (`ACTION_SEND`, `application/pdf`, URI `content://` d'origine, lecture seule, sélecteur du système
+  sans Lutrin lui-même) : ni copie, ni fournisseur de contenu, un document protégé reste chiffré ;
+  un message dit quand aucune application ne peut le recevoir ou quand le fournisseur refuse. La
+  feuille « Propriétés » (V5) montre le fichier, le titre, l'auteur, le nombre de pages, la taille,
+  la version PDF et les dates de création et de modification (« Non renseigné » quand une valeur
+  manque), avec les boutons « Partager » et « Imprimer » (atténué si l'auteur l'interdit). La taille
+  et le nom du fichier viennent de `DocumentInfoResolver` (`core:domain`, `core:data`) ; le moteur
+  n'a pas changé (`PdfMetadata` donnait déjà tout). Tests instrumentés de l'intent
+  (Espresso-Intents) et des propriétés lues par MuPDF.
 - **Écran « À propos et licences »** (E4, M5, ADR 0030) : nouveau module `feature:about`, atteint par
   la dernière ligne de Paramètres. Il affiche le nom, la version, « Aucune donnée collectée », la
   licence (GNU GPL v3 ou ultérieure, **distribuée sous GNU AGPL v3 à cause de MuPDF**, ce que la
