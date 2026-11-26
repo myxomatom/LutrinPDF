@@ -89,7 +89,9 @@ flowchart LR
 - `ReaderViewModel` ouvre le document (URI reçue par la navigation) via `PdfEngine` et le ferme
   avec lui ; il expose `ReaderUiState` : `Loading`, `Error` (V8) ou `Ready`.
 - `PageRenderer` produit les bitmaps : rendu de base de chaque page (cache LRU `BitmapCache`) et
-  rendu net de la partie visible au-delà de « ajuster à la largeur » (ADR 0008).
+  rendu net de la partie visible au-delà de « ajuster à la largeur » (ADR 0008). Il renvoie un
+  `RenderResult` (`Rendered`, `Unreadable`, `OutOfMemory`) : une page que le moteur ne peut pas
+  lire affiche « Page endommagée » au lieu de faire planter le lecteur (ADR 0031).
 - `ReaderScreen` / `PdfPagesView` (Compose) : `LazyColumn` des pages, gestes de zoom, barres,
   plein écran. Les calculs (zoom, partie visible, page courante) sont des fonctions pures de
   `ReaderGeometry.kt`, testées sur la JVM.

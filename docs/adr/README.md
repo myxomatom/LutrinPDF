@@ -34,6 +34,7 @@ par un nouvel ADR. Dans les deux cas, l'ADR d'origine renvoie à ce qui le modif
 | [0025](0025-police-de-secours-cjk.md) | Texte CJK non incorporé : polices CJK du système, pas de police embarquée (DroidSansFallback mesurée puis écartée) | Accepté |
 | [0026](0026-impression.md) | Impression : bouton « Imprimer » à la place de « pleine largeur » dans la barre flottante, PDF d'origine ou images des pages d'un document protégé (écrivain de PDF d'images en flux, jamais le PDF déchiffré), interdiction d'impression respectée sauf réglage « Ignorer les restrictions du document » (amende l'ADR 0024) | Accepté |
 | [0030](0030-ecran-a-propos-et-licences.md) | Écran « À propos et licences » (E4) : module `feature:about`, licence GPL distribuée sous AGPL, liste générée par AboutLibraries (hors ligne) complétée à la main pour MuPDF, ses bibliothèques natives et les polices, lien source confirmé, confidentialité locale | Accepté |
+| [0031](0031-page-illisible.md) | Page illisible dans un document qui s'ouvre : taille de repli (page précédente ou A4), message « Page endommagée » mis à l'échelle de la page, aperçu vierge, rendu par type scellé `RenderResult`, erreur V8 si aucune page ne se lit | Accepté |
 
 ADR attendus (voir `SPEC.md`, `ROADMAP.md` et [`../open-questions.md`](../open-questions.md)) :
 

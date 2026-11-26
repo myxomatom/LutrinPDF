@@ -356,6 +356,17 @@ changement y est signalé.
   documentation (`docs/dependencies.md` aligné sur le catalogue de versions).
 
 ### Corrigé
+- Lecteur : un PDF qui s'ouvre mais dont une page ne se charge pas (par exemple un arbre de pages
+  dont `/Count` annonce plus de pages qu'il n'en contient) ne fait plus planter l'application
+  (audit du 2026-11-26, constat A1, ADR 0031). La page illisible garde la taille de la page
+  précédente (A4 pour la première) et affiche « Page endommagée » avec une explication : le
+  fichier PDF est en cause, les autres pages restent lisibles. Le message suit la taille de la page
+  affichée (zoom, petite page, police à 200 %). L'aperçu du curseur montre une page vierge. Un
+  document dont aucune page ne se lit affiche l'erreur « Impossible d'ouvrir ce document ».
+  `PageRenderer` renvoie un type scellé `RenderResult` (`Rendered`, `Unreadable`, `OutOfMemory`) ;
+  la KDoc de `PdfDocument` signale `PdfError.Unreadable` sur toute fonction qui prend un index de
+  page. Nouveau fichier de test `page_tree_count_mismatch.pdf` et
+  `FakePdfDocument.unreadablePages`.
 - Lecteur, mode page par page : un appui long sélectionne un mot sur toutes les pages (il ne
   marchait que sur la première, et basculait le plein écran ailleurs), et un toucher sur un lien
   est suivi hors de la première page. Cause : le test de position cherchait la taille de la page

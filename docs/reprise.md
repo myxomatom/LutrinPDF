@@ -67,7 +67,12 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
       essais validés le 2026-11-21) ;
    3. **Corrections de l'audit du 2026-11-26** : les corrections de code sont décrites dans
       [`docs/audits/2026-11-26-plan-de-correction.md`](audits/2026-11-26-plan-de-correction.md) ;
-      **à faire en premier, A1 d'abord** (une page illisible dans un PDF qui s'ouvre fait planter le lecteur). La documentation a été mise à jour le
+      **à faire en premier**. Lot 1 (**A1**, page illisible) : branche `fix/unreadable-page`,
+      PR à fusionner une fois la CI verte (ADR 0031 ; décision D1 du mainteneur : message
+      « Page endommagée » sur la page). **À essayer sur appareil** : ouvrir
+      `page_tree_count_mismatch.pdf`, aller à la page 3, faire glisser le curseur, zoomer, passer
+      en page par page, TalkBack sur le message : aucun plantage, pages 1 et 2 dessinées. Ensuite
+      le lot 2 (mémoire et fil du rendu, qui s'appuie sur `RenderResult`). La documentation a été mise à jour le
       2026-11-26 ; le constat complet est dans
       [`docs/audits/2026-11-26-audit-complet.md`](audits/2026-11-26-audit-complet.md) ;
    4. **M5**, lot 1 **impression (F15)** : **dans `main` (PR #50), pas encore essayée sur
@@ -135,9 +140,11 @@ permission réseau.
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0026, et 0030) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0026, 0030 et 0031) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
+  - **ADR 0031** : page illisible dans un document qui s'ouvre : taille de repli, message
+    « Page endommagée » mis à l'échelle de la page, `PageRenderer` renvoie `RenderResult` ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
   - **ADR 0010** : couleurs dynamiques désactivables, activées par défaut ; police du système
     conservée (pas de Roboto embarquée) ;
@@ -200,6 +207,9 @@ permission réseau.
     bibliothèque : fournir `LocalLayoutDirection` dans le test ;
   - ne pas lancer deux Gradle en même temps sur le même module (le premier échoue avec
     `EOFException` sur `testDebugUnitTest`).
+- **Erreurs par page du moteur** : toute fonction de `PdfDocument` qui prend un index de page
+  peut lever `PdfError.Unreadable` sur un document qui s'est pourtant ouvert (ADR 0031). Un nouvel
+  appelant l'intercepte ; dans les tests, `FakePdfDocument.unreadablePages` simule ces pages.
 - **Tests Robolectric de `app` qui ouvrent un document** : la bibliothèque native de MuPDF ne se
   charge pas sous Robolectric (`UnsatisfiedLinkError` dès la construction de `MuPdfEngine`).
   Écrire un test `@HiltAndroidTest` avec `@Config(application = HiltTestApplication::class)` :
