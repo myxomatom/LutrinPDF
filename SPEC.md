@@ -37,7 +37,7 @@ Principes non négociables :
 | F09 | Liens | Liens internes (navigation dans le document). Liens externes : ouverture via intent système après confirmation (l'app elle-même n'accède pas au réseau). |
 | F10 | PDF protégés | Saisie du mot de passe pour les PDF chiffrés. Le mot de passe n'est jamais stocké. |
 | F11 | Fichiers récents | Liste des documents récents (URI persistés via `takePersistableUriPermission`), avec vignette, possibilité de retirer un élément ou de vider la liste. |
-| F12 | Reprise de lecture | Mémorisation de la dernière page et du zoom par document. |
+| F12 | Reprise de lecture | Mémorisation de la dernière page par document. Le zoom n'est pas mémorisé (décision du mainteneur du 2026-11-25 : jugé inutile). |
 | F13 | Thèmes | Clair, sombre, suivre le système. Couleurs dynamiques (Material You, Android 12+) désactivables, activées par défaut (ADR 0010). **Mode nuit du document** (inversion des couleurs du rendu) et mode sépia. |
 | F14 | Plein écran | Mode immersif (barres masquées), réaffichage au tap. |
 | F15 | Partager / imprimer | Partage du fichier via intent ; impression via `PrintManager`. |
