@@ -40,7 +40,7 @@ leakcanary = "2.14"
 junit = "4.13.2"
 truth = "1.4.5"
 turbine = "1.2.1"
-robolectric = "4.17"
+robolectric = "4.18.1"
 # Android framework jars of Robolectric 4.17 (android-all-instrumented), resolved by Gradle so that
 # tests run offline. Update them together with Robolectric (versions listed in its release notes).
 robolectricAndroidAll30 = "11-robolectric-6757853-i7"
