@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
@@ -17,6 +18,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
+import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentNameResolver
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
@@ -68,6 +70,7 @@ class ReaderViewModelLinksTest {
                 GetDocumentNameUseCase(recents, FakeDocumentNameResolver()),
                 this,
             ),
+            GetDocumentPropertiesUseCase(FakeDocumentInfoResolver()),
         ).also { advanceUntilIdle() }
     }
 

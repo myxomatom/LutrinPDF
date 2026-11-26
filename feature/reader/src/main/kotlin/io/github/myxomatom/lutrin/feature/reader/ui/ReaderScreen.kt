@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerState
@@ -26,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -61,9 +61,12 @@ import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
 import io.github.myxomatom.lutrin.feature.reader.print.startPrinting
+import io.github.myxomatom.lutrin.feature.reader.share.ShareOutcome
+import io.github.myxomatom.lutrin.feature.reader.share.startSharing
 import kotlinx.coroutines.launch
 
 /** Reader destination, connected to its [ReaderViewModel]. */
+@Suppress("LongMethod") // Plain wiring of the ViewModel to the screen.
 @Composable
 fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,6 +105,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
                 canCopy = (state as? ReaderUiState.Ready)?.canCopyText == true,
             ),
         onPrint = { viewModel.printJob()?.let { startPrinting(context, it) } ?: true },
+        onShare = { viewModel.shareRequest()?.let { startSharing(context, it) } ?: ShareOutcome.NOT_SHAREABLE },
+        properties = rememberReaderProperties(viewModel),
     )
 }
 
@@ -136,6 +141,10 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param onPrint called by the print button of the floating bar (F15, ADR 0026) when the document
  *   may be printed ([ReaderUiState.Ready.canPrint]); opens the print dialog of the system and
  *   returns `false` when the device cannot print.
+ * @param onShare called by « Partager » of the menu and of the properties sheet (F15, ADR 0027);
+ *   opens the chooser of the system for the document as it is, and tells whether it did.
+ * @param properties the properties of the document (F16, V5): « Propriétés » of the menu opens a
+ *   sheet over the reader, with « Partager » and « Imprimer ».
  */
 @Composable
 fun ReaderScreen(
@@ -154,6 +163,8 @@ fun ReaderScreen(
     search: ReaderSearch = ReaderSearch(),
     selection: ReaderSelection = ReaderSelection(),
     onPrint: () -> Boolean = { true },
+    onShare: () -> ShareOutcome = { ShareOutcome.STARTED },
+    properties: ReaderProperties = ReaderProperties(),
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -180,6 +191,8 @@ fun ReaderScreen(
                     search = search,
                     selection = selection,
                     onPrint = onPrint,
+                    onShare = onShare,
+                    properties = properties,
                 )
         }
     }
@@ -209,12 +222,17 @@ private fun ReaderContent(
     search: ReaderSearch = ReaderSearch(),
     selection: ReaderSelection = ReaderSelection(),
     onPrint: () -> Boolean = { true },
+    onShare: () -> ShareOutcome = { ShareOutcome.STARTED },
+    properties: ReaderProperties = ReaderProperties(),
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var optionsVisible by rememberSaveable { mutableStateOf(false) }
     var goToPageVisible by rememberSaveable { mutableStateOf(false) }
+    // Shared with the document area: the messages of the menu and of the sheets appear in the same place.
+    val snackbar = remember { SnackbarHostState() }
+    val onShareClick = rememberShareClick(onShare, snackbar)
     // A new navigator per mode, starting on the page the previous one last reported.
     val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, state.pageSizes)
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
@@ -239,7 +257,12 @@ private fun ReaderContent(
             onToggleControls = { if (!search.state.isOpen) controlsVisible = !controlsVisible },
             actions = ReaderBarActions(
                 onBack = onBack,
-                onMoreOptions = { optionsVisible = true },
+                menu =
+                    ReaderMenu(
+                        onDisplay = { optionsVisible = true },
+                        onShare = onShareClick,
+                        onProperties = properties.onOpen,
+                    ),
                 onOutline = openOutline,
                 onIndicatorClick = { goToPageVisible = true },
                 onPrint = onPrint,
@@ -248,8 +271,10 @@ private fun ReaderContent(
             links = links,
             search = search,
             selection = selection,
+            snackbar = snackbar,
         )
     }
+    PropertiesSheet(properties, state.canPrint, onShareClick, rememberPrintClick(state.canPrint, onPrint, snackbar))
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
     OptionsSheet(optionsVisible, state.scrollMode, onScrollModeChange, onDismiss = { optionsVisible = false })
 }
@@ -267,12 +292,12 @@ private fun OptionsSheet(
 }
 
 /**
- * What the bars of the reader do: back, the buttons of the top bar, the page indicator and the
+ * What the bars of the reader do: back, the buttons and the menu of the top bar, the page indicator and the
  * print button of the floating bar.
  */
 private class ReaderBarActions(
     val onBack: () -> Unit,
-    val onMoreOptions: () -> Unit,
+    val menu: ReaderMenu,
     val onOutline: (() -> Unit)?,
     val onIndicatorClick: () -> Unit,
     val onPrint: () -> Boolean,
@@ -297,6 +322,7 @@ private fun ReaderScaffold(
     links: ReaderLinks,
     search: ReaderSearch,
     selection: ReaderSelection,
+    snackbar: SnackbarHostState,
 ) {
     SearchHandling(search, navigator)
     Scaffold(
@@ -307,7 +333,7 @@ private fun ReaderScaffold(
                 ReaderTopBar(
                     title = state.title,
                     onBack = actions.onBack,
-                    onMoreOptions = actions.onMoreOptions,
+                    menu = actions.menu,
                     onOutline = actions.onOutline,
                     onSearch = search.onOpen,
                 )
@@ -333,6 +359,7 @@ private fun ReaderScaffold(
             search = search.state,
             selection = selection,
             onPrint = actions.onPrint,
+            snackbar = snackbar,
         )
     }
 }
@@ -371,9 +398,11 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
 
 /**
  * Top bar of the reader: back, title and, once a document is open, « Rechercher » (V1), the
- * table of contents (V2) and « More options » (V6).
+ * table of contents (V2) and « More options »: the menu of the display options (V6), « Partager »
+ * and « Propriétés » (V5).
  *
- * @param onMoreOptions opens the display options; `null` hides the button (error screen).
+ * @param menu what the items of the « More options » menu do; `null` hides the button (error
+ *   screen).
  * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
  *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
  * @param onSearch opens the search bar; `null` hides the button (error screen).
@@ -383,7 +412,7 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
 internal fun ReaderTopBar(
     title: String,
     onBack: () -> Unit,
-    onMoreOptions: (() -> Unit)? = null,
+    menu: ReaderMenu? = null,
     onOutline: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
 ) {
@@ -415,11 +444,7 @@ internal fun ReaderTopBar(
                     )
                 }
             }
-            if (onMoreOptions != null) {
-                IconButton(onClick = onMoreOptions) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.reader_more_options))
-                }
-            }
+            if (menu != null) ReaderMenuButton(menu)
         },
     )
 }

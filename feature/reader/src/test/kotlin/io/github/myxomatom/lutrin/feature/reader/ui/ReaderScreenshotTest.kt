@@ -7,6 +7,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -66,6 +67,7 @@ class ReaderScreenshotTest {
             LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { ReaderScreen(ready(), onBack = {}) }
         }
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
         composeRule.waitForIdle()
         captureScreenRoboImage("src/test/screenshots/$name.png")
     }

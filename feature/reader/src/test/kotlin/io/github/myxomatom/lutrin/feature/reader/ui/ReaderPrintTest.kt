@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
@@ -30,6 +31,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
+import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentNameResolver
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
@@ -82,6 +84,7 @@ class ReaderPrintTest {
                     GetDocumentNameUseCase(recents, FakeDocumentNameResolver()),
                     CoroutineScope(Dispatchers.Unconfined),
                 ),
+                GetDocumentPropertiesUseCase(FakeDocumentInfoResolver()),
             )
         composeRule.setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()

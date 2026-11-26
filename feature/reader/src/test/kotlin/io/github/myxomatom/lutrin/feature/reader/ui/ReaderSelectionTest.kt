@@ -32,6 +32,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
@@ -49,6 +50,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
+import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentNameResolver
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
@@ -122,6 +124,7 @@ class ReaderSelectionTest {
                     GetDocumentNameUseCase(recents, FakeDocumentNameResolver()),
                     scope,
                 ),
+                GetDocumentPropertiesUseCase(FakeDocumentInfoResolver()),
             )
         composeRule.setContent {
             LutrinTheme(dynamicColor = false) { ReaderRoute(onBack = {}, viewModel = viewModel) }

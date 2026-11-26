@@ -87,8 +87,11 @@ internal fun openExternalLink(context: Context, uri: String): Boolean {
  * @return the state of the messages of the reader, for its `SnackbarHost`.
  */
 @Composable
-internal fun rememberLinkHandling(links: ReaderLinks, navigator: PageNavigator): SnackbarHostState {
-    val snackbar = remember { SnackbarHostState() }
+internal fun rememberLinkHandling(
+    links: ReaderLinks,
+    navigator: PageNavigator,
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
+): SnackbarHostState {
     LinkEffectsHandler(links, navigator, snackbar)
     ExternalLinkConfirmation(links, snackbar)
     return snackbar

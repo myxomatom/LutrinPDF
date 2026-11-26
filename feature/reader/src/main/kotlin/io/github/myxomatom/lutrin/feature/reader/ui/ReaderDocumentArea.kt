@@ -72,6 +72,8 @@ private val FullscreenIndicatorPadding = 16.dp
  * @param onPrint called by the print button of the floating bar when the document may be printed
  *   (F15, ADR 0026); returns `false` when the device cannot print. When its author forbids it,
  *   the button explains why instead.
+ * @param snackbar where the messages of the document appear: those of the links, of the selection
+ *   and of printing; shared with the reader for those of its menu and sheets.
  */
 @Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
@@ -90,12 +92,13 @@ internal fun ReaderDocumentArea(
     search: SearchState = SearchState(),
     selection: ReaderSelection = ReaderSelection(),
     onPrint: () -> Boolean = { true },
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val page = navigator.currentPage
     val onPageTap = rememberSelectionTap(selection, rememberPageTap(state.links, navigator, onTap, links.onLinkClick))
     val onPageLongPress = rememberPageLongPress(selection)
     val pageActions = rememberLinkActions(state.links, page, links.onLinkClick) + copyPageAction(selection, page)
-    val snackbar = rememberLinkHandling(links, navigator)
+    rememberLinkHandling(links, navigator, snackbar)
     SelectionHandling(selection, navigator, search.isOpen, snackbar)
     val onPrintClick = rememberPrintClick(state.canPrint, onPrint, snackbar)
     val sharedPage = sharedPage(page, zoom, pageTransition)
@@ -291,7 +294,7 @@ private fun BoxScope.ReaderPageBar(
  * otherwise explains that the author forbids it. Also says so when the device cannot print.
  */
 @Composable
-private fun rememberPrintClick(canPrint: Boolean, onPrint: () -> Boolean, snackbar: SnackbarHostState): () -> Unit {
+internal fun rememberPrintClick(canPrint: Boolean, onPrint: () -> Boolean, snackbar: SnackbarHostState): () -> Unit {
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
     val currentCanPrint by rememberUpdatedState(canPrint)
