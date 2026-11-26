@@ -350,6 +350,36 @@ def garbage() -> None:
     (PDFS / "corrupted_garbage.pdf").write_bytes(b"%PDF-1.7\n" + noise)
 
 
+def page_tree_count_mismatch() -> None:
+    """Declares /Count 3 with only two /Kids: the document opens with 3 pages, the third is unreadable.
+
+    Written byte by byte, with computed xref offsets, because pymupdf could repair /Count when saving.
+    The xref has 8 entries, more than the declared count, so MuPDF does not reject the count itself.
+    """
+    page = (b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            b"/Resources << /Font << /F1 7 0 R >> >> /Contents %d 0 R >>")
+    stream = b"BT /F1 24 Tf 72 760 Td (%s) Tj ET"
+    contents = [stream % b"Page 1", stream % b"Page 2"]
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 3 >>",
+        page % 5,
+        page % 6,
+        *(b"<< /Length %d >>\nstream\n%s\nendstream" % (len(content), content) for content in contents),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    data = bytearray(b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(data))
+        data += b"%d 0 obj\n%s\nendobj\n" % (number, body)
+    xref = len(data)
+    data += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    data += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    data += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objects) + 1, xref)
+    (PDFS / "page_tree_count_mismatch.pdf").write_bytes(bytes(data))
+
+
 def not_a_pdf() -> None:
     (PDFS / "not_a_pdf.pdf").write_text("Ceci est un fichier texte renommé en .pdf.\n", encoding="utf-8")
 
@@ -408,7 +438,7 @@ def texts() -> None:
 
 GENERATORS = (simple, large, nested_outline, links, encrypted, encrypted_variants, form, scanned, mixed_sizes,
               non_latin, text_selection, many_hits, rotated_destinations, cjk_not_embedded, corrupted, garbage,
-              not_a_pdf, images, texts)
+              page_tree_count_mismatch, not_a_pdf, images, texts)
 
 
 def main(names: list[str]) -> None:

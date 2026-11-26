@@ -91,6 +91,12 @@ object TestFiles {
         /** A `%PDF` header followed by noise; cannot be opened. */
         const val CORRUPTED_GARBAGE = "pdfs/corrupted_garbage.pdf"
 
+        /**
+         * Declares 3 pages (`/Count 3`) but its page tree only holds 2 ("Page 1", "Page 2"): the
+         * document opens with 3 pages, the third one cannot be loaded, the others stay readable.
+         */
+        const val PAGE_TREE_COUNT_MISMATCH = "pdfs/page_tree_count_mismatch.pdf"
+
         /** A text file renamed to `.pdf`. */
         const val NOT_A_PDF = "pdfs/not_a_pdf.pdf"
     }

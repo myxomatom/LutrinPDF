@@ -147,4 +147,20 @@ class FakePdfDocumentTest {
         assertThat(runCatching { document.search(" ").toList() }.exceptionOrNull())
             .isInstanceOf(PdfError.Closed::class.java)
     }
+
+    @Test
+    fun `an unreadable page throws on every call taking its index, the others stay readable`() = runTest {
+        val document = FakePdfDocument().apply { unreadablePages = setOf(2) }
+
+        listOf<suspend () -> Unit>(
+            { document.pageSize(2) },
+            { document.links(2) },
+            { document.selectText(2, origin, origin) },
+            { document.isOnText(2, origin) },
+        ).forEach { call ->
+            assertThat(runCatching { call() }.exceptionOrNull()).isInstanceOf(PdfError.Unreadable::class.java)
+        }
+        assertThat(document.pageSize(1)).isEqualTo(A4)
+        assertThat(document.links(0)).isEmpty()
+    }
 }
