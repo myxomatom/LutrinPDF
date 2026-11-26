@@ -237,9 +237,9 @@ Les opérations longues des outils s'exécutent dans un **WorkManager** (ou un s
 | Entité | Champs |
 |--------|--------|
 | `RecentDocument` | uri, nom affiché, taille, nombre de pages, date d'ouverture, chemin vignette |
-| `ReadingPosition` | uri (ou empreinte du fichier), page, zoom, décalage |
+| `ReadingPosition` | uri (ou empreinte du fichier, point ouvert 16), page ; le zoom n'est pas mémorisé (F12) ; le décalage dans la page est reporté (ADR 0015) |
 | `Bookmark` (v1.x) | id, documentId, page, libellé, date |
-| Préférences (DataStore) | thème, couleurs dynamiques, mode nuit, mode défilement, écran allumé, orientation, dossier de sortie, autorisations assistants |
+| Préférences (DataStore) | thème, couleurs dynamiques, aperçu de la page (ADR 0018), ignorer les restrictions du document (ADR 0024, 0026), mode nuit, mode défilement, écran allumé, orientation, dossier de sortie, autorisations assistants |
 | `AssistantAction` (v1.1) | id, fonction, paquet appelant, date, résultat (sans contenu de document) |
 
 Identification d'un document : empreinte (hash) des premiers et derniers Ko + taille, pour retrouver la position même si l'URI change.
@@ -272,7 +272,7 @@ Identification d'un document : empreinte (hash) des premiers et derniers Ko + ta
 
 ## 8. Critères d'acceptation du MVP
 
-- [ ] Toutes les fonctionnalités F01 à F19 sont implémentées et testées.
+- [ ] Toutes les fonctionnalités F01 à F19 et F27 sont implémentées et testées.
 - [ ] Le manifeste fusionné ne contient **aucune** permission réseau (vérifié en CI).
 - [ ] Aucune dépendance propriétaire ni SDK de suivi (vérifié par revue des dépendances).
 - [ ] Les tests passent en CI ; couverture ≥ 80 % sur `core:domain` et `core:data`, ≥ 70 % globale.
@@ -312,7 +312,7 @@ Identification d'un document : empreinte (hash) des premiers et derniers Ko + ta
 4. Ouverture de fichiers et récents (F01, F11, F12).
 5. Navigation, table des matières, liens (F05, F06, F09).
 6. Recherche et sélection de texte (F07, F08).
-7. Thèmes, plein écran, paramètres (F13, F14, F17).
+7. Thèmes, plein écran, paramètres, rotation de l'affichage (F13, F14, F17, F27).
 8. Mot de passe, partage, impression, propriétés (F10, F15, F16).
 9. Accessibilité, traductions, performance (F18, F19, §3).
 10. Préparation de la publication F-Droid.

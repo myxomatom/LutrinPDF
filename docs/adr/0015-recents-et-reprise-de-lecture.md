@@ -84,7 +84,8 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
    rester celui de l'entrée existante.
 3. **Pas de table `ReadingPosition` séparée** : la page vit dans la ligne du récent. Elle est
    perdue quand le document sort de la liste. **Le zoom et le décalage ne sont pas enregistrés**
-   (F12 partiel) : le zoom est un état du composable, il n'a pas le même sens selon le mode
+   (F12 partiel ; **amendement du 2026-11-25** : le zoom est abandonné, F12 ne mémorise que la
+   page, voir `SPEC.md` F12 ; seul le décalage dans la page reste reporté) : le zoom est un état du composable, il n'a pas le même sens selon le mode
    (1 = « largeur » en défilement continu, « page entière » page par page, ADR 0011), et le
    rétablir sans la position dans la page n'aurait guère d'intérêt. Ils arriveront avec une
    colonne et une migration quand le lecteur exposera cet état (suivi dans `ROADMAP.md`).
@@ -145,6 +146,7 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
 12. **Écarts avec la maquette E1** (complètent l'ADR 0009) :
     - pas de bouton « grille / liste » (miniatures, V10 en v1.x) ni « Outils » (M6) ;
     - pas de menu « ⋮ » par ligne : son action « Retirer des récents » arrive à l'étape suivante ;
+      ajouté par l'[ADR 0016](0016-retirer-et-vider-les-recents.md) ;
     - pas de pastille de cadenas (documents protégés, avec V4) ; ajoutée par l'ADR 0017 ;
     - jamais « 4 pages · Hier » : seul un document ouvert avec succès entre dans la liste, la
       ligne dit donc toujours « Page x / n » ;
@@ -169,7 +171,7 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
     souvent sans vignette, et peut ne plus s'ouvrir après la fermeture de l'application
     appelante (écran V8) ;
   - un même fichier ouvert par deux URI donne deux entrées (point ouvert 16) ;
-  - zoom et décalage non restaurés ;
+  - zoom (abandonné le 2026-11-25) et décalage non restaurés ;
   - une vignette est dessinée au premier affichage de la bibliothèque qui suit l'ouverture, donc
     avec un léger délai (l'image d'attente de la maquette s'affiche entre-temps).
 - Actions de suivi :
@@ -177,4 +179,4 @@ lecteur ; ou après un temps calme, plus une dernière écriture à la fermeture
     ADR 0016 ;
   - essais sur appareil : permission persistée après redémarrage, liste de plus de 50
     documents, document supprimé ou permission retirée depuis « Fichiers » ;
-  - empreinte du contenu (point ouvert 16), zoom et décalage (F12).
+  - empreinte du contenu (point ouvert 16), décalage dans la page (F12 ; le zoom est abandonné).

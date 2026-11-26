@@ -2,7 +2,8 @@
 
 Une décision structurante = un fichier `NNNN-titre-court.md`, créé à partir de
 [`0000-modele.md`](0000-modele.md) (contexte, options, décision, conséquences).
-Un ADR accepté n'est pas réécrit : on le remplace par un nouvel ADR.
+Un ADR accepté n'est pas réécrit : on le complète par un amendement daté, ou on le remplace
+par un nouvel ADR. Dans les deux cas, l'ADR d'origine renvoie à ce qui le modifie.
 
 | N° | Décision | Statut |
 |----|----------|--------|

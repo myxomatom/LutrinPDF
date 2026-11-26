@@ -35,7 +35,8 @@ Décisions du mainteneur du 2026-11-04 :
 3. **E3 en avance sur M5** : l'écran Paramètres existe désormais avec la seule section
    « Apparence » ; il est ouvert par l'icône engrenage de la bibliothèque (E1), comme dans la
    maquette. Les autres réglages (thème, rendu du document, lecture, données) arrivent en M5.
-4. **Police du système conservée** : pas de Roboto embarquée. L'APK ne grossit pas et la
+4. **Police du système conservée** (amendé par l'[ADR 0018](0018-nouveau-design-visuel.md) : les
+   titres passent en Fraunces 600 embarquée ; le reste du texte garde la police du système) : pas de Roboto embarquée. L'APK ne grossit pas et la
    police choisie par l'utilisateur est respectée ; sur Pixel et Android de base, c'est Roboto.
 
 ## Conséquences

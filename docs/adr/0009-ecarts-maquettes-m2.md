@@ -21,7 +21,8 @@ vide. Plusieurs écarts avec les maquettes restent voulus.
 2. **E1 en avance sur M3, état vide seulement** : sans récents (M3), la bibliothèque montre
    toujours l'état vide de `E1-Bibliotheque-Vide.png`. Les boutons « Outils PDF » et
    « Paramètres » de la barre n'apparaissent qu'avec leurs écrans (M5, M6) : un bouton sans
-   destination serait trompeur.
+   destination serait trompeur. Complété par l'[ADR 0010](0010-couleurs-dynamiques-et-police.md) :
+   E3 est avancé en M2 et l'icône « Paramètres » apparaît dans E1 ; « Outils » reste pour M6.
 3. **E2 sans les actions des jalons suivants** : « Rechercher », « Table des matières » et
    « Plus d'options » (M4, M5) ne sont pas affichées ; la bulle de défilement rapide et
    l'ouverture de V3 par l'indicateur de page viennent avec M4.
