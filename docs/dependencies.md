@@ -10,26 +10,30 @@ La CI vérifie automatiquement les deux gardes-fous (`./gradlew check`) :
 - **`verifyReleasePermissions`** échoue si le manifeste fusionné demande une permission réseau
   ou un accès large au stockage.
 
-Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt Maven de Google).
+Licences vérifiées le 2026-11-03 dans les POM publiés (Maven Central, dépôt Maven de Google) ;
+`javax.inject`, `ui-tooling-preview`, `espresso-core` et `android-all-instrumented` vérifiés de même le 2026-11-26.
+Versions comparées au catalogue `gradle/libs.versions.toml` le 2026-11-26.
 
 ## Embarquées dans l'application (classpath d'exécution de `release`)
 
 | Dépendance | Version | Licence (SPDX) | Module(s) | Justification |
 |------------|---------|----------------|-----------|---------------|
 | MuPDF (Artifex) | 1.28.6 (`da5f5eb89`) | AGPL-3.0-or-later | `third-party:mupdf` → `core:pdf` | Moteur de rendu et d'écriture PDF (ADR 0001, 0007) |
-| Kotlin stdlib, kotlinx-coroutines | 2.4.21 / 1.11.0 | Apache-2.0 | tous | Langage, asynchronisme |
+| Kotlin stdlib, kotlinx-coroutines | 2.4.21 / 1.11.0 | Apache-2.0 | tous (`kotlinx-coroutines-android` dans `core:pdf`) | Langage, asynchronisme |
 | AndroidX Core KTX | 1.19.1 | Apache-2.0 | `app`, `core:data`, `feature:reader` | Extensions Kotlin d'Android |
 | AndroidX Activity Compose | 1.13.0 | Apache-2.0 | `app` | Activité hôte de Compose |
 | AndroidX Lifecycle Runtime Compose | 2.11.0 | Apache-2.0 | `feature:*` | Collecte d'état sensible au cycle de vie |
 | Jetpack Compose (BOM) : UI, Material 3, Animation | 2026.09.00 | Apache-2.0 | `core:ui`, `app`, `feature:*` | Interface (`SPEC.md` §4.1). `animation` (éléments partagés de la transition vignette → lecteur, ADR 0019) était déjà tirée par Material 3 ; `core:ui` la déclare parce qu'il expose ses portées |
-| Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `feature:*` | Injection de dépendances (ADR 0002) |
-| AndroidX DataStore Preferences | 1.2.1 | Apache-2.0 | `core:data` | Préférences enregistrées sur l'appareil (`SPEC.md` §5, ADR 0010) |
+| Hilt / Dagger | 2.60.1 | Apache-2.0 | `app`, `core:data`, `core:pdf`, `feature:*` | Injection de dépendances (ADR 0002) |
+| AndroidX DataStore Preferences | 1.3.0 | Apache-2.0 | `core:data` | Préférences enregistrées sur l'appareil (`SPEC.md` §5, ADR 0010) |
 | AndroidX Room (`room-runtime`) | 2.8.5 | Apache-2.0 | `core:data` | Base locale des récents et des positions de lecture (`SPEC.md` §4.1, §5, ADR 0015). Tire AndroidX SQLite 2.6.2 (`sqlite`, `sqlite-framework`, SQLite du système, pas de SQLite embarqué), `room-common`, AndroidX Collection et Annotation, tous Apache-2.0 ; aucune permission. Licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
-| AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader` | Navigation entre écrans (`SPEC.md` §4.1) |
-| AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader` | ViewModels dans Compose |
-| AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader` | `hiltViewModel()` |
-| Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:reader` | Icônes standard (retour, alerte, liste, chevrons, croix) ; le tracé « lien externe » de la table des matières (`OutlineIcons.kt`, Material Symbols, Apache-2.0) y est recopié plutôt que d'ajouter `material-icons-extended` (ADR 0021) |
+| AndroidX Navigation Compose | 2.10.2 | Apache-2.0 | `app`, `feature:reader`, `feature:settings` | Navigation entre écrans (`SPEC.md` §4.1) |
+| AndroidX Lifecycle ViewModel Compose | 2.11.0 | Apache-2.0 | `feature:reader`, `feature:settings` | ViewModels dans Compose |
+| AndroidX Hilt Lifecycle ViewModel Compose | 1.4.0 | Apache-2.0 | `feature:reader`, `feature:settings` | `hiltViewModel()` |
+| Compose Material Icons Core | BOM (1.7.8) | Apache-2.0 | `feature:library`, `feature:reader`, `feature:settings` | Icônes standard (retour, alerte, liste, chevrons, croix) ; le tracé « lien externe » de la table des matières (`OutlineIcons.kt`, Material Symbols, Apache-2.0) y est recopié plutôt que d'ajouter `material-icons-extended` (ADR 0021) |
 | AndroidX ProfileInstaller | 1.4.1 | Apache-2.0 | `app` | Installe le Baseline Profile sur les appareils sans Google Play (F-Droid, installation directe) ; aucune permission demandée (ADR 0012) |
+| `javax.inject` (JSR-330) | 1 | Apache-2.0 | `core:domain` (`api`) → tous | Annotations `@Inject` des cas d'usage de `core:domain`, module Kotlin pur sans Android ni Hilt ; embarquée dans l'APK (annotations seules, pas de code actif). Licence vérifiée le 2026-11-26 dans le POM publié (Maven Central) |
+| Compose UI Tooling Preview (`ui-tooling-preview`) | BOM | Apache-2.0 | `core:ui`, `app`, `feature:*` (plugin `lutrin.android.compose`) | Annotation `@Preview` des aperçus ; déclarée en `implementation`, donc présente au classpath. Licence vérifiée le 2026-11-26 dans le POM publié (dépôt Maven de Google) |
 | AndroidX Activity Compose (`ReportDrawnWhen`) | 1.13.0 | Apache-2.0 | `feature:reader` | Signale la fin de l'ouverture d'un document (premières pages rendues), mesurée par `:benchmark` (ADR 0012) |
 | AboutLibraries Core (`com.mikepenz:aboutlibraries-core`) | 15.3.0 | Apache-2.0 (POM publié, `LICENSE` du dépôt mikepenz/AboutLibraries) | `feature:about` | Lit le `aboutlibraries.json` généré à la compilation, pour la liste des licences tierces de E4 ; seule la bibliothèque `core` est embarquée, l'interface est celle de Lutrin (ADR 0030). Tire `kotlinx-serialization-json` 1.11.0 et `kotlinx-serialization-core` (Apache-2.0, JetBrains). Aucune permission : `verifyReleasePermissions` passe. Licence vérifiée le 2026-11-25 dans le POM publié (Maven Central) |
 | AndroidX Activity Compose (`BackHandler`), Core KTX | 1.13.0 / 1.19.1 | Apache-2.0 | `feature:about` | Retour d'une sous-page de E4 à sa page principale ; `Uri.toUri` du lien du code source (déjà embarquées par ailleurs) |
@@ -97,7 +101,7 @@ cite ces polices**, que le plugin AboutLibraries ne détecte pas : elles sont d�
 | Dépendance | Version | Licence | Justification |
 |------------|---------|---------|---------------|
 | LeakCanary | 2.14 | Apache-2.0 | Détection des fuites mémoire (`AGENTS.md` §8) |
-| Compose UI Tooling, ui-test-manifest | BOM | Apache-2.0 | Aperçus, activité de test Compose |
+| Compose UI Tooling (`ui-tooling`), ui-test-manifest | BOM | Apache-2.0 | Aperçus, activité de test Compose |
 
 ## Tests (jamais distribués)
 
@@ -108,9 +112,11 @@ cite ces polices**, que le plugin AboutLibraries ne détecte pas : elles sont d�
 | Turbine | 1.2.1 | Apache-2.0 | Tests de `Flow` |
 | kotlinx-coroutines-test | 1.11.0 | Apache-2.0 | Dispatchers de test |
 | Robolectric | 4.17 | MIT | Tests Android sur JVM |
-| Roborazzi | 1.77.0 | Apache-2.0 | Tests de captures d'écran |
+| Roborazzi | 1.79.0 | Apache-2.0 | Tests de captures d'écran |
 | AndroidX Test (runner, rules, ext-junit) | 1.7.0 / 1.7.0 / 1.3.0 | Apache-2.0 | Tests instrumentés |
 | Compose UI Test (+ accessibility) | BOM | Apache-2.0 | Tests d'interface, Accessibility Test Framework |
+| Espresso Core (`espresso-core`) | 3.7.0 | Apache-2.0 | Tests instrumentés de tout module qui applique `lutrin.android.compose` (dépendance `androidTestImplementation` de la convention). Même projet et même version qu'`espresso-intents` ; licence vérifiée le 2026-11-26 dans le POM publié (dépôt Maven de Google) |
+| Robolectric android-all-instrumented (Android 11, 12, 16 : `11-robolectric-6757853-i7`, `12-robolectric-7732740-i7`, `16-robolectric-13921718-i7`) | voir catalogue | Apache-2.0 (code d'Android, AOSP) | Jars du framework Android que Robolectric charge, résolus par Gradle pour tourner hors ligne (plugin `lutrin.android.robolectric`) ; à mettre à jour avec Robolectric. Licence vérifiée le 2026-11-26 dans le POM publié (Maven Central) |
 | Espresso Intents (`espresso-intents`) | 3.7.0 | Apache-2.0 | Tests instrumentés de `app` : vérifie l'intent d'un lien externe confirmé (V7) sans lancer de navigateur (ADR 0022). Même projet et même version qu'`espresso-accessibility` ; tests seulement, absent de l'APK publié |
 | Hilt Android Testing (`hilt-android-testing`) | 2.60.1 | Apache-2.0 | Tests Robolectric de `app` : remplace le moteur MuPDF, que Robolectric ne peut pas charger, par un faux (`@TestInstallIn`, ADR 0014). Même projet et même licence que Hilt |
 | AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
@@ -121,14 +127,14 @@ cite ces polices**, que le plugin AboutLibraries ne détecte pas : elles sont d�
 
 | Outil | Version | Licence |
 |-------|---------|---------|
-| Gradle | 9.8.2 | Apache-2.0 |
-| Android Gradle Plugin | 9.5.1 | Apache-2.0 |
-| KSP | 2.3.13 | Apache-2.0 |
+| Gradle | 9.9.1 | Apache-2.0 |
+| Android Gradle Plugin | 9.5.2 | Apache-2.0 |
+| KSP | 2.3.14 | Apache-2.0 |
 | Room compiler (`room-compiler`, via KSP) et plugin Gradle Room (`androidx.room`, export du schéma dans `core/data/schemas/`) | 2.8.5 | Apache-2.0 |
 | ktlint / plugin Gradle ktlint | 1.8.0 / 14.2.0 | MIT |
-| detekt / compose-rules | 1.23.8 / 0.4.27 | Apache-2.0 |
+| detekt / compose-rules | 1.23.8 / 0.4.28 | Apache-2.0 |
 | Kover | 0.9.11 | Apache-2.0 |
-| Dokka | 2.2.0 | Apache-2.0 |
+| Dokka | 2.3.0 | Apache-2.0 |
 | Licensee | 1.14.1 | Apache-2.0 |
 | Plugin Gradle AboutLibraries (`com.mikepenz.aboutlibraries.plugin.android`) | 15.3.0 | Apache-2.0 (génère `res/raw/aboutlibraries.json` de `:app`, hors ligne : `offlineMode = true`, aucune récupération distante ; dépend d'Apache Ivy 2.6.0 et de maven-model-builder 3.10.0, Apache-2.0, dans le classpath du build seulement ; sortie identique à chaque génération, ADR 0030) |
 | Plugin Gradle Baseline Profile (`androidx.baselineprofile`) | 1.5.0 | Apache-2.0 (testé avec AGP < 10.0.0-alpha01) |

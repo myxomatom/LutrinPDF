@@ -133,3 +133,21 @@ l'interdiction d'impression.
 - Actions de suivi : essais sur appareil (vraie imprimante ou « Enregistrer au format PDF »,
   document protégé, impression interdite puis permise par le réglage, TalkBack) ; lot 4 :
   « Ajuster à la largeur » dans la feuille « Affichage ».
+
+## Amendement du 2026-11-26 — écart à `AGENTS.md` §10
+
+L'audit du 2026-11-26 (`docs/audits/2026-11-26-audit-complet.md`, constat X1) relève que
+`ImagePdfWriter` enfreint deux règles que cet ADR ne citait pas :
+
+- `AGENTS.md` §10 : toute écriture de PDF passe par `PdfWriter` ;
+- `AGENTS.md` §3 : la manipulation du format PDF reste dans `core:pdf`.
+
+L'écart est maintenu jusqu'au jalon M6, qui crée `PdfWriter` (dont `fromImages`, `SPEC.md` §4),
+pour les raisons de la décision ci-dessus : la mémoire doit rester bornée, et `PdfWriter`
+n'existe pas encore. Sa portée est limitée à l'impression d'un document protégé. Le fichier
+produit n'est remis qu'au service d'impression du système et n'est jamais enregistré par
+l'application.
+
+- **Action de suivi (M6)** : remplacer `ImagePdfWriter` par `PdfWriter.fromImages` dans
+  `core:pdf`, en gardant l'écriture page par page, puis supprimer le paquet d'écriture de
+  `feature:reader`. Aucun autre écrivain de PDF ne doit être ajouté hors de `core:pdf` d'ici là.

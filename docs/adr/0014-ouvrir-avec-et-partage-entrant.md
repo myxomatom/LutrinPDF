@@ -106,7 +106,8 @@ l'intent le permet, ou attendre les récents.
    - l'extra **`page` compte à partir de 1**, comme les numéros de page lus par l'utilisateur et
      comme `goToPage(page)` (« Va à la page 12 », §2.4). Il n'est lu que pour `ACTION_VIEW`
      (seul cas documenté par §2.4) et doit être un `Int` ; absent, d'un autre type, nul ou
-     négatif, il est ignoré (première page) ; au-delà de la dernière page, le lecteur ouvre la
+     négatif, il est ignoré (première page ; depuis l'[ADR 0015](0015-recents-et-reprise-de-lecture.md) §8,
+     la page enregistrée du document si elle existe) ; au-delà de la dernière page, le lecteur ouvre la
      dernière page (il est le seul à connaître le nombre de pages).
 6. **Erreurs** : un intent refusé ramène à la bibliothèque (la pile est vidée) avec un message
    (snackbar, français et anglais) selon la raison : aucun document reçu ; lien impossible à
