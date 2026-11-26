@@ -349,6 +349,25 @@ class MuPdfEngineInstrumentedTest {
         }
     }
 
+    @Test
+    fun aPageMissingFromThePageTreeIsUnreadableAndTheOthersStillRender() = runTest {
+        open(TestFiles.Pdf.PAGE_TREE_COUNT_MISMATCH).use { document ->
+            val page = PdfRect(0f, 0f, PAGE_WIDTH, PAGE_HEIGHT)
+            val bitmap = Bitmap.createBitmap(298, 421, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.MAGENTA)
+
+            val error = runCatching { document.renderPage(2, bitmap, page, scale = 0.5f, nightMode = false) }
+
+            assertThat(document.pageCount).isEqualTo(3)
+            assertThat(error.exceptionOrNull()).isInstanceOf(PdfError.Unreadable::class.java)
+            // Left as it was, and the next page renders into it.
+            assertThat(bitmap.getPixel(0, 0)).isEqualTo(Color.MAGENTA)
+            document.renderPage(1, bitmap, page, scale = 0.5f, nightMode = false)
+            assertThat(bitmap.getPixel(290, 415)).isEqualTo(Color.WHITE)
+            bitmap.recycle()
+        }
+    }
+
     private companion object {
         const val DARK = 0x60
         const val PAGE_WIDTH = 595f
