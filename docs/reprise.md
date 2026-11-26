@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-25.**
+> session de travail. **Dernière mise à jour : 2026-11-26.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -135,7 +135,10 @@ par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `intern
    - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
    (SDK_INT 36) ; sur JVM nue, DataStore retombe sur `File.renameTo`, qui n'écrase pas sous Windows.
-3. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
+3. **Audit complet du 2026-11-26** (`docs/audits/2026-11-26-audit-complet.md`) : corriger en
+   premier **A1** (une page illisible dans un PDF qui s'ouvre fait planter le lecteur), puis
+   amender l'ADR 0026 (X1) et mettre la documentation à jour (B1 à B4) ; ordre complet en §9.
+4. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
    - tester la build minifiée (R8) ;
    - tester `verifyReleasePermissions` de bout en bout ;
 
