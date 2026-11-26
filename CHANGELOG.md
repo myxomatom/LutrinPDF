@@ -9,21 +9,6 @@ changement y est signalé.
 
 ## [Non publié]
 
-### Modifié
-- **Réglage « Ignorer les restrictions du document »** (E3 › Lecture, ADR 0026), ancien « Ignorer
-  l'interdiction de copie » : il couvre la copie et l'impression ; même clé DataStore, la valeur
-  choisie est gardée. API interne renommée (`ignoreDocumentRestrictions`,
-  `SetIgnoreDocumentRestrictionsUseCase`).
-- **Barre flottante du lecteur** (E2, ADR 0026) : le bouton « pleine largeur » laisse la place au
-  bouton « Imprimer » ; l'ajustement à la largeur rejoindra la feuille « Affichage » (M5, lot 4).
-  Le double toucher zoome et revient au zoom d'origine comme avant.
-- **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
-  sélecteurs de `SearchBenchmark` et `OutlineBenchmark` corrigés (compteur de recherche décrit
-  « 1 000 résultats ou plus », attente du bouton de la table des matières, processus tué entre
-  deux itérations) ; Baseline Profile régénéré (recherche, tiroir de la table des matières,
-  sélection) ; défilement P90 4,7 ms, ouverture du PDF de 600 pages 819 ms, démarrage à froid
-  427 ms.
-
 ### Ajouté
 - **Impression** (F15, M5 lot 1, ADR 0026) : bouton « Imprimer » de la barre flottante, boîte
   d'impression du système, travail nommé d'après le document. Un document ouvert sans mot de passe
@@ -50,9 +35,10 @@ changement y est signalé.
   l'explique au lieu de copier. TalkBack : action « Copier le texte de la page » sur le
   document, poignées nommées, cibles de 48 dp. Jetons `color.reader.selection` et
   `selectionHandle`.
-- **Réglage « Ignorer l'interdiction de copie »** (E3, section « Lecture », ADR 0024) :
-  désactivé par défaut ; activé, le lecteur copie aussi le texte des documents dont l'auteur
-  l'interdit. Enregistré avec DataStore, suivi en direct par le lecteur.
+- **Réglage « Ignorer les restrictions du document »** (E3, section « Lecture », ADR 0024, étendu à
+  l'impression par l'ADR 0026) : désactivé par défaut ; activé, le lecteur copie le texte et imprime
+  aussi les documents dont l'auteur l'interdit. Enregistré avec DataStore, suivi en direct par le
+  lecteur.
 - **Recherche dans le document** (F07, V1, M4 lot 5, ADR 0023) : l'icône « Rechercher » de la
   barre du lecteur fait place à une barre de recherche ; la recherche part 400 ms après la
   dernière frappe ou à la validation du clavier, depuis la page affichée, avec bouclage, et
@@ -308,6 +294,44 @@ changement y est signalé.
 - Modèles d'issues et de pull request GitHub, `.editorconfig`, `.gitattributes`.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
+### Modifié
+- **Réglage « Ignorer l'interdiction de copie »** renommé « Ignorer les restrictions du document »
+  (ADR 0026) : même clé DataStore, la valeur choisie est gardée. API interne renommée
+  (`ignoreDocumentRestrictions`, `SetIgnoreDocumentRestrictionsUseCase`).
+- **Barre flottante du lecteur** (E2, ADR 0026) : le bouton « pleine largeur » laisse la place au
+  bouton « Imprimer » ; l'ajustement à la largeur rejoindra la feuille « Affichage » (M5, lot 4).
+  Le double toucher zoome et revient au zoom d'origine comme avant.
+- **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
+  sélecteurs de `SearchBenchmark` et `OutlineBenchmark` corrigés (compteur de recherche décrit
+  « 1 000 résultats ou plus », attente du bouton de la table des matières, processus tué entre
+  deux itérations) ; Baseline Profile régénéré (recherche, tiroir de la table des matières,
+  sélection) ; défilement P90 4,7 ms, ouverture du PDF de 600 pages 819 ms, démarrage à froid
+  427 ms.
+- Moteur PDF (ADR 0020) : `OutlineItem.pageIndex` et `PdfLink.Internal.pageIndex` deviennent
+  `destination: PdfDestination` ; `PdfDocument.search` émet des `SearchPageResult` (une par page)
+  au lieu de `SearchHit` ; `textAt(index, PdfRect)`, qui lisait en fait le texte entre deux
+  points et non celui d'un rectangle, est remplacé par `selectText`. Le PDF de 600 pages du jeu
+  de test (aussi utilisé par `:benchmark`) a désormais un sommaire.
+- **Build** : `:app` tolère les avertissements Dokka (`failOnWarning` reste actif ailleurs), car
+  Dokka 2.3 signale un lien KDoc non résolu dans `androidx` (`MenuHost`, hérité de
+  `MainActivity`). Prépare la montée à Dokka 2.3.
+- `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
+  désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
+- L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
+  passe (ADR 0017).
+- « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document
+  s'ouvre à la page enregistrée, sinon à la première ; l'extra `page` reste prioritaire.
+  L'argument de navigation `page` du lecteur vaut `NO_PAGE` (-1) par défaut.
+- CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
+- APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
+- `ContentOpener` et `DocumentDispatcherFactory` (core:pdf) passent en `internal` : le moteur PDF n'expose plus ces détails d'implémentation.
+- Android Gradle Plugin 9.5.0 → 9.5.1 ; synchronisation Gradle en parallèle dans Android Studio (`org.gradle.tooling.parallel`).
+- Dépendances : AGP 9.5.1 → 9.5.2, Gradle 9.8.2 → 9.9.1, KSP 2.3.13 → 2.3.14, Dokka 2.2.0 → 2.3.0,
+  Roborazzi 1.77.0 → 1.79.0, DataStore 1.2.1 → 1.3.0, UiAutomator 2.4.0 → 2.4.1, compose-rules
+  0.4.27 → 0.4.28, actions GitHub `setup-java` 6.3.0.
+- **Audit complet du 2026-11-26** (`docs/audits/2026-11-26-audit-complet.md`) : corrections de la
+  documentation (`docs/dependencies.md` aligné sur le catalogue de versions).
+
 ### Corrigé
 - Lecteur, mode page par page : un appui long sélectionne un mot sur toutes les pages (il ne
   marchait que sur la première, et basculait le plein écran ailleurs), et un toucher sur un lien
@@ -341,27 +365,6 @@ changement y est signalé.
   silencieuse quand un appel croise `close()` ; fermeture robuste des ressources ; l'enveloppe
   `PDFDocument` de MuPDF est détruite à l'ouverture (elle gardait le fichier ouvert jusqu'au GC).
 - Dates PDF : forme `Z00'00'` reconnue, décalages horaires invalides refusés.
-
-### Modifié
-- Moteur PDF (ADR 0020) : `OutlineItem.pageIndex` et `PdfLink.Internal.pageIndex` deviennent
-  `destination: PdfDestination` ; `PdfDocument.search` émet des `SearchPageResult` (une par page)
-  au lieu de `SearchHit` ; `textAt(index, PdfRect)`, qui lisait en fait le texte entre deux
-  points et non celui d'un rectangle, est remplacé par `selectText`. Le PDF de 600 pages du jeu
-  de test (aussi utilisé par `:benchmark`) a désormais un sommaire.
-- **Build** : `:app` tolère les avertissements Dokka (`failOnWarning` reste actif ailleurs), car
-  Dokka 2.3 signale un lien KDoc non résolu dans `androidx` (`MenuHost`, hérité de
-  `MainActivity`). Prépare la montée à Dokka 2.3.
-- `:benchmark` : les gestes de défilement laissent libre le quart bas de l'écran, où se trouve
-  désormais la barre flottante du lecteur (ADR 0018) ; les mesures de l'ADR 0012 sont à refaire.
-- L'écran d'erreur (V8) ne traite plus les documents protégés : le lecteur demande leur mot de
-  passe (ADR 0017).
-- « Ouvrir avec » (ADR 0014, amendé par l'ADR 0015) : sans extra `page` valide, le document
-  s'ouvre à la page enregistrée, sinon à la première ; l'extra `page` reste prioritaire.
-  L'argument de navigation `page` du lecteur vaut `NO_PAGE` (-1) par défaut.
-- CI : les actions GitHub sont épinglées par SHA de commit (et non plus par tag mutable), la version restant en commentaire ; Dependabot mettra ces épinglages à jour.
-- APK sans bloc de métadonnées de dépendances chiffré par Google (gênant pour F-Droid).
-- `ContentOpener` et `DocumentDispatcherFactory` (core:pdf) passent en `internal` : le moteur PDF n'expose plus ces détails d'implémentation.
-- Android Gradle Plugin 9.5.0 → 9.5.1 ; synchronisation Gradle en parallèle dans Android Studio (`org.gradle.tooling.parallel`).
 
 ### Sécurité
 - JavaScript PDF désactivé à l'ouverture ; messages de MuPDF jamais journalisés.

@@ -1,7 +1,7 @@
 # Architecture
 
 > Architecture décrite par `SPEC.md` §4. Les 11 modules existent depuis le jalon M0 et se
-> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-09 : `feature:tools` et
+> remplissent au fil des jalons (`ROADMAP.md` §0). État au 2026-11-26 (M4 terminé, M5 en cours) : `feature:tools` et
 > `feature:assistant` sont encore vides ; le module de test `:benchmark` s'y ajoute en M2
 > (ADR 0012).
 
@@ -10,7 +10,8 @@
 - **Clean Architecture + MVVM**, flux de données unidirectionnel (UDF).
 - `core:domain` est en Kotlin pur (aucune dépendance Android).
 - Un module `feature:*` ne dépend jamais d'un autre module `feature:*`.
-- MuPDF n'est visible que dans `core:pdf`, derrière `PdfEngine` et `PdfWriter`.
+- MuPDF n'est visible que dans `core:pdf`, derrière `PdfEngine` et, à partir de M6, `PdfWriter` (aujourd'hui seul `ImagePdfWriter`,
+  écart provisoire, voir « Impression »).
 - Les dispatchers sont injectés ; aucun travail lourd sur le thread principal.
 
 ## Modules
@@ -20,12 +21,12 @@
 | `:app` | Point d'entrée, navigation, assemblage de l'injection de dépendances |
 | `:core:domain` | Modèles, interfaces de repository, cas d'usage (`operator fun invoke`) |
 | `:core:data` | Repositories, Room (récents, positions, signets), DataStore (préférences) |
-| `:core:pdf` | `PdfEngine` / `PdfWriter` et leur implémentation MuPDF |
+| `:core:pdf` | `PdfEngine` et son implémentation MuPDF ; `PdfWriter` est prévu en M6 |
 | `:third-party:mupdf` | MuPDF compilé depuis son sous-module (Java + JNI, NDK) ; seul `core:pdf` en dépend (ADR 0007) |
 | `:core:ui` | Thème Material 3 (jetons de `docs/design/design-tokens.json`), composants partagés, portées de la transition vignette → lecteur (ADR 0019) |
-| `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) |
+| `:core:testing` | Fakes, utilitaires de test, jeu de PDF de test (`SPEC.md` §9) ; expose `core:pdf` (`api`) |
 | `:feature:library` | Bibliothèque / récents (E1) |
-| `:feature:reader` | Lecteur, recherche, table des matières, dialogues (E2, V1–V8) |
+| `:feature:reader` | Lecteur, recherche, table des matières, liens, sélection, impression, dialogues (E2, V1–V8) |
 | `:feature:settings` | Paramètres, À propos, licences (E3, E4, E10) |
 | `:feature:tools` | Fusion, extraction, conversion, progression (E5–E9) |
 | `:feature:assistant` | AppFunctions, intents et raccourcis pour assistants IA |
@@ -42,22 +43,27 @@ flowchart TD
     app --> fa[":feature:assistant"]
     app --> data[":core:data"]
     app --> pdf[":core:pdf"]
+    app --> ui
+    app --> domain
 
-    fl & fr & fs & ft --> ui[":core:ui"]
+    fl & fr & fs & ft & fa --> ui[":core:ui"]
     fl & fr & fs & ft & fa --> domain[":core:domain"]
+    fr -->|"rendu, texte, impression"| pdf
 
     data --> domain
     data -->|"vignettes (PdfEngine)"| pdf
     pdf --> domain
     pdf --> mupdf[":third-party:mupdf"]
 
-    testing[":core:testing"] -.tests.-> domain
+    testing[":core:testing"] -.tests.-> pdf
     bench[":benchmark"] -.mesure.-> app
 ```
 
 `core:pdf` et `core:data` implémentent les interfaces déclarées dans `core:domain` ;
-`:app` les relie par injection de dépendances. Les features ne connaissent que le domaine
-(et `core:pdf` pour le lecteur). `core:data` utilise `PdfEngine` pour dessiner les vignettes
+`:app` les relie par injection de dépendances. Les features ne connaissent que `core:ui` et le domaine
+(plus `core:pdf` pour le lecteur ; `feature:assistant` et `feature:tools` les reçoivent du plugin
+`lutrin.android.feature`, même vides). `core:testing` expose `core:pdf` en `api`, donc le domaine
+par transitivité ; les modules `feature:*` l'ajoutent à leurs tests (plugin `lutrin.android.feature`). `core:data` utilise `PdfEngine` pour dessiner les vignettes
 des récents, sans voir aucun type MuPDF (ADR 0015).
 
 ## Moteur PDF (`core:pdf`)
@@ -144,11 +150,13 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    e3["SettingsScreen (E3)"] -->|"onDynamicColorChange, onPagePreviewChange"| vm["SettingsViewModel"]
-    vm -->|"SetDynamicColorUseCase, SetPagePreviewUseCase"| repo["SettingsRepository"]
+    e3["SettingsScreen (E3)"] -->|"onDynamicColorChange, onPagePreviewChange,<br/>onIgnoreDocumentRestrictionsChange"| vm["SettingsViewModel"]
+    vm -->|"SetDynamicColorUseCase, SetPagePreviewUseCase,<br/>SetIgnoreDocumentRestrictionsUseCase"| repo["SettingsRepository"]
     repo --> ds["DataStore Preferences (fichiers privés)"]
     repo -->|"Flow&lt;AppSettings&gt;"| act["MainActivity → LutrinTheme(dynamicColor)"]
     repo -->|"Flow&lt;AppSettings&gt;"| vm
+    v6["Feuille Affichage (V6, lecteur)"] -->|"SetScrollModeUseCase"| repo
+    repo -->|"AppSettings(dynamicColor, scrollMode, pagePreview, ignoreDocumentRestrictions)"| rvm["ReaderViewModel"]
 ```
 
 - `AppSettings`, `SettingsRepository` et les cas d'usage sont dans `core:domain` ;
@@ -161,6 +169,10 @@ flowchart LR
   et écrit le mode (feuille « Affichage ») par ses propres cas d'usage, sans dépendre de
   `feature:settings` ; l'aperçu se règle dans les Paramètres (section « Lecture »), et un
   lecteur ouvert suit le changement.
+- `AppSettings.ignoreDocumentRestrictions` (ADR 0024, amendé par l'ADR 0026), désactivé par défaut,
+  se règle aussi dans « Lecture ». `allowsTextCopy(documentAllowsCopy)` et
+  `allowsPrinting(documentAllowsPrinting)` combinent la permission du document et ce réglage. La clé
+  DataStore reste `ignore_copy_restriction` (pas de migration).
 
 ## Récents et reprise de lecture (`feature:library`, `feature:reader`, `core:data`)
 
@@ -233,6 +245,75 @@ sequenceDiagram
 - `LibraryViewModel` est rattaché à `MainActivity` ; `LutrinApp` reçoit son état en
   `StateFlow` et reste testable sans Hilt.
 
+## Navigation et texte (M4, `feature:reader`, `core:pdf`)
+
+Le lecteur est découpé en contrôleurs détenus par `ReaderViewModel`, un par fonction : le
+ViewModel leur fournit la page courante, le document et les dispatchers injectés, et l'écran
+n'observe que leurs `StateFlow` et leurs effets. Aucun ne voit de `Context`.
+
+```mermaid
+flowchart LR
+    rvm["ReaderViewModel"] --> link["LinkController (links)"]
+    rvm --> search["SearchController (search)"]
+    rvm --> sel["SelectionController (selection)"]
+    rvm -->|"ReaderOutline (état Ready)"| outline["OutlineDrawer (ui)"]
+    rvm -->|"printJob()"| job["PrintJob"]
+    link -->|"CheckExternalLinkUseCase"| domain["core:domain"]
+    search & sel & rvm --> doc["PdfDocument (core:pdf)"]
+    job -->|"startPrinting(context, job), par ReaderRoute"| pm["PrintManager"]
+    pm --> adapter["DocumentPrintAdapter"]
+    adapter -->|"PrintSource.Original"| copy["copie du fichier d'origine"]
+    adapter -->|"PrintSource.Rendered"| img["ImagePdfWriter (images des pages)"]
+    img --> doc
+    settings["AppSettings.allowsPrinting"] --> rvm
+```
+
+**API texte et destinations (ADR 0020).** `PdfEngine` expose le sommaire, les liens avec leur
+destination (page et position), la recherche page par page avec extraits, `textAt` et la
+sélection (mots, caractères, lignes), `isOnText` avec tolérance, et les permissions du document
+(`canCopyText`, `canPrint`) rapportées sans être appliquées par le moteur.
+
+**Table des matières (V2, ADR 0021).** Le ViewModel lit le sommaire une fois le document affiché,
+hors du fil principal, et le met à plat dans `ReaderUiState.Ready.outline` (`ReaderOutline` :
+entrées `OutlineEntry`, ensemble déplié, section courante). `OutlineDrawer` (`ModalNavigationDrawer`,
+`OutlineHost`) l'affiche, paresseux, ouvert sur la section courante ; les entrées externes passent
+par `onExternalOutlineEntry`, donc par `LinkController`.
+
+**Liens (V7, ADR 0022).** `CheckExternalLinkUseCase` (`core:domain`) n'accepte que `http`, `https`
+et `mailto`, après nettoyage de l'URI. `LinkController` suit les liens internes (effet `GoTo`, avec
+« Revenir ») et garde l'URI externe en attente (`externalLink`) pour la confirmation
+`ExternalLinkDialog` ; l'ouverture (`ACTION_VIEW`) est faite par la route, sans permission
+réseau.
+
+**Recherche (V1, ADR 0023).** `SearchController` lance la recherche 400 ms après la frappe (ou aussitôt
+à la validation), depuis la page courante, annule la précédente et publie `SearchState` et
+`SearchEffect.Reveal` ; les surlignages sont dessinés par `SearchHighlightLayer` dans `PdfPage`.
+
+**Sélection et copie (F08, ADR 0024).** `SelectionController` expose `StateFlow<TextSelection?>` (une
+page à la fois) et les effets `Copy`, `CopyRefused`, `NothingToCopy` ; l'écran copie dans le
+presse-papiers (`SelectionEffectsHandler`), le texte d'un document protégé étant marqué sensible.
+La copie obéit à `AppSettings.allowsTextCopy`.
+
+**Polices CJK (ADR 0025).** Aucune police CJK n'est embarquée (la limite de 15 Mo par ABI serait
+dépassée) : MuPDF dessine le texte CJK non incorporé avec les polices du système. Le build de
+MuPDF (`MUPDF_EMBEDDED_RESOURCES`, `build-logic`) n'embarque que les polices URW et les motifs de
+césure.
+
+## Impression (M5, `feature:reader`, ADR 0026)
+
+- Le bouton « Imprimer » de la barre flottante appelle `ReaderViewModel.printJob()`, qui relit à
+  chaque appui la permission (`allowsPrinting(document.canPrint)`) et rend un `PrintJob` (nom,
+  `PrintSource`, dispatcher d'E/S injecté), ou `null` si l'impression est interdite. `ReaderRoute`
+  le passe à `startPrinting(context, job)` (paquet `print`), qui appelle `PrintManager.print`.
+- `DocumentPrintAdapter` répond au service d'impression : `onLayout` ne dépend jamais du papier ;
+  `onWrite` copie le fichier d'origine par blocs de 64 Kio (`PrintSource.Original`), ou, pour un
+  document ouvert avec un mot de passe (`PrintSource.Rendered`), dessine les seules pages
+  demandées à 150 ppp (abaissés au-delà de 8 millions de pixels) dans un PDF d'images. Annulation
+  vérifiée entre deux blocs ou pages ; le PDF déchiffré n'est jamais écrit.
+- **Écart provisoire à `AGENTS.md` §10** (toute écriture passe par `PdfWriter`) : `ImagePdfWriter`
+  écrit ce PDF d'images lui-même, page par page, dans `feature:reader`, car `PdfWriter` n'existe
+  pas encore. Il sera migré dans `core:pdf`, derrière `PdfWriter`, en M6.
+
 ## Flux de données d'un écran
 
 ```mermaid
@@ -257,14 +338,16 @@ sequenceDiagram
   | Plugin | Appliqué à | Ajoute |
   |--------|-----------|--------|
   | `lutrin.android.application` | `:app` | AGP application, Licensee, `verifyReleasePermissions`, émulateurs gérés |
-  | `lutrin.android.library` | modules Android `core:*` | AGP bibliothèque |
+  | `lutrin.android.library` | `core:ui`, `core:data`, `core:pdf`, `core:testing`, `feature:*` (par `lutrin.android.feature`) | AGP bibliothèque |
+  | `lutrin.android.test` | `:benchmark` | AGP `com.android.test`, ktlint et detekt (ni Kover, ni Dokka) |
+  | `lutrin.mupdf` | `:third-party:mupdf` | tâche `generateMupdfResources` (ADR 0013) ; le module applique `android.library` directement |
   | `lutrin.android.compose` | `app`, `core:ui`, `feature:*` | Compose (BOM, compilateur) |
-  | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` |
+  | `lutrin.android.feature` | `feature:*` | bibliothèque + Compose + Hilt + `core:ui` / `core:domain` (`implementation`), `core:testing` en test |
   | `lutrin.jvm.library` | `core:domain` | Kotlin/JVM pur |
-  | `lutrin.hilt` | `app`, `feature:*` | Hilt + KSP |
+  | `lutrin.hilt` | `app`, `core:data`, `core:pdf`, `feature:*` (ces derniers par `lutrin.android.feature`) | Hilt + KSP |
   | `lutrin.android.robolectric` | `app`, `core:ui`, `core:data`, `feature:library`, `feature:reader`, `feature:settings` | Robolectric hors ligne (jars Android résolus par Gradle) |
 
-  Tous appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17.
+  Les plugins `android.application`, `android.library` et `jvm.library` appliquent ktlint, detekt, Kover et Dokka, `allWarningsAsErrors` et Java 17 ; `android.test` seulement ktlint et detekt.
 - Versions : uniquement dans `gradle/libs.versions.toml`. Dépôts : uniquement dans
   `settings.gradle.kts` (`FAIL_ON_PROJECT_REPOS`).
 - Identifiant d'application : `io.github.myxomatom.lutrin` (`.debug` en debug, ADR 0006).

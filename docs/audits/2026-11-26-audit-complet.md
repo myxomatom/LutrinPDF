@@ -44,7 +44,7 @@ d'erreur sans contenu ni chemin.
 
 | # | Gravité | Constat | Suivi |
 |---|---------|---------|-------|
-| X1 | Moyenne | `feature/reader/.../print/ImagePdfWriter.kt` écrit un PDF d'images à la main dans un module feature. AGENTS §10 impose que toute écriture passe par `PdfWriter`, et §3 réserve la manipulation du PDF à `core:pdf`. L'ADR 0026 (l. 43-46) assume l'écart pour borner la mémoire, sans citer ces règles ni prévoir de migration. Action : amender l'ADR 0026, puis déplacer cet écrivain derrière `PdfWriter` dans `core:pdf` au jalon M6 | ⏳ |
+| X1 | Moyenne | `feature/reader/.../print/ImagePdfWriter.kt` écrit un PDF d'images à la main dans un module feature. AGENTS §10 impose que toute écriture passe par `PdfWriter`, et §3 réserve la manipulation du PDF à `core:pdf`. L'ADR 0026 (l. 43-46) assume l'écart pour borner la mémoire, sans citer ces règles ni prévoir de migration. Action : amender l'ADR 0026, puis déplacer cet écrivain derrière `PdfWriter` dans `core:pdf` au jalon M6 | ✅ ADR 0026 amendé · 📌 migration en M6 |
 
 Relevé par trois revues (moteur, dérive, architecture), avec des gravités allant de basse à haute.
 La gravité moyenne a été retenue parce que l'écart est délibéré et en partie documenté.
@@ -95,11 +95,11 @@ bien couverte ; exclusions Kover limitées au code généré.
 
 | # | Gravité | Constat | Suivi |
 |---|---------|---------|-------|
-| B1 | Moyenne | `docs/dependencies.md` a 7 versions qui ne correspondent plus au catalogue (AGP 9.5.1 au lieu de 9.5.2, Gradle, Dokka, KSP, DataStore, Roborazzi, compose-rules) et n'a pas `javax.inject` (embarqué dans l'APK), `espresso-core` ni Robolectric android-all (AGENTS §1.4, §6) | ⏳ |
-| B2 | Moyenne | Le README s'arrête à « M3 terminé, M4 à venir ». `architecture.md` (2026-11-09) ignore M4 et M5, et son diagramme n'a pas l'arête `feature:reader → core:pdf` | ⏳ |
-| B3 | Moyenne | La décision F12 « zoom non mémorisé » n'a changé que `SPEC.md:40`. SPEC §5 (l. 240), ROADMAP (l. 19), `reprise.md` (l. 134) et l'ADR 0015 parlent encore du zoom et du décalage | ⏳ |
-| B4 | Moyenne | `docs/reprise.md` décrit encore 7 branches fusionnées et validées comme « pas encore sur appareil », cite « ADR 0001 à 0025 » et omet les points ouverts 17 et 18 | ⏳ |
-| B5 | Basse | CHANGELOG avec deux sections « Modifié » et aucune montée de version après AGP 9.5.1. ADR 0009, 0010, 0014 et 0015 amendés sans renvoi depuis le texte d'origine. Point ouvert n° 11 encore « à trancher avant M3 ». F27 absent des critères d'acceptation (SPEC §8) | ⏳ |
+| B1 | Moyenne | `docs/dependencies.md` a 7 versions qui ne correspondent plus au catalogue (AGP 9.5.1 au lieu de 9.5.2, Gradle, Dokka, KSP, DataStore, Roborazzi, compose-rules) et n'a pas `javax.inject` (embarqué dans l'APK), `espresso-core` ni Robolectric android-all (AGENTS §1.4, §6) | ✅ |
+| B2 | Moyenne | Le README s'arrête à « M3 terminé, M4 à venir ». `architecture.md` (2026-11-09) ignore M4 et M5, et son diagramme n'a pas l'arête `feature:reader → core:pdf` | ✅ |
+| B3 | Moyenne | La décision F12 « zoom non mémorisé » n'a changé que `SPEC.md:40`. SPEC §5 (l. 240), ROADMAP (l. 19), `reprise.md` (l. 134) et l'ADR 0015 parlent encore du zoom et du décalage | ✅ |
+| B4 | Moyenne | `docs/reprise.md` décrit encore 7 branches fusionnées et validées comme « pas encore sur appareil », cite « ADR 0001 à 0025 » et omet les points ouverts 17 et 18 | ✅ |
+| B5 | Basse | CHANGELOG avec deux sections « Modifié » et aucune montée de version après AGP 9.5.1. ADR 0009, 0010, 0014 et 0015 amendés sans renvoi depuis le texte d'origine. Point ouvert n° 11 encore « à trancher avant M3 ». F27 absent des critères d'acceptation (SPEC §8) | ✅ |
 
 Conformes : chaînes FR et EN complètes dans les 4 modules ; thème `core:ui` identique à
 `design-tokens.json` ; écarts aux maquettes couverts par les ADR 0015, 0018 et 0026 ; aucun code
@@ -133,4 +133,6 @@ Confirmation possible avec `./gradlew check --dry-run`.
 4. **A2, A3, Q1, Q2, T1, T2**, puis les points de gravité basse au fil de l'eau. S1 et S5 avant la
    v1.0.
 
-Rapports détaillés des six revues : non versionnés, conservés dans le scratchpad de la session.
+Les corrections de code, de tests et de build sont détaillées, lot par lot, dans
+[`2026-11-26-plan-de-correction.md`](2026-11-26-plan-de-correction.md). La documentation
+(B1 à B5, X1 côté ADR) a été corrigée le 2026-11-26.

@@ -7,15 +7,24 @@ Aucune publicité, aucun traqueur, aucune permission réseau.
 offline: no ads, no tracking, no network permission. Read, search, merge and convert
 PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpack Compose.*
 
-> 🚧 **Statut : jalon M3 (fichiers et récents) terminé, M4 (navigation et texte) à venir.** On peut ouvrir un PDF depuis la
-> bibliothèque, ou depuis une autre application avec « Ouvrir avec » ou « Partager », et le
-> lire : défilement continu ou page par page, zoom, plein écran. La bibliothèque propose de
-> reprendre le dernier document lu (carte « Reprendre la lecture ») et liste les autres
-> documents récents, avec leur vignette ; elle les rouvre à la page où la lecture s'est arrêtée,
-> et au retour la page se replie vers sa vignette ;
-> un document se retire de la liste (menu « ⋮ » ou écran d'erreur) et la liste se vide depuis
-> les paramètres. Un PDF protégé par mot de passe s'ouvre après saisie du mot de passe, qui
-> n'est jamais enregistré. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
+> 🚧 **Statut : jalons M0 à M4 terminés (M4 le 2026-11-21), M5 (finitions du MVP) en cours.**
+> Fonctions disponibles :
+>
+> - lecture : défilement continu ou page par page, zoom net jusqu'à 800 %, plein écran,
+>   curseur et indicateur de page, « Aller à la page » ;
+> - ouverture depuis la bibliothèque, ou depuis une autre application avec « Ouvrir avec » ou
+>   « Partager » ; documents protégés par mot de passe (jamais enregistré) ;
+> - récents avec vignettes, carte « Reprendre la lecture », reprise à la dernière page lue,
+>   retrait d'un document ou vidage de la liste ;
+> - table des matières, recherche dans le document, sélection et copie du texte, liens
+>   (internes, et externes après confirmation) ;
+> - impression (F15, ADR 0026), fusionnée dans `main` (PR #50) mais **pas encore essayée sur
+>   appareil** ;
+> - paramètres : couleurs dynamiques, aperçu de la page, « Ignorer les restrictions du
+>   document », mode de défilement (réglé depuis le lecteur).
+>
+> À venir en M5 : « À propos », partage, propriétés, thèmes. Le README ne contient pas encore
+> de captures d'écran. État détaillé et écarts avec les maquettes : `ROADMAP.md` §0 et ADR 0009.
 >
 > Pour essayer : chaque exécution de la CI publie un artefact **`lutrin-debug-apk`** (onglet
 > *Actions* de GitHub) ; installez `app-arm64-v8a-debug.apk` sur la plupart des téléphones.
@@ -69,7 +78,7 @@ Règles de validation : ADR 0014.
 
 Kotlin, Jetpack Compose, Material 3, Clean Architecture + MVVM (flux unidirectionnel),
 Hilt, Room, DataStore, coroutines et Flow. Moteur PDF : **MuPDF**, compilé depuis les
-sources et isolé derrière les interfaces `PdfEngine` / `PdfWriter` du module `core:pdf`.
+sources et isolé derrière les interfaces `PdfEngine` et `PdfWriter` (prévu en M6) du module `core:pdf`.
 Voir [`docs/architecture.md`](docs/architecture.md) et l'[ADR 0001](docs/adr/0001-moteur-pdf-mupdf.md).
 
 ## Compilation et tests

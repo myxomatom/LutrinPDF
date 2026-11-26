@@ -12,236 +12,117 @@
 | M0 Fondations | ✅ Terminé (sauf la vérification de reproductibilité F-Droid, reportée) |
 | M1 Moteur PDF | ✅ Terminé, audit du 2026-11-04 corrigé |
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
-| M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant faits (ADR 0014) ; récents, vignettes, permissions persistées et reprise de la dernière page faits (ADR 0015, PR #16) ; « Retirer des récents » et « Vider les récents » faits (ADR 0016, PR #18) ; dialogue de mot de passe (V4) et documents protégés dans les récents faits (ADR 0017, branche `feat/pdf-password`) ; validé sur un Xiaomi 23013PC75G (Android 15) : tests instrumentés de `core:pdf` (9, dont les PDF chiffrés) et de `app` (6) verts, essais manuels du mainteneur réussis, dont un vrai PDF chiffré. Non essayée sur appareil : la migration Room 1→2 d'une base existante |
-| M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (PR #27, #30, #31, #32, #39 et polices CJK, ADR 0020 à 0025) : tests instrumentés de `core:pdf` (21) et de `app` (12) verts le 2026-11-21 sur le Xiaomi 23013PC75G (Android 15) ; scénarios `SearchBenchmark` et `OutlineBenchmark` exécutés et Baseline Profile régénéré le 2026-11-21 (ADR 0012, « Mesures M4 ») ; liste des essais [`verification-appareil-m4.md`](verification-appareil-m4.md) entièrement validée par le mainteneur le 2026-11-21 |
-| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026, branche `feat/reader-print`, pas encore sur appareil) ; « À propos » en parallèle |
+| M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
+| M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
+| M5 Finitions MVP | 🟡 En cours : lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; « À propos » en parallèle ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
-Ce qui est dans `main` et fonctionne sur appareil (vérifié par le mainteneur avec l'APK de debug) :
+M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
+`core:pdf` (21) et de `app` (12) verts, benchmarks et Baseline Profile régénérés le 2026-11-21,
+et la liste [`verification-appareil-m4.md`](verification-appareil-m4.md) entièrement validée par
+le mainteneur (53 essais, dont la migration Room 1→2 d'une base existante et le temps d'ouverture
+par une vraie URI SAF). **Cette liste fait foi** pour ce qui a été essayé sur appareil.
 
-- **E1 Bibliothèque**, état vide de la maquette : « Ouvrir un fichier » (sélecteur système, PDF
-  seulement), icône Paramètres. Pas encore de récents (M3).
-- **E2 Lecteur** : défilement continu, zoom au pincement et double tap de 25 à 800 % (corrigé
-  dans la PR #9), rendu net de la partie visible, plein écran au tap, curseur et indicateur de page.
-- **V8 Erreur** : document endommagé, non PDF, inaccessible, protégé par mot de passe.
-- **E3 Paramètres**, section « Apparence » seulement : interrupteur « Couleurs dynamiques »,
-  activé par défaut, enregistré avec DataStore (ADR 0010).
-- Moteur MuPDF 1.28.6 compilé depuis les sources, sans fuite à l'ouverture ni à la fermeture.
+Ce qui est dans `main` :
 
-Sur la branche de la session suivante, testé seulement sous Robolectric : **mode page par page**
-(F03, ADR 0011) et feuille « Affichage » (V6, section « Défilement » seulement) ouverte par
-« Plus d'options », choix enregistré avec DataStore. **À essayer sur appareil en priorité** :
-glissement entre pages, zoom dans la page, rendu net après un zoom, changement de mode.
+- **E1 Bibliothèque** : récents (Room, 50 au plus, vignettes, progression, cadenas des documents
+  protégés), carte « Reprendre la lecture », menu « ⋮ » « Retirer des récents » avec « Annuler »,
+  « Ouvrir un fichier » (sélecteur système), « Ouvrir avec » et partage entrant, accès aux
+  paramètres.
+- **E2 Lecteur** : défilement continu ou page par page (F03), zoom 25 à 800 % net, plein écran au
+  tap, curseur et indicateur de page, reprise de la dernière page, aller à la page (V3), table des
+  matières (V2), liens internes et externes (V7), recherche (V1), sélection et copie (F08),
+  **impression** depuis la barre flottante (F15, ADR 0026, pas encore essayée sur appareil).
+- **V4** mot de passe, **V8** erreurs, **V6** feuille « Affichage » (section « Défilement »
+  seulement ; l'ajustement à la largeur n'a plus de bouton depuis l'ADR 0026 et y reviendra au
+  lot 4 de M5).
+- **E3 Paramètres** (`feature/settings`) : « Apparence » (couleurs dynamiques), « Lecture »
+  (aperçu de la page, « Ignorer les restrictions du document »), « Données et confidentialité »
+  (« Vider les récents »).
+- Moteur MuPDF 1.28.6 compilé depuis les sources ; texte CJK non incorporé dessiné avec les
+  polices du système (ADR 0025). Module `:benchmark` (ADR 0012) : l'activité réservée
+  `BenchmarkReaderActivity` (`app/src/benchmark/`) n'existe que dans les builds de mesure, `check`
+  vérifie qu'elle n'est pas dans le build release.
 
-Module `:benchmark` (ADR 0012, exécuté le 2026-11-08 sur un Xiaomi 23013PC75G sous Android 15,
-chiffres dans l'ADR) : Macrobenchmark (démarrage, ouverture du PDF de 600 pages, défilement continu
-et page par page) et générateur du Baseline Profile. Les builds `benchmarkRelease` /
-`nonMinifiedRelease` de `:app` ont une activité réservée, `BenchmarkReaderActivity`
-(`app/src/benchmark/`), qui ouvre le PDF de test embarqué sans sélecteur ; `check` vérifie
-qu'elle n'est pas dans le build release.
+Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, sont omises) :
 
-Sur la branche `feat/open-with` (pas encore sur appareil) : **« Ouvrir avec » et partage
-entrant** (F01, ADR 0014). `MainActivity` répond à `ACTION_VIEW` (`content://`, PDF) et
-`ACTION_SEND` (un PDF) ; le document s'ouvre seul dans le lecteur et le retour ramène à
-l'application appelante ; extra `page` à partir de 1 ; refus (`file://`, lien web, autre type,
-URI de Lutrin) avec un message sur la bibliothèque. Validation dans
-`ParseIncomingDocumentUseCase` (`core:domain`). **À essayer sur appareil** : ouvrir un PDF depuis
-Fichiers, Gmail et Drive avec « Ouvrir avec » puis avec « Partager », le retour arrière, une
-rotation pendant l'ouverture, et `adb shell am start -a android.intent.action.VIEW -t
-application/pdf -d <uri content://> --ei page 3`. **Mesurer aussi le temps d'ouverture par une
-vraie URI SAF** reçue d'une autre application (les benchmarks de l'ADR 0012 ouvrent un fichier du
-cache).
-
-Sur la branche `feat/recents` (pas encore sur appareil) : **récents et reprise de lecture**
-(F11, F12, ADR 0015). Base Room `lutrin.db` (`core:data`, schéma exporté dans
-`core/data/schemas/`), au plus 50 récents ; chaque ouverture réussie prend une permission
-persistante quand le système l'accorde (sélecteur) ; la bibliothèque liste les récents comme la
-maquette E1 et dessine les vignettes (par `PdfEngine`, dans `noBackupFilesDir/thumbnails/`)
-quand elle les montre ; le lecteur reprend à la page enregistrée (une seconde après le dernier
-changement, et à la fermeture), l'extra `page` d'« Ouvrir avec » restant prioritaire. **À
-essayer sur appareil** : ouvrir par le sélecteur, quitter, redémarrer le téléphone, rouvrir
-depuis la liste (permission persistée) ; un document d'« Ouvrir avec » Gmail ou Drive dans la
-liste après fermeture de l'application (attendu : écran V8 « inaccessible ») ; un fichier
-supprimé depuis « Fichiers » ; la vignette qui apparaît au retour dans la bibliothèque ; la
-reprise après rotation et après la mort du processus ; grande police et thème sombre.
-
-Sur la branche `feat/remove-recents` (pas encore sur appareil) : **retirer un document des
-récents et vider la liste** (F11, ADR 0016). Menu « ⋮ » de chaque ligne avec « Retirer des
-récents » : la ligne disparaît, un message propose « Annuler » pendant 10 s, puis le retrait a
-lieu (permission rendue, vignette supprimée, page oubliée), sauf si le document a été rouvert
-entre-temps. L'écran V8 propose « Retirer des récents » pour un document de la liste qui ne
-s'ouvre plus ; les paramètres (E3) ont « Vider les récents » avec un dialogue de confirmation,
-désactivé quand la liste est vide. **À essayer sur appareil** : retirer puis « Annuler », retirer
-puis attendre, retirer puis tourner l'écran (le retrait est confirmé), le tout avec TalkBack ;
-« Vider les récents » puis vérifier que les permissions sont rendues
-(`adb shell dumpsys activity permissions` ou `contentResolver.persistedUriPermissions`) ;
-V8 « Retirer des récents » sur un fichier supprimé depuis « Fichiers ».
-
-Sur la branche `feat/pdf-password` (pas encore sur appareil) : **documents protégés par mot de
-passe** (F10, V4, ADR 0017). Un PDF chiffré ouvre le dialogue « Document protégé » au-dessus du
-lecteur ; un mauvais mot de passe affiche une erreur annoncée et garde le texte sélectionné ;
-essais illimités. Le mot de passe n'est jamais gardé (ni état, ni `SavedStateHandle`, ni Room,
-ni journaux) ; le champ n'est pas sauvegardable, donc vide après une rotation. Un document
-ouvert avec son mot de passe entre dans les récents avec un cadenas, sans vignette (schéma Room
-**version 2**, colonne `is_protected`, migration automatique testée avec `MigrationTestHelper`).
-Trois PDF chiffrés de plus dans le jeu de test (RC4, AES-128, mot de passe propriétaire seul).
-**À essayer sur appareil** : ouvrir chacun des PDF chiffrés du jeu de test (mots de passe dans
-`core/testing/README.md`) par le sélecteur et par « Ouvrir avec » ; mauvais mot de passe avec
-TalkBack (annonce de l'erreur) ; clavier sans suggestions ; aucun gestionnaire de mots de passe
-(Google, Bitwarden…) ne propose d'enregistrer le mot de passe ; rotation pendant la saisie
-(champ vide attendu) ; `adb shell am kill` pendant la lecture d'un document protégé (le mot de
-passe est redemandé) ; mise à jour depuis une version avec des récents (migration 1 → 2) ;
-lancer `:core:pdf:connectedDebugAndroidTest` (nouveaux tests des PDF chiffrés, jamais
-exécutés).
-
-Historique des PR : #4 M1, #6 lecteur, #7 audit et bibliothèque, #9 zoom et Dependabot,
-#10 fermeture sans plantage, #11 E3 et ce fichier. La branche suivante apporte le mode page
-par page, l'épinglage des actions GitHub par SHA (B9) et la visibilité `internal` (C13).
+- 2026-11-03 à 05 : #1 spécification, #2 M0, #4 M1, #6 lecteur, #7 audit M1 et bibliothèque,
+  #9 zoom, #10 fermeture sans plantage, #11 E3 et ce fichier, #12 actions GitHub épinglées par SHA ;
+- 2026-11-08 à 10 : #13 M2 clos (benchmarks, Baseline Profile), #14 build sous Windows, #15 « Ouvrir
+  avec », #16 récents, #17 Robolectric et `%TEMP%`, #18 retrait des récents, #19 mots de passe
+  (M3 clos), #24 et #25 nouveau design (ADR 0018, 0019 ; validé sur appareil) ;
+- 2026-11-11 et 12 : #26 API texte et destinations, #27 aller à la page, #28 polices CJK, #29
+  Dokka 2.3, #30 table des matières, #31 liens, #32 recherche ;
+- 2026-11-19 à 22 : #33 sélection et copie, #39 appui long en page par page, #40 et #41 clôture de
+  M4 (benchmarks), #42 M4 terminé, #43 rotation F27 ajoutée au MVP ;
+- 2026-11-25 et 26 : #50 impression (M5, lot 1), #48 zoom retiré de F12, puis l'audit du 2026-11-26
+  (`0e6a96d`).
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **État au 2026-11-21 : M4 terminé (code, benchmarks et essais sur appareil).** Dans l'ordre :
+0. **État au 2026-11-26 : M4 terminé, M5 en cours.** Dans l'ordre :
    1. ~~Benchmarks sur appareil~~ **faits le 2026-11-21** (ADR 0012, « Mesures M4 ») : reste à
       décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
-   2. **essais de la liste** [`verification-appareil-m4.md`](verification-appareil-m4.md) (les
-      paragraphes « À essayer sur appareil » ci-dessous y sont rassemblés ; la liste fait foi) ;
-   3. **M5**, avec **l'impression (F15) en premier lot**, à la demande du mainteneur : **faite**
-      (ADR 0026, branche `feat/reader-print`). **À essayer sur appareil** : imprimer
-      `simple_1page.pdf` et le PDF de 600 pages vers une vraie imprimante et vers « Enregistrer au
-      format PDF » (pages choisies « 2-5 » : le fichier d'origine est envoyé entier, le service
-      doit garder la plage) ; un PDF chiffré ouvert avec son mot de passe (images à 150 ppp, aperçu
-      qui arrive après le dessin de toutes les pages, mémoire stable) ;
-      `encrypted_owner_password_only.pdf` (bouton atténué, message), puis E3 › Lecture › « Ignorer
-      les restrictions du document » (impression permise) ; TalkBack sur le bouton ; quitter le
-      lecteur pendant l'impression d'un document protégé (échec propre attendu) ; test
-      instrumenté `PrintInstrumentedTest`. L'ajustement à la largeur n'a plus de bouton : il ira
-      dans la feuille « Affichage » au lot 4.
+   2. ~~essais de [`verification-appareil-m4.md`](verification-appareil-m4.md)~~ **faits** (53
+      essais validés le 2026-11-21) ;
+   3. **Corrections de l'audit du 2026-11-26** : les corrections de code sont décrites dans
+      [`docs/audits/2026-11-26-plan-de-correction.md`](audits/2026-11-26-plan-de-correction.md) ;
+      **à faire en premier, A1 d'abord** (une page illisible dans un PDF qui s'ouvre fait planter le lecteur). La documentation a été mise à jour le
+      2026-11-26 ; le constat complet est dans
+      [`docs/audits/2026-11-26-audit-complet.md`](audits/2026-11-26-audit-complet.md) ;
+   4. **M5**, lot 1 **impression (F15)** : **dans `main` (PR #50), pas encore essayée sur
+      appareil** (ADR 0026). **À essayer** : imprimer `simple_1page.pdf` et le PDF de 600 pages
+      vers une vraie imprimante et vers « Enregistrer au format PDF » (pages choisies « 2-5 » : le
+      fichier d'origine est envoyé entier, le service doit garder la plage) ; un PDF chiffré
+      ouvert avec son mot de passe (images à 150 ppp, aperçu qui arrive après le dessin de toutes
+      les pages, mémoire stable) ; `encrypted_owner_password_only.pdf` (bouton atténué, message),
+      puis E3 › Lecture › « Ignorer les restrictions du document » (impression permise) ;
+      TalkBack sur le bouton ; quitter le lecteur pendant l'impression d'un document protégé
+      (échec propre attendu) ; test instrumenté `PrintInstrumentedTest`. L'ajustement à la largeur
+      n'a plus de bouton : il ira dans la feuille « Affichage » au lot 4 ;
+   5. lots suivants de M5 (voir `ROADMAP.md`) : À propos et licences (E4), propriétés (V5),
+      partage, thèmes, feuille « Affichage » (lot 4), rotation F27 (lot 5).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
      tests Robolectric de `app`, vu sur les PR #31 et #38, disparaît à la relance
      (`gh run rerun --failed`). Cause probable : code Hilt ou KSP périmé repris d'un cache.
-1. **M3 Fichiers et récents** :
-   - ~~« Ouvrir avec » et partage entrant (`ACTION_VIEW`, `ACTION_SEND`), avec validation des
-     URI et des types MIME (`AGENTS.md` §9)~~ **Fait** (ADR 0014, branche `feat/open-with`) ;
-   - ~~permissions persistantes, récents avec vignettes (Room), nom réel du document dans la
-     liste, reprise de la dernière page~~ **Fait** (ADR 0015, branche `feat/recents`) ; le titre
-     de la barre du lecteur reste le titre du PDF, sinon le dernier segment de l'URI ;
-   - ~~« Retirer des récents » dans V8 et dans un menu « ⋮ » de ligne, « Vider les récents »~~
-     **Fait** (ADR 0016, branche `feat/remove-recents`) ;
-   - ~~dialogue de mot de passe (V4)~~ **Fait** (ADR 0017, branche `feat/pdf-password`) ;
-   - ~~essais sur appareil de tout M3~~ **Fait** le 2026-11-10 (voir §1) ;
-   - reportés par l'ADR 0015 : zoom et décalage de F12, empreinte des documents (point ouvert 16) ;
-   - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11).
+1. **Restes de M3, reportés** :
+   - le **décalage dans la page** de F12 (le zoom est **abandonné**, décision du 2026-11-25,
+     PR #48 : `SPEC.md` F12 ne mémorise que la page) ; l'empreinte des documents (point ouvert 16) ;
+   - repli par copie dans `cacheDir` pour les URI non seekables (point ouvert 11), à trancher
+     **avant la publication v1.0**.
 2. ~~**Windows** : `DataStoreSettingsRepositoryTest`~~ **Résolu** : le test tourne sous Robolectric
    (SDK_INT 36) ; sur JVM nue, DataStore retombe sur `File.renameTo`, qui n'écrase pas sous Windows.
-3. **Audit complet du 2026-11-26** (`docs/audits/2026-11-26-audit-complet.md`) : corriger en
-   premier **A1** (une page illisible dans un PDF qui s'ouvre fait planter le lecteur), puis
-   amender l'ADR 0026 (X1) et mettre la documentation à jour (B1 à B4) ; ordre complet en §9.
-4. Petits restes de l'audit (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
+3. Petits restes de l'audit M1 (`docs/audits/2026-11-04-audit-m1.md`, lignes ⏳) :
    - tester la build minifiée (R8) ;
-   - tester `verifyReleasePermissions` de bout en bout ;
+   - tester `verifyReleasePermissions` de bout en bout.
 
-**Nouveau design visuel (ADR 0018 et 0019), fusionné dans `main` le 2026-11-10 (PR #24)** et
-essayé sur appareil par le mainteneur : globalement validé. Deux retours corrigés ensuite sur la
-branche `ccr-d7c547a8-psu5t2` (pas encore sur appareil) :
+**Fuite signalée par LeakCanary** (une fois le 2026-11-10, non reproduite ; l'essai de la liste de
+M4 n'a rien signalé) : un `PopupLayout` de Compose retenu par la passe *lookahead* de
+`SharedTransitionLayout`, probablement le menu « ⋮ » des récents. Documentée, pas corrigée :
+analyse et pistes au point ouvert 17 de `docs/open-questions.md`.
 
-- l'animation « aller » (la vignette qui grandissait jusqu'au lecteur) était buggée : l'aller est
-  maintenant un simple fondu ; seul le retour replie la page vers sa vignette, le document
-  n'étant lié qu'une fois le lecteur posé (`DocumentLink`, ADR 0019 amendé). La page d'attente a
-  disparu, donc le rond de chargement reste visible pendant une ouverture lente ;
-- le réglage « Aperçu de la page » a quitté la feuille « Affichage » du lecteur pour l'écran
-  Paramètres, nouvelle section « Lecture », à côté des couleurs dynamiques (ADR 0018 §6 amendé).
+**Repères sur le code de M4 et M5** (les détails sont dans les ADR) :
 
-**À essayer sur appareil** :
-
-1. ouvrir depuis la carte et depuis une ligne : simple fondu ; revenir par la flèche, le bouton
-   et le geste (lent, puis annulé) : la page se replie vers la carte ; revenir aussitôt après le
-   toucher : simple fondu ; un PDF lent : le rond de chargement reste visible ;
-2. Paramètres › Lecture › « Aperçu de la page » : couper, revenir dans un document ouvert, le
-   curseur suit le document en continu ; rallumer ;
-3. toujours dû depuis la PR #24 : clavier physique sur le
-   curseur (non couvert par un test) ; retour depuis « Ouvrir avec ».
-
-**Fuite signalée par LeakCanary** (une fois, non reproduite) : un `PopupLayout` de Compose
-retenu par la passe *lookahead* de `SharedTransitionLayout`, probablement le menu « ⋮ » des
-récents. Documentée, pas corrigée : analyse et pistes au point ouvert 17 de
-`docs/open-questions.md`.
-
-**M4, lot 2 : « Aller à la page »** (F05, V3, branche `feat/reader-go-to-page`, pas encore sur
-appareil). Un appui sur l'indicateur « 5 / 8 » de la barre flottante ouvre le dialogue
-(`GoToPageDialog`, validation dans `PageNumberInput.kt`) ; le curseur fin reste la barre de
-défilement rapide. `PageNavigator.goTo(page, yOffset)` accepte un décalage en points PDF depuis
-le haut de la page (appliqué en défilement continu seulement ; page par page, la page est
-montrée entière) pour la table des matières et les liens. **À essayer sur appareil** : le clavier
-numérique s'ouvre à l'affichage, TalkBack annonce le bouton « Page x sur n » et les erreurs,
-rotation avec le dialogue ouvert, un document de plusieurs centaines de pages.
-
-**M4, lot 3 : table des matières** (F06, V2, ADR 0021, branche `feat/reader-outline`, pas encore
-sur appareil). Une icône de la barre du lecteur (cachée sans sommaire) ouvre le tiroir latéral
-(`OutlineDrawer`, de droite en droite à gauche) : section courante dépliée et surlignée, liste
-paresseuse, un tap mène à la page (position `y` appliquée en défilement continu seulement) et
-ferme le tiroir, le titre de la section s'affiche dans l'aperçu du curseur. Logique pure et
-testée dans `ReaderOutline.kt` ; sommaire lu par `ReaderViewModel` après l'affichage du
-document. Les entrées externes appellent `ReaderViewModel.onExternalOutlineEntry(uri)`, branchée par le
-lot 4 sur le filtre des schémas et V7. **À essayer sur appareil** : le PDF de 600 pages du jeu de test (ouverture du
-tiroir, défilement, aller à un chapitre lointain), TalkBack (niveau, déplié, page cible), langue
-de droite à gauche, grande police, mode page par page, un PDF dont le sommaire a des
-destinations avec position.
-
-**M4, lot 4 : liens** (F09, V7, ADR 0022, branche `feat/reader-links`, pas encore sur
-appareil). Un toucher sur un lien l'active (`PageHitTest.kt` : position → page et point, dans
-les deux modes, au zoom) ; ailleurs, plein écran comme avant. Lien interne : destination, puis
-« Vous étiez à la page N. » / « Revenir ». Lien externe : filtré par `CheckExternalLinkUseCase`
-(`core:domain`, `http`, `https`, `mailto` seulement), confirmé dans V7, ouvert par la route
-(`ACTION_VIEW`, `CATEGORY_BROWSABLE`). TalkBack : une action par lien de la page courante. Les
-entrées externes du sommaire passent par `onExternalOutlineEntry`, puis
-`LinkController.onExternalLink`. **À essayer sur
-appareil** : `links_internal_external.pdf` (jeu de test) au doigt, zoomé et page par page ; un
-lien `mailto` ; un téléphone sans navigateur (message) ; « Copier le lien » (confirmation du
-système dès Android 13) ; TalkBack (actions « Lien : … ») ; test instrumenté `LinksInstrumentedTest`.
-
-**M4, lot 5 : recherche** (F07, V1, ADR 0023, branche `feat/reader-search`, pas encore sur
-appareil). L'icône « Rechercher » de la barre du haut ouvre la barre de recherche (`SearchBar`) ;
-`SearchController` (paquet `search`, détenu par `ReaderViewModel`) lance la recherche 400 ms après
-la frappe ou à la validation, depuis la page courante, fusionne les résultats en ordre du document
-sur le dispatcher injecté (`SearchResults`, résultat courant `HitRef`) et demande au lecteur d'aller
-au premier trouvé, puis au suivant ou au précédent (`PageNavigator.reveal`, centré en continu).
-Surlignage : `SearchHighlightLayer` dans `PdfPage` (couleurs `LutrinReaderColors` de `core:ui`).
-Carte d'extrait (`SearchResultCard`) à la place de la barre flottante. **À essayer sur appareil** :
-le PDF de 600 pages (fluidité pendant le parcours, rang qui change après le bouclage, aller au
-premier résultat), `search_many_hits.pdf` (800 résultats sur une page, surlignage au zoom),
-`text_selection.pdf` (mot coupé, arabe), `scanned_images_only.pdf` (aucun résultat), TalkBack
-(annonce du nombre puis du résultat), clavier physique (Entrée), rotation pendant une recherche,
-mode page par page ; test instrumenté `SearchInstrumentedTest` (jamais exécuté sur appareil).
-
-**M4, lot 6 : sélection et copie** (F08, ADR 0024, branche `feat/reader-text-selection`, pas
-encore sur appareil). Un appui long sur un mot le sélectionne (`SelectionController`, paquet
-`selection`, détenu par `ReaderViewModel`) ; deux poignées (`TextSelectionHandles.kt`, cibles de
-48 dp) l'étendent caractère par caractère ; une barre en `Popup` propose « Copier » et « Tout
-sélectionner ». Zones dessinées dans `PdfPage` (`SelectionHighlightLayer`), poignées dans la
-boîte qui entoure la page (non coupée). Fermeture : toucher, retour, autre page, recherche.
-Copie par l'écran (`SelectionEffectsHandler`) : sensible pour un document protégé (Android 13+),
-« Texte copié » avant Android 13 seulement. Permission : `AppSettings.allowsTextCopy` ; réglage
-« Ignorer l'interdiction de copie » dans E3 › Lecture, désactivé par défaut. TalkBack : action
-« Copier le texte de la page ». **À essayer sur appareil** : `text_selection.pdf` (mot latin,
-mot arabe, poignées qui se croisent, « Tout sélectionner »), au zoom et page par page ;
-`encrypted_owner_password_only.pdf` (copie refusée, puis permise par le réglage) ; un PDF chiffré
-avec mot de passe (aperçu du presse-papiers masqué, Android 13+) ; `scanned_images_only.pdf`
-(rien n'est sélectionné) ; confirmation de copie du système (13+) et « Texte copié » (avant 13) ;
-TalkBack ; test instrumenté `SelectionInstrumentedTest` (jamais exécuté sur appareil).
-
-**M4, lot des polices CJK** (ADR 0025, PR #28) : pas de police CJK embarquée. MuPDF dessine le
-texte CJK non incorporé avec les polices du système (`androidfonts.c` lit `/system/fonts`, quel
-que soit `TOFU_CJK`) ; carrés sur un appareil sans police CJK (limite connue). DroidSansFallback a
-été essayée (+3,4 Mio par ABI, mesures dans l'ADR) puis retirée ; limite de `SPEC.md` gardée à
-15 Mo. **À essayer sur appareil** : ouvrir `cjk_not_embedded.pdf` (jeu de test). **L'écran des
-licences (M5) doit citer les polices URW** (`docs/dependencies.md`). Pas encore de vérification
-automatique de la taille des APK (proposition dans l'ADR 0025).
+- `PageNavigator.goTo(page, yOffset)` : décalage en points PDF depuis le haut de la page, appliqué
+  en défilement continu seulement ; `PageNavigator.reveal` centre un résultat de recherche.
+- Les entrées externes de la table des matières passent par `onExternalOutlineEntry`, puis
+  `LinkController.onExternalLink` et le filtre des schémas (`CheckExternalLinkUseCase`).
+- Recherche : `SearchController` (400 ms après la frappe) ; sélection : `SelectionController`
+  (copie par `SelectionEffectsHandler`) ; permission : `AppSettings.allowsTextCopy`, réglage
+  « Ignorer les restrictions du document » (copie et impression, ADR 0026 qui renomme l'ancien
+  « Ignorer l'interdiction de copie » de l'ADR 0024).
+- Polices CJK (ADR 0025) : pas de police embarquée, carrés sur un appareil sans police CJK (limite
+  connue) ; limite de taille de `SPEC.md` gardée à 15 Mo. **L'écran des licences (M5) doit citer
+  les polices URW** (`docs/dependencies.md`). Pas encore de vérification automatique de la taille
+  des APK (proposition dans l'ADR 0025).
+- Un document protégé ouvert avec son mot de passe : récents avec cadenas et sans vignette (schéma
+  Room 2, ADR 0017) ; jeu de test chiffré dans `core/testing/README.md`.
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0025) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0026) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0009** : écarts assumés avec les maquettes ;
@@ -272,7 +153,7 @@ automatique de la taille des APK (proposition dans l'ADR 0025).
     de page tant que la page est zoomée, pages toujours de gauche à droite.
 - Fermeture d'un document : un échec natif est intercepté et signalé, jamais relancé (point 15).
 - MuPDF reste épinglé sur un tag publié ; Dependabot ne le suit pas (point ouvert 14).
-- Points encore ouverts : 1, 2, 3, 6, 11, 13, 14 et 16 (`docs/open-questions.md`).
+- Points encore ouverts : 1, 2, 3, 6, 11, 13, 14, 16, 17 et 18 (`docs/open-questions.md`).
 
 ## 4. Pièges déjà rencontrés
 
