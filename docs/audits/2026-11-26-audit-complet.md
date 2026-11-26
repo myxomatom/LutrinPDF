@@ -30,7 +30,7 @@ régression des corrections de l'audit M1. Les dérives portent sur trois points
 | # | Gravité | Constat | Suivi |
 |---|---------|---------|-------|
 | A1 | Haute | Un PDF qui s'ouvre mais dont une page ne se charge pas (par exemple `/Count` supérieur au nombre de `/Kids`) lève `PdfError.Unreadable`. Aucun appelant ne l'intercepte : `ReaderViewModel.kt:284` (`pageSize` de toutes les pages dans `show()`, lancé depuis `viewModelScope`), `PdfPage.kt:83` et `:182`, `PagePreviewCard.kt:175`. L'application plante, contrairement à SPEC §3. Le KDoc de `PdfDocument` ne mentionne pas cette erreur. Correction : KDoc, taille de repli, page vierge en erreur, PDF de test dédié, tests du moteur et du ViewModel | ⏳ |
-| A2 | Moyenne | `renderPage` alloue trois fois la taille de la cible : pixmap natif (`PageRendering.kt:295`), `IntArray` Java (`:314`) et bitmap. Seul `createBitmap` est protégé contre le manque de mémoire : une page très haute peut provoquer un `OutOfMemoryError` | ⏳ |
+| A2 | Moyenne | `renderPage` alloue trois fois la taille de la cible : pixmap natif (`PageRendering.kt:38`), `IntArray` Java (`:57`) et bitmap (`MuPdfDocument.kt:72-73`). Seul `createBitmap` est protégé contre le manque de mémoire : une page très haute peut provoquer un `OutOfMemoryError` | ⏳ |
 | A3 | Moyenne | Le cache natif de MuPDF garde sa taille par défaut (256 Mo), n'est jamais réduit (pas de `shrinkStore`, pas de réaction à `onTrimMemory`) et n'est pas compté dans le budget de l'ADR 0008 | ⏳ |
 | A4 | Basse | La copie des pixels (`setPixels`) se fait sur le thread appelant, le thread principal, contrairement à AGENTS §3 | ⏳ |
 | A5 | Basse | Le test d'annulation ne prouve pas qu'un rendu en cours est interrompu. Les tests promis par l'audit M1 manquent toujours : annulation de la recherche, éviction de `PageCache`, permission révoquée sur la JVM | ⏳ |
@@ -70,7 +70,7 @@ impression respectent les restrictions du document ; sauvegarde désactivée ;
 | # | Gravité | Constat | Suivi |
 |---|---------|---------|-------|
 | Q1 | Moyenne | `ReaderUiState.Ready` (`ReaderUiState.kt:58-69`) porte des objets à état (`PageRenderer` avec son cache de bitmaps, `PageLinks` avec son cache synchronisé) : l'UiState n'est pas immuable. Son défaut `Dispatchers.Unconfined` (`:66`) est un dispatcher codé en dur | ⏳ |
-| Q2 | Moyenne | 4 `catch (SQLiteException)` avalés sans `Result` ni trace dans `RoomRecentDocumentsRepository.kt:96,105,115,127` (AGENTS §4) | ⏳ |
+| Q2 | Moyenne | Échecs Room avalés dans `RoomRecentDocumentsRepository.kt` : `saveLastPage` silencieux, `remove` et `clear` dont l'échec se confond avec « absent » ou « liste vide » (AGENTS §4). Le `null` de `recordOpening` est documenté par son contrat : écarté | ⏳ |
 | Q3 | Basse | `ReaderViewModel` (357 lignes, 7 dépendances) partage un état mutable (`document`, `isProtected`) avec 3 contrôleurs. 13 composables dépassent 35 lignes (`PdfPage`, 55 lignes). 28 `@Suppress("LongParameterList")` | ⏳ |
 | Q4 | Basse | Types Android dans les ViewModels : `android.net.Uri` dans `ReaderViewModel`, `ImageBitmap` et `IntSize` exposés par `LibraryViewModel:140`. `@Suppress` sans justification dans `PdfDates.kt:25` | ⏳ |
 
@@ -83,9 +83,9 @@ aucun fichier au-dessus de 450 lignes.
 | # | Gravité | Constat | Suivi |
 |---|---------|---------|-------|
 | T1 | Moyenne | Un seul test `AccessibilityChecks`, sur la bibliothèque vide (`MainActivityInstrumentedTest.kt:24-30`). Le lecteur, les réglages, la recherche et les dialogues n'en ont aucun (AGENTS §5.1) | ⏳ |
-| T2 | Moyenne | `SearchInstrumentedTest`, `SelectionInstrumentedTest` et `LinksInstrumentedTest` n'ont aucune assertion explicite, seulement des `waitUntil` | ⏳ |
-| T3 | Basse | Quatre tests de captures sans assertion (Selection, ExternalLinkDialog, GoToPageDialog, PasswordDialog) : ils ne protègent que si `roborazzi.test.verify=true`. Quelques `isNotNull()` seuls (`RoomRecentDocumentsRepositoryTest:265,314,436`, `ReaderPrintTest:174`…) | ⏳ |
-| T4 | Basse | Aucun test pour `ReaderOptionsSheet` ni `PagePreviewCard`. Les tests instrumentés de la CI ne couvrent que `:app` et `:core:pdf` | ⏳ |
+| T2 | Moyenne | `SearchInstrumentedTest`, `SelectionInstrumentedTest` et `LinksInstrumentedTest.internalLinkActionShowsItsPage` (l'autre test de liens a un vrai `intended`) n'ont aucune assertion explicite, seulement des `waitUntil` | ⏳ |
+| T3 | Basse | Quatre tests de captures sans assertion (Selection, ExternalLinkDialog, GoToPageDialog, PasswordDialog) : ils ne protègent que si `roborazzi.test.verify=true`. `ReaderPrintTest.kt:174` n'a qu'un `isNotNull()` (les autres `isNotNull()` relevés sont suivis d'assertions : écartés) | ⏳ |
+| T4 | Basse | Les tests instrumentés de la CI ne couvrent que `:app` et `:core:pdf`. (« Aucun test pour `ReaderOptionsSheet` ni `PagePreviewCard` » : écarté, couverts par `ReaderScreenTest` et `FloatingPageBarTest`) | ⏳ |
 
 Conformes : aucun `@Ignore` ; aucun `Thread.sleep` ni heure réelle ; un seul test supprimé dans
 l'historique, retiré avec sa fonctionnalité (ADR 0019) ; migration Room 1→2 testée ; impression
