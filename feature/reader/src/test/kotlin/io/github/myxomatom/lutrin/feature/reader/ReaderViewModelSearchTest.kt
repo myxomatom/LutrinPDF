@@ -56,6 +56,7 @@ class ReaderViewModelSearchTest {
             SavedStateHandle(mapOf(READER_URI_ARG to "content://com.example.provider/document/a.pdf")),
             FakePdfEngine(Result.success(document)),
             dispatcher,
+            dispatcher,
             ObserveSettingsUseCase(settings),
             SetScrollModeUseCase(settings),
             ReadingHistory(

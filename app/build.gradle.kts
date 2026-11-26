@@ -222,4 +222,6 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
     // Checks the intent of a confirmed external link without starting a browser (ADR 0022).
     androidTestImplementation(libs.androidx.test.espresso.intents)
+    // The print dialog of the system is another app: only UiAutomator sees it (ADR 0026).
+    androidTestImplementation(libs.androidx.test.uiautomator)
 }

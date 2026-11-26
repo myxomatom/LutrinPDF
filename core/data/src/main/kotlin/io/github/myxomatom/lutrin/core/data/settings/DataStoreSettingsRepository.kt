@@ -29,8 +29,8 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
                     dynamicColor = preferences[DYNAMIC_COLOR] ?: AppSettings.DEFAULT_DYNAMIC_COLOR,
                     scrollMode = scrollModeOf(preferences[SCROLL_MODE]),
                     pagePreview = preferences[PAGE_PREVIEW] ?: AppSettings.DEFAULT_PAGE_PREVIEW,
-                    ignoreCopyRestriction =
-                        preferences[IGNORE_COPY_RESTRICTION] ?: AppSettings.DEFAULT_IGNORE_COPY_RESTRICTION,
+                    ignoreDocumentRestrictions =
+                        preferences[IGNORE_DOCUMENT_RESTRICTIONS] ?: AppSettings.DEFAULT_IGNORE_DOCUMENT_RESTRICTIONS,
                 )
             }.distinctUntilChanged()
 
@@ -46,8 +46,8 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
         dataStore.edit { it[PAGE_PREVIEW] = enabled }
     }
 
-    override suspend fun setIgnoreCopyRestriction(enabled: Boolean) {
-        dataStore.edit { it[IGNORE_COPY_RESTRICTION] = enabled }
+    override suspend fun setIgnoreDocumentRestrictions(enabled: Boolean) {
+        dataStore.edit { it[IGNORE_DOCUMENT_RESTRICTIONS] = enabled }
     }
 
     private companion object {
@@ -60,8 +60,12 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
         /** Whether the reader's slider previews the page (ADR 0018). */
         val PAGE_PREVIEW = booleanPreferencesKey("page_preview")
 
-        /** Whether the copy restriction of documents is ignored (ADR 0024); absent before it existed. */
-        val IGNORE_COPY_RESTRICTION = booleanPreferencesKey("ignore_copy_restriction")
+        /**
+         * Whether the copy and print restrictions of documents are ignored (ADR 0024, ADR 0026);
+         * absent before it existed. The key keeps its first name, from when it covered the copy
+         * only: a user who turned it on keeps it on, without any migration.
+         */
+        val IGNORE_DOCUMENT_RESTRICTIONS = booleanPreferencesKey("ignore_copy_restriction")
     }
 }
 

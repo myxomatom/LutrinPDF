@@ -29,7 +29,7 @@ class FakePdfDocumentTest {
     private val origin = PdfPoint(0f, 0f)
 
     @Test
-    fun `is empty and allows copying by default`() = runTest {
+    fun `is empty and allows copying and printing by default`() = runTest {
         val document = FakePdfDocument()
 
         assertThat(document.outline()).isEmpty()
@@ -38,6 +38,7 @@ class FakePdfDocumentTest {
         assertThat(document.isOnText(0, origin)).isFalse()
         assertThat(document.search("lutrin").toList().flatMap { it.hits }).isEmpty()
         assertThat(document.canCopyText).isTrue()
+        assertThat(document.canPrint).isTrue()
     }
 
     @Test
@@ -51,6 +52,7 @@ class FakePdfDocumentTest {
             selections = mapOf(1 to selection)
             textAreas = mapOf(1 to listOf(rect))
             canCopyText = false
+            canPrint = false
         }
 
         assertThat(document.outline()).isEqualTo(outline)
@@ -64,6 +66,7 @@ class FakePdfDocumentTest {
         assertThat(document.isOnText(1, PdfPoint(20f, 25f), 2f)).isFalse()
         assertThat(document.isOnText(1, PdfPoint(20f, 25f), 3f)).isTrue()
         assertThat(document.canCopyText).isFalse()
+        assertThat(document.canPrint).isFalse()
     }
 
     @Test

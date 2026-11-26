@@ -10,6 +10,13 @@ changement y est signalé.
 ## [Non publié]
 
 ### Modifié
+- **Réglage « Ignorer les restrictions du document »** (E3 › Lecture, ADR 0026), ancien « Ignorer
+  l'interdiction de copie » : il couvre la copie et l'impression ; même clé DataStore, la valeur
+  choisie est gardée. API interne renommée (`ignoreDocumentRestrictions`,
+  `SetIgnoreDocumentRestrictionsUseCase`).
+- **Barre flottante du lecteur** (E2, ADR 0026) : le bouton « pleine largeur » laisse la place au
+  bouton « Imprimer » ; l'ajustement à la largeur rejoindra la feuille « Affichage » (M5, lot 4).
+  Le double toucher zoome et revient au zoom d'origine comme avant.
 - `settingsScreen` et `SettingsRoute` (`feature:settings`) prennent un rappel `onOpenAbout` : E3 a une
   ligne « À propos et licences » qui ouvre E4, la navigation restant dans `app`.
 - **Benchmarks de M4 exécutés sur le Xiaomi 23013PC75G** (ADR 0012, « Mesures M4, 2026-11-21 ») :
@@ -20,6 +27,15 @@ changement y est signalé.
   427 ms.
 
 ### Ajouté
+- **Impression** (F15, M5 lot 1, ADR 0026) : bouton « Imprimer » de la barre flottante, boîte
+  d'impression du système, travail nommé d'après le document. Un document ouvert sans mot de passe
+  est envoyé tel quel (fichier d'origine, le service d'impression garde les pages choisies) ; un
+  document ouvert avec son mot de passe est imprimé en images de ses pages (150 ppp, une page en
+  mémoire à la fois, `ImagePdfWriter`), sans jamais écrire le PDF déchiffré. L'interdiction
+  d'impression du document (`PdfDocument.canPrint`, `core:pdf`) est respectée par défaut : bouton
+  atténué, lu « Désactivé, interdit par l'auteur », qui explique pourquoi. La rotation de
+  l'affichage (F27) ne s'applique jamais à l'impression. Test instrumenté de la boîte
+  d'impression (UiAutomator).
 - **Écran « À propos et licences »** (E4, M5, ADR 0030) : nouveau module `feature:about`, atteint par
   la dernière ligne de Paramètres. Il affiche le nom, la version, « Aucune donnée collectée », la
   licence (GNU GPL v3 ou ultérieure, **distribuée sous GNU AGPL v3 à cause de MuPDF**, ce que la

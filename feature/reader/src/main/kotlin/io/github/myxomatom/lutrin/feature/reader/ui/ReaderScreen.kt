@@ -60,6 +60,7 @@ import io.github.myxomatom.lutrin.feature.reader.OutlineTarget
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
+import io.github.myxomatom.lutrin.feature.reader.print.startPrinting
 import kotlinx.coroutines.launch
 
 /** Reader destination, connected to its [ReaderViewModel]. */
@@ -100,6 +101,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
                 selection,
                 canCopy = (state as? ReaderUiState.Ready)?.canCopyText == true,
             ),
+        onPrint = { viewModel.printJob()?.let { startPrinting(context, it) } ?: true },
     )
 }
 
@@ -131,6 +133,9 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   bar, the excerpt of the current result replaces the floating bar, and back closes it.
  * @param selection the text selection (F08, ADR 0024): long press, handles, « Copier » and
  *   « Tout sélectionner ».
+ * @param onPrint called by the print button of the floating bar (F15, ADR 0026) when the document
+ *   may be printed ([ReaderUiState.Ready.canPrint]); opens the print dialog of the system and
+ *   returns `false` when the device cannot print.
  */
 @Composable
 fun ReaderScreen(
@@ -148,6 +153,7 @@ fun ReaderScreen(
     onExternalOutlineEntry: (String) -> Unit = {},
     search: ReaderSearch = ReaderSearch(),
     selection: ReaderSelection = ReaderSelection(),
+    onPrint: () -> Boolean = { true },
 ) {
     // Linked by the app only once the reader is settled: the page shrinks back into its thumbnail,
     // while coming in is a plain fade (ADR 0019).
@@ -173,6 +179,7 @@ fun ReaderScreen(
                     onExternalOutlineEntry = onExternalOutlineEntry,
                     search = search,
                     selection = selection,
+                    onPrint = onPrint,
                 )
         }
     }
@@ -201,6 +208,7 @@ private fun ReaderContent(
     onExternalOutlineEntry: (String) -> Unit = {},
     search: ReaderSearch = ReaderSearch(),
     selection: ReaderSelection = ReaderSelection(),
+    onPrint: () -> Boolean = { true },
 ) {
     // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
     var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
@@ -234,6 +242,7 @@ private fun ReaderContent(
                 onMoreOptions = { optionsVisible = true },
                 onOutline = openOutline,
                 onIndicatorClick = { goToPageVisible = true },
+                onPrint = onPrint,
             ),
             pageTransition = pageTransition,
             links = links,
@@ -257,12 +266,16 @@ private fun OptionsSheet(
     ReaderOptionsSheet(scrollMode = scrollMode, onScrollModeChange = onScrollModeChange, onDismiss = onDismiss)
 }
 
-/** What the bars of the reader do: back, the two buttons of the top bar and the page indicator. */
+/**
+ * What the bars of the reader do: back, the buttons of the top bar, the page indicator and the
+ * print button of the floating bar.
+ */
 private class ReaderBarActions(
     val onBack: () -> Unit,
     val onMoreOptions: () -> Unit,
     val onOutline: (() -> Unit)?,
     val onIndicatorClick: () -> Unit,
+    val onPrint: () -> Boolean,
 )
 
 /**
@@ -319,6 +332,7 @@ private fun ReaderScaffold(
             pageTransition = pageTransition,
             search = search.state,
             selection = selection,
+            onPrint = actions.onPrint,
         )
     }
 }

@@ -11,7 +11,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
-import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreCopyRestrictionUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreDocumentRestrictionsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
@@ -53,7 +53,7 @@ class SettingsViewModelTest {
         ObserveRecentDocumentsUseCase(recents),
         ClearRecentDocumentsUseCase(recents),
         applicationScope,
-        SetIgnoreCopyRestrictionUseCase(repository),
+        SetIgnoreDocumentRestrictionsUseCase(repository),
     )
 
     private suspend fun FakeRecentDocumentsRepository.open(vararg ids: Int) = apply {
@@ -120,7 +120,7 @@ class SettingsViewModelTest {
     @Test
     fun `the copy restriction of documents is respected by default`() = runTest {
         viewModel(FakeSettingsRepository()).uiState.test {
-            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+            assertThat(awaitItem().ignoreDocumentRestrictions).isFalse()
         }
     }
 
@@ -130,13 +130,13 @@ class SettingsViewModelTest {
         val viewModel = viewModel(repository)
 
         viewModel.uiState.test {
-            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
-            viewModel.onIgnoreCopyRestrictionChange(true)
-            assertThat(awaitItem().ignoreCopyRestriction).isTrue()
-            assertThat(repository.settings.value.ignoreCopyRestriction).isTrue()
+            assertThat(awaitItem().ignoreDocumentRestrictions).isFalse()
+            viewModel.onIgnoreDocumentRestrictionsChange(true)
+            assertThat(awaitItem().ignoreDocumentRestrictions).isTrue()
+            assertThat(repository.settings.value.ignoreDocumentRestrictions).isTrue()
 
-            viewModel.onIgnoreCopyRestrictionChange(false)
-            assertThat(awaitItem().ignoreCopyRestriction).isFalse()
+            viewModel.onIgnoreDocumentRestrictionsChange(false)
+            assertThat(awaitItem().ignoreDocumentRestrictions).isFalse()
         }
         assertThat(repository.settings.value.pagePreview).isTrue()
     }

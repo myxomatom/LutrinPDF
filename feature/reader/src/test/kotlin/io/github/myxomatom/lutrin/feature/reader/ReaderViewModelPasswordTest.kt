@@ -63,6 +63,7 @@ class ReaderViewModelPasswordTest {
         handle,
         engine,
         dispatcher,
+        dispatcher,
         ObserveSettingsUseCase(FakeSettingsRepository()),
         SetScrollModeUseCase(FakeSettingsRepository()),
         ReadingHistory(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.Dp
@@ -67,6 +69,9 @@ private val FullscreenIndicatorPadding = 16.dp
  *   and, while it is open, the excerpt of the current one replaces the floating bar (V1).
  * @param selection the text selection (F08, ADR 0024): a long press on a word selects it, a tap
  *   closes it; TalkBack copies the text of the page with an action of the document area.
+ * @param onPrint called by the print button of the floating bar when the document may be printed
+ *   (F15, ADR 0026); returns `false` when the device cannot print. When its author forbids it,
+ *   the button explains why instead.
  */
 @Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
@@ -84,6 +89,7 @@ internal fun ReaderDocumentArea(
     pageTransition: DocumentTransition? = null,
     search: SearchState = SearchState(),
     selection: ReaderSelection = ReaderSelection(),
+    onPrint: () -> Boolean = { true },
 ) {
     val page = navigator.currentPage
     val onPageTap = rememberSelectionTap(selection, rememberPageTap(state.links, navigator, onTap, links.onLinkClick))
@@ -91,6 +97,7 @@ internal fun ReaderDocumentArea(
     val pageActions = rememberLinkActions(state.links, page, links.onLinkClick) + copyPageAction(selection, page)
     val snackbar = rememberLinkHandling(links, navigator)
     SelectionHandling(selection, navigator, search.isOpen, snackbar)
+    val onPrintClick = rememberPrintClick(state.canPrint, onPrint, snackbar)
     val sharedPage = sharedPage(page, zoom, pageTransition)
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
@@ -117,7 +124,7 @@ internal fun ReaderDocumentArea(
                 navigator = navigator,
                 scrubber = scrubber,
                 onIndicatorClick = onIndicatorClick,
-                onFit = { onZoomChange(1f) },
+                onPrint = onPrintClick,
                 previewMaxHeight = maxHeight,
             )
         } else {
@@ -252,11 +259,10 @@ private fun BoxScope.ReaderPageBar(
     navigator: PageNavigator,
     scrubber: PageScrubber,
     onIndicatorClick: () -> Unit,
-    onFit: () -> Unit,
+    onPrint: () -> Unit,
     previewMaxHeight: Dp,
 ) {
     val scope = rememberCoroutineScope()
-    val fitLabel = if (navigator is PagedNavigator) R.string.reader_fit_page else R.string.reader_fit_width
     FloatingPageBar(
         page = page,
         pageSizes = state.pageSizes,
@@ -272,12 +278,32 @@ private fun BoxScope.ReaderPageBar(
             }
         },
         onIndicatorClick = onIndicatorClick,
-        fitLabel = stringResource(fitLabel),
-        onFit = onFit,
+        onPrint = onPrint,
         previewMaxHeight = previewMaxHeight,
         modifier = Modifier.align(Alignment.BottomCenter),
         sectionTitle = state.outline::sectionTitleAt,
+        canPrint = state.canPrint,
     )
+}
+
+/**
+ * What a tap on the print button does (F15, ADR 0026): starts printing when [canPrint];
+ * otherwise explains that the author forbids it. Also says so when the device cannot print.
+ */
+@Composable
+private fun rememberPrintClick(canPrint: Boolean, onPrint: () -> Boolean, snackbar: SnackbarHostState): () -> Unit {
+    val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
+    val currentCanPrint by rememberUpdatedState(canPrint)
+    val currentOnPrint by rememberUpdatedState(onPrint)
+    return remember(snackbar) {
+        {
+            when {
+                !currentCanPrint -> scope.inform(snackbar, resources.getString(R.string.reader_print_forbidden))
+                !currentOnPrint() -> scope.inform(snackbar, resources.getString(R.string.reader_print_unavailable))
+            }
+        }
+    }
 }
 
 /**

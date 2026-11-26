@@ -30,9 +30,10 @@ interface SettingsRepository {
     suspend fun setPagePreview(enabled: Boolean)
 
     /**
-     * Chooses whether the reader may copy the text of documents whose author forbids it (ADR 0024).
+     * Chooses whether the reader may copy the text (ADR 0024) and print (ADR 0026) documents whose
+     * author forbids it.
      *
-     * @param enabled whether the copy restriction of a document is ignored.
+     * @param enabled whether the copy and print restrictions of a document are ignored.
      */
-    suspend fun setIgnoreCopyRestriction(enabled: Boolean)
+    suspend fun setIgnoreDocumentRestrictions(enabled: Boolean)
 }

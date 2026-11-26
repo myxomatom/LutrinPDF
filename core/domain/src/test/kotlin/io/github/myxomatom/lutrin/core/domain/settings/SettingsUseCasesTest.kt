@@ -24,8 +24,8 @@ class SettingsUseCasesTest {
             (settings as MutableStateFlow).value = settings.value.copy(pagePreview = enabled)
         }
 
-        override suspend fun setIgnoreCopyRestriction(enabled: Boolean) {
-            (settings as MutableStateFlow).value = settings.value.copy(ignoreCopyRestriction = enabled)
+        override suspend fun setIgnoreDocumentRestrictions(enabled: Boolean) {
+            (settings as MutableStateFlow).value = settings.value.copy(ignoreDocumentRestrictions = enabled)
         }
     }
 
@@ -92,28 +92,39 @@ class SettingsUseCasesTest {
 
     @Test
     fun `the copy restriction of documents is respected by default`() {
-        assertThat(AppSettings().ignoreCopyRestriction).isFalse()
+        assertThat(AppSettings().ignoreDocumentRestrictions).isFalse()
     }
 
     @Test
     fun `the copy restriction can be ignored and respected again`() = runTest {
-        val setIgnoreCopyRestriction = SetIgnoreCopyRestrictionUseCase(repository)
+        val setIgnoreDocumentRestrictions = SetIgnoreDocumentRestrictionsUseCase(repository)
 
-        setIgnoreCopyRestriction(true)
-        assertThat(repository.settings.value).isEqualTo(AppSettings(ignoreCopyRestriction = true))
+        setIgnoreDocumentRestrictions(true)
+        assertThat(repository.settings.value).isEqualTo(AppSettings(ignoreDocumentRestrictions = true))
 
-        setIgnoreCopyRestriction(false)
-        assertThat(repository.settings.value.ignoreCopyRestriction).isFalse()
+        setIgnoreDocumentRestrictions(false)
+        assertThat(repository.settings.value.ignoreDocumentRestrictions).isFalse()
     }
 
     @Test
     fun `text copy is allowed by the document or by the setting`() {
-        val respecting = AppSettings(ignoreCopyRestriction = false)
-        val ignoring = AppSettings(ignoreCopyRestriction = true)
+        val respecting = AppSettings(ignoreDocumentRestrictions = false)
+        val ignoring = AppSettings(ignoreDocumentRestrictions = true)
 
         assertThat(respecting.allowsTextCopy(documentAllowsCopy = true)).isTrue()
         assertThat(respecting.allowsTextCopy(documentAllowsCopy = false)).isFalse()
         assertThat(ignoring.allowsTextCopy(documentAllowsCopy = true)).isTrue()
         assertThat(ignoring.allowsTextCopy(documentAllowsCopy = false)).isTrue()
+    }
+
+    @Test
+    fun `printing is allowed by the document or by the same setting`() {
+        val respecting = AppSettings(ignoreDocumentRestrictions = false)
+        val ignoring = AppSettings(ignoreDocumentRestrictions = true)
+
+        assertThat(respecting.allowsPrinting(documentAllowsPrinting = true)).isTrue()
+        assertThat(respecting.allowsPrinting(documentAllowsPrinting = false)).isFalse()
+        assertThat(ignoring.allowsPrinting(documentAllowsPrinting = true)).isTrue()
+        assertThat(ignoring.allowsPrinting(documentAllowsPrinting = false)).isTrue()
     }
 }

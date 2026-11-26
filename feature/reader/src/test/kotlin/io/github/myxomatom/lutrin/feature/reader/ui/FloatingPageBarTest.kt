@@ -291,7 +291,7 @@ class FloatingPageBarTest {
         show(ready(FakePdfDocument(listOf(A4))))
 
         composeRule.onNodeWithText("1 / 1").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Fit to width").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Print").assertIsDisplayed()
         slider.assertDoesNotExist()
     }
 
@@ -304,7 +304,7 @@ class FloatingPageBarTest {
 
         slider.assertDoesNotExist()
         composeRule.onNodeWithText("1 / 3").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Fit to width").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Print").assertDoesNotExist()
         composeRule.onNodeWithText("Page 1 / 3").assertIsDisplayed()
     }
 

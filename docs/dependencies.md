@@ -114,7 +114,7 @@ cite ces polices**, que le plugin AboutLibraries ne détecte pas : elles sont d�
 | Espresso Intents (`espresso-intents`) | 3.7.0 | Apache-2.0 | Tests instrumentés de `app` : vérifie l'intent d'un lien externe confirmé (V7) sans lancer de navigateur (ADR 0022). Même projet et même version qu'`espresso-accessibility` ; tests seulement, absent de l'APK publié |
 | Hilt Android Testing (`hilt-android-testing`) | 2.60.1 | Apache-2.0 | Tests Robolectric de `app` : remplace le moteur MuPDF, que Robolectric ne peut pas charger, par un faux (`@TestInstallIn`, ADR 0014). Même projet et même licence que Hilt |
 | AndroidX Macrobenchmark (`benchmark-macro-junit4`) | 1.5.0 | Apache-2.0 | Module `:benchmark` : démarrage, ouverture, défilement, génération du Baseline Profile (ADR 0012). Tire Perfetto / tracing, Wire et JSpecify, tous Apache-2.0 |
-| AndroidX Test UiAutomator | 2.4.0 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) |
+| AndroidX Test UiAutomator | 2.4.1 | Apache-2.0 | Gestes et attentes des benchmarks (`:benchmark`) ; boîte d'impression du système dans les tests instrumentés de `app` (ADR 0026) |
 | AndroidX Room Testing (`room-testing`) | 2.8.5 | Apache-2.0 | `core:data` : `MigrationTestHelper`, test de chaque migration de la base contre les schémas exportés (`core/data/schemas/`, ADR 0017). Même projet et même version que `room-runtime` ; licence vérifiée le 2026-11-09 dans le POM publié (dépôt Maven de Google) |
 
 ## Build et qualité (outils, jamais distribués)

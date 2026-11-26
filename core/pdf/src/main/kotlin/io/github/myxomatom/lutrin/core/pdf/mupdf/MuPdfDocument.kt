@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
  * [dispatcher], a single thread owned by this document.
  *
  * @param releaseFailures receives the failures of [close], which never throws them.
- * @param canCopyText copy permission read when the document was opened.
+ * @param permissions copy and print permissions read when the document was opened.
  * @param resources released after the document, e.g. the file descriptor of a content URI.
  */
 internal class MuPdfDocument(
@@ -43,9 +43,13 @@ internal class MuPdfDocument(
     private val dispatcher: ExecutorCoroutineDispatcher,
     override val metadata: PdfMetadata,
     private val releaseFailures: ReleaseFailureReporter,
-    override val canCopyText: Boolean = true,
+    private val permissions: DocumentPermissions = DocumentPermissions(),
     private val resources: Closeable? = null,
 ) : PdfDocument {
+    override val canCopyText: Boolean = permissions.canCopyText
+
+    override val canPrint: Boolean = permissions.canPrint
+
     override val pageCount: Int = metadata.pageCount
 
     private val closed = AtomicBoolean(false)
@@ -182,3 +186,12 @@ private fun AtomicBoolean.ensureOpen() {
 
 /** Pages from [startPage] to the last one, then from the first one to the one before [startPage]. */
 internal fun searchOrder(startPage: Int, pageCount: Int): List<Int> = (startPage until pageCount) + (0 until startPage)
+
+/**
+ * Permissions of a document, read once when it is opened (ADR 0020, ADR 0026): the engine reports
+ * them and its callers enforce them.
+ *
+ * @property canCopyText whether the author lets readers copy the text.
+ * @property canPrint whether the author lets readers print the document.
+ */
+internal data class DocumentPermissions(val canCopyText: Boolean = true, val canPrint: Boolean = true)
