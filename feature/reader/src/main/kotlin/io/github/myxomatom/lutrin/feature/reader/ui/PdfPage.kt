@@ -32,7 +32,9 @@ import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PixelRect
+import io.github.myxomatom.lutrin.feature.reader.render.RenderResult
 import io.github.myxomatom.lutrin.feature.reader.render.baseRenderWidth
+import io.github.myxomatom.lutrin.feature.reader.render.bitmapOrNull
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
 import io.github.myxomatom.lutrin.feature.reader.render.visiblePart
@@ -53,8 +55,9 @@ private val PAPER_NIGHT = Color(0xFF16181C)
 /**
  * One page: a base rendering of the whole page, stretched to the displayed size, and, when
  * zoomed in beyond "fit width", a sharp rendering of the visible part drawn on top (F02).
- * Both renderings are cancelled when the page leaves the screen. The activity is reported
- * fully drawn once the pages first shown have their base rendering.
+ * Both renderings are cancelled when the page leaves the screen. A page the engine cannot read
+ * shows [DamagedPageMessage] on its paper instead (ADR 0031). The activity is reported fully drawn
+ * once the pages first shown have their base rendering, or are known to be damaged.
  *
  * @param pageModifier modifier applied to the page itself, first (the paper, not the margins
  *   around it): the shared element of the thumbnail transition ([SharedPage], ADR 0019).
@@ -79,13 +82,14 @@ internal fun PdfPage(
 ) {
     val displayedWidth = pageWidthPx(fitWidth, zoom)
     val baseWidth = baseRenderWidth(fitWidth, zoom)
-    val base by produceState<Bitmap?>(null, pageIndex, baseWidth, nightMode) {
+    val base by produceState<RenderResult?>(null, pageIndex, baseWidth, nightMode) {
         value = renderer.renderPage(pageIndex, baseWidth, nightMode)
     }
     // The activity reports itself fully drawn once every page first shown has its rendering:
-    // the end of "open a document" for the startup metrics of :benchmark (ADR 0012).
+    // the end of "open a document" for the startup metrics of :benchmark (ADR 0012). A damaged
+    // page is drawn too, with its message, or the measure would never end (ADR 0031).
     // A no-op after that first report, and outside an activity.
-    ReportDrawnWhen { base != null }
+    ReportDrawnWhen { base is RenderResult.Rendered || base is RenderResult.Unreadable }
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val detail =
         rememberDetail(
@@ -110,7 +114,7 @@ internal fun PdfPage(
                 .background(if (nightMode) PAPER_NIGHT else PAPER)
                 .onGloballyPositioned { coordinates = it },
         ) {
-            PageImages(base, detail)
+            PageImages(base, detail, nightMode)
             SearchHighlightLayer(highlights, page)
             SelectionHighlightLayer(selection?.selection, page)
         }
@@ -119,12 +123,19 @@ internal fun PdfPage(
     }
 }
 
-/** The base rendering stretched over the page, and the sharp detail drawn over its part. */
+/**
+ * The base rendering stretched over the page, and the sharp detail drawn over its part; the
+ * message of a damaged page instead when the page cannot be read (ADR 0031).
+ */
 @Composable
-private fun PageImages(base: Bitmap?, detail: Pair<PixelRect, Bitmap>?) {
+private fun PageImages(base: RenderResult?, detail: Pair<PixelRect, Bitmap>?, nightMode: Boolean) {
+    if (base is RenderResult.Unreadable) {
+        DamagedPageMessage(nightMode, Modifier.fillMaxSize())
+        return
+    }
     Box(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        base?.let {
+        base?.bitmapOrNull?.let {
             Image(
                 it.asImageBitmap(),
                 contentDescription = null,
@@ -179,7 +190,7 @@ private fun rememberDetail(
                 viewportSize.height,
             )
         if (part != null && part != detail?.first) {
-            renderer.renderPart(pageIndex, displayedWidth, part, nightMode)?.let { detail = part to it }
+            renderer.renderPart(pageIndex, displayedWidth, part, nightMode).bitmapOrNull?.let { detail = part to it }
         }
     }
     return detail

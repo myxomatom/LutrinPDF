@@ -67,6 +67,17 @@ class PdfPageFullyDrawnTest {
     }
 
     @Test
+    fun `the activity is reported fully drawn even when a visible page is unreadable`() {
+        // Otherwise the startup measure of :benchmark would never end on a damaged document.
+        document.unreadablePages = setOf(0, 1, 2)
+        show(Dispatchers.Unconfined)
+
+        composeRule.waitUntil(TIMEOUT_MS) { fullyDrawn }
+
+        assertThat(document.renders).isEmpty()
+    }
+
+    @Test
     fun `the activity is not reported fully drawn while the pages are still rendering`() {
         // A dispatcher that never runs: the renderings never finish.
         show(StandardTestDispatcher())

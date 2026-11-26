@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
@@ -159,6 +160,38 @@ class ReaderViewModelTest {
         store.clear()
 
         assertThat(document.isClosed).isTrue()
+    }
+
+    @Test
+    fun `a page whose size cannot be read takes the size of the previous page`() = runTest(dispatcher) {
+        val small = PageSize(420f, 595f)
+        val document = FakePdfDocument(pageSizes = listOf(A4, small, A4, A4)).apply { unreadablePages = setOf(2, 3) }
+
+        val state = viewModel(FakePdfEngine(Result.success(document))).ready
+
+        assertThat(state.pageSizes).containsExactly(A4, small, small, small).inOrder()
+        assertThat(document.isClosed).isFalse()
+    }
+
+    @Test
+    fun `an unreadable first page takes the A4 size`() = runTest(dispatcher) {
+        val square = PageSize(500f, 500f)
+        val document = FakePdfDocument(pageSizes = listOf(square, square)).apply { unreadablePages = setOf(0) }
+
+        val state = viewModel(FakePdfEngine(Result.success(document))).ready
+
+        assertThat(state.pageSizes).containsExactly(A4, square).inOrder()
+    }
+
+    @Test
+    fun `a document without any readable page shows the unreadable error`() = runTest(dispatcher) {
+        val document = FakePdfDocument().apply { unreadablePages = setOf(0, 1, 2) }
+
+        val state = viewModel(FakePdfEngine(Result.success(document))).uiState.value
+
+        assertThat(state).isEqualTo(ReaderUiState.Error(ReaderError.UNREADABLE))
+        assertThat(document.isClosed).isTrue()
+        assertThat(recents.recentDocuments.value).isEmpty()
     }
 
     @Test
