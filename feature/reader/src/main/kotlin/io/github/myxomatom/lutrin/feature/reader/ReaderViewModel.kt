@@ -17,8 +17,10 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
@@ -71,6 +73,8 @@ import kotlinx.coroutines.withContext
  * @param observeSettings reads the scroll mode, the page preview and the document restrictions
  *   settings, shared by every document (ADR 0011, ADR 0018, ADR 0024).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
+ * @param setDocumentColorMode stores the colours of the documents chosen in the reader options
+ *   (F13, ADR 0028).
  * @param history the recent list and the reading position of this document.
  * @param getDocumentProperties gathers the properties of the document for the « Propriétés »
  *   sheet (F16, V5, ADR 0027).
@@ -94,6 +98,7 @@ constructor(
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
+    private val setDocumentColorMode: SetDocumentColorModeUseCase,
     private val history: ReadingHistory,
     private val getDocumentProperties: GetDocumentPropertiesUseCase,
     private val checkExternalLink: CheckExternalLinkUseCase = CheckExternalLinkUseCase(),
@@ -174,6 +179,7 @@ constructor(
                     outline = outline.withCurrentSection(page),
                     canCopyText = settings.allowsTextCopy(document?.canCopyText ?: true),
                     canPrint = settings.allowsPrinting(document?.canPrint ?: true),
+                    documentColors = settings.documentColors,
                 )
             } else {
                 state
@@ -201,6 +207,16 @@ constructor(
      */
     fun onScrollModeChange(mode: ScrollMode) {
         viewModelScope.launch { setScrollMode(mode) }
+    }
+
+    /**
+     * Stores the colours chosen by the user in the display options (F13, V6, ADR 0028): an
+     * explicit choice for every document, which the dark theme of the app no longer changes.
+     *
+     * @param mode original colours, night or sepia.
+     */
+    fun onDocumentColorModeChange(mode: DocumentColorMode) {
+        viewModelScope.launch { setDocumentColorMode(mode) }
     }
 
     /**

@@ -20,7 +20,7 @@ class MuPdfCancellationTest {
             // A large rendering, cancelled right away.
             val rendering =
                 async(Dispatchers.Default) {
-                    document.renderPixels(0, RenderSpec(wholePage, 8f, 4760, 6736, nightMode = false))
+                    document.renderPixels(0, RenderSpec(wholePage, 8f, 4760, 6736))
                 }
             rendering.cancelAndJoin()
 

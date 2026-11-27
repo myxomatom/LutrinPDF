@@ -14,6 +14,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FAKE_PAGE_COLOR
@@ -238,9 +239,9 @@ class DocumentPrintAdapterTest {
                 target: Bitmap,
                 region: PdfRect,
                 scale: Float,
-                nightMode: Boolean,
+                options: RenderOptions,
             ) {
-                document.renderPage(index, target, region, scale, nightMode)
+                document.renderPage(index, target, region, scale, options)
                 signal.cancel()
             }
         }

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
@@ -58,6 +59,7 @@ private val PAGE_MARGIN = 16.dp
  * @param onTap called on a single tap with the page and the point tapped, `null` outside the
  *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
+ * @param renderOptions how the pages are drawn: their colours (F13, ADR 0028).
  * @param bottomClearance height of the floating bar laid over the bottom of the pages (ADR 0018):
  *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
@@ -77,7 +79,7 @@ internal fun PdfPagerView(
     onTap: (PageHit?) -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    nightMode: Boolean = false,
+    renderOptions: RenderOptions = RenderOptions.ORIGINAL,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
@@ -104,7 +106,7 @@ internal fun PdfPagerView(
                 onTap = onTap,
                 onLongPress = onLongPress,
                 pagerMoving = pagerState.isScrollInProgress,
-                nightMode = nightMode,
+                renderOptions = renderOptions,
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 highlights = highlights,
@@ -141,7 +143,7 @@ private fun ZoomablePage(
     onTap: (PageHit?) -> Unit,
     onLongPress: (PageHit?) -> Unit,
     pagerMoving: Boolean,
-    nightMode: Boolean,
+    renderOptions: RenderOptions,
     bottomClearance: Dp,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
@@ -176,7 +178,7 @@ private fun ZoomablePage(
                     zoom = zoom,
                     settled = pinch == null && !pagerMoving && !horizontal.isScrollInProgress &&
                         !vertical.isScrollInProgress,
-                    nightMode = nightMode,
+                    options = renderOptions,
                     pageModifier = Modifier.sharedPage(sharedPage, pageIndex),
                     highlights = rememberPageHighlights(highlights, pageIndex),
                     selection = selection,

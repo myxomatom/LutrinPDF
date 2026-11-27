@@ -17,6 +17,9 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
@@ -53,21 +56,31 @@ class ReaderScreenshotTest {
     private fun ready(
         scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
         document: FakePdfDocument = FakePdfDocument(),
+        colors: DocumentColors = DocumentColors(),
     ): ReaderUiState = ReaderUiState.Ready(
         "Contrat de location",
         document.pageSizes,
         PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
         scrollMode,
+        documentColors = colors,
     )
 
     /** The display options sheet (V6) over the reader; the sheet is a separate window. */
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun captureOptions(name: String, darkTheme: Boolean) {
+    private fun captureOptions(
+        name: String,
+        darkTheme: Boolean,
+        colors: DocumentColors = DocumentColors(),
+        label: String = "Display",
+    ) {
         composeRule.setContent {
-            LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { ReaderScreen(ready(), onBack = {}) }
+            LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
+                ReaderScreen(ready(colors = colors), onBack = {})
+            }
         }
-        composeRule.onNodeWithContentDescription("More options").performClick()
-        composeRule.onNodeWithText("Display").performClick()
+        composeRule.onNodeWithContentDescription(if (label == "Display") "More options" else "Plus d’options")
+            .performClick()
+        composeRule.onNodeWithText(label).performClick()
         composeRule.waitForIdle()
         captureScreenRoboImage("src/test/screenshots/$name.png")
     }
@@ -76,7 +89,7 @@ class ReaderScreenshotTest {
      * The reader of the mockup E2-Lecteur-Curseur: on page 3 of 8, the slider dragged to page 6
      * and held there, the preview card above the thumb.
      */
-    private fun captureDragging(name: String, darkTheme: Boolean) {
+    private fun captureDragging(name: String, darkTheme: Boolean, colors: DocumentColors = DocumentColors()) {
         val document = FakePdfDocument(List(MOCKUP_PAGES) { A4 })
         val state =
             ReaderUiState.Ready(
@@ -84,6 +97,7 @@ class ReaderScreenshotTest {
                 document.pageSizes,
                 PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
                 currentPage = MOCKUP_START_PAGE,
+                documentColors = colors,
             )
         composeRule.setContent {
             LutrinTheme(darkTheme = darkTheme, dynamicColor = false) { ReaderScreen(state, onBack = {}) }
@@ -124,6 +138,45 @@ class ReaderScreenshotTest {
 
     @Test
     fun optionsDark() = captureOptions("reader_options_dark", darkTheme = true)
+
+    // Colours of the document (F13, ADR 0028): the choice in V6, and the pages drawn with it.
+
+    @Test
+    fun optionsSepia() = captureOptions("reader_options_sepia_light", darkTheme = false, colors = SEPIA)
+
+    /** Dark theme followed by the documents: night is the colours shown chosen. */
+    @Test
+    fun optionsFollowingDarkTheme() =
+        captureOptions("reader_options_night_dark", darkTheme = true, colors = DocumentColors(followDarkTheme = true))
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun optionsFrench() = captureOptions("reader_options_fr", darkTheme = false, colors = NIGHT, label = "Affichage")
+
+    // The sheet is another window: the font scale is the configuration's, not LocalDensity's.
+    @Test
+    @Config(fontScale = 2f)
+    fun optionsLargeFont() = captureOptions("reader_options_light_font200", darkTheme = false)
+
+    @Test
+    fun readerNight() = capture("reader_night_light", ready(colors = NIGHT))
+
+    @Test
+    fun readerNightDark() = capture("reader_night_dark", ready(colors = NIGHT), darkTheme = true)
+
+    @Test
+    fun readerSepia() = capture("reader_sepia_light", ready(colors = SEPIA))
+
+    @Test
+    fun readerSepiaDark() = capture("reader_sepia_dark", ready(colors = SEPIA), darkTheme = true)
+
+    @Test
+    fun readerNightPagedLargeFont() =
+        capture("reader_night_paged_light_font200", ready(ScrollMode.PAGED, colors = NIGHT), fontScale = 2f)
+
+    /** The preview of the slider is drawn in the colours of the pages. */
+    @Test
+    fun readerDraggingNight() = captureDragging("reader_dragging_night_light", darkTheme = false, colors = NIGHT)
 
     // A page the engine cannot read, in a document that opens (ADR 0031): its message on the paper.
 
@@ -171,7 +224,7 @@ class ReaderScreenshotTest {
                     onZoomChange = {},
                     onTap = {},
                     contentDescription = "Document",
-                    nightMode = true,
+                    renderOptions = RenderOptions(DocumentColorMode.NIGHT),
                 )
             }
         }
@@ -204,6 +257,9 @@ class ReaderScreenshotTest {
     fun errorRecentFrench() = capture("reader_error_recent_fr", recentError)
 
     private companion object {
+        val NIGHT = DocumentColors(chosen = DocumentColorMode.NIGHT)
+        val SEPIA = DocumentColors(chosen = DocumentColorMode.SEPIA)
+
         /** A page a third as tall as A4. */
         val SHORT_PAGE = PageSize(595f, 280f)
 

@@ -2,7 +2,9 @@
 package io.github.myxomatom.lutrin.feature.reader
 
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.feature.reader.links.PageLinks
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -55,6 +57,9 @@ sealed interface ReaderUiState {
      *   it, or the user chose to ignore its restriction in the settings; followed live.
      * @property canPrint whether the document may be printed (F15, ADR 0026): the document allows
      *   it, or the user chose to ignore its restrictions in the settings; followed live.
+     * @property documentColors the colours the user chose for the documents (F13, ADR 0028), from
+     *   the settings and followed live; the screen resolves them with the theme it is drawn in
+     *   ([renderOptions]).
      */
     data class Ready(
         val title: String,
@@ -67,7 +72,16 @@ sealed interface ReaderUiState {
         val outline: ReaderOutline = ReaderOutline(),
         val canCopyText: Boolean = true,
         val canPrint: Boolean = true,
-    ) : ReaderUiState
+        val documentColors: DocumentColors = DocumentColors(),
+    ) : ReaderUiState {
+        /**
+         * How to draw the pages (ADR 0028): with the colours of [documentColors] in a theme that is
+         * dark or not. The theme is known to the screen only, which may force it (E3).
+         *
+         * @param darkTheme whether the interface uses its dark colour scheme.
+         */
+        fun renderOptions(darkTheme: Boolean): RenderOptions = RenderOptions(documentColors.modeFor(darkTheme))
+    }
 }
 
 /**

@@ -26,6 +26,9 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
+import io.github.myxomatom.lutrin.core.ui.theme.LutrinDarkColorScheme
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
 import io.github.myxomatom.lutrin.core.ui.transition.sharedDocumentPage
 import io.github.myxomatom.lutrin.feature.reader.R
@@ -102,9 +105,11 @@ internal fun ReaderDocumentArea(
     SelectionHandling(selection, navigator, search.isOpen, snackbar)
     val onPrintClick = rememberPrintClick(state.canPrint, onPrint, snackbar)
     val sharedPage = sharedPage(page, zoom, pageTransition)
+    val renderOptions = state.renderOptions(LocalDarkTheme.current)
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
             state = state,
+            renderOptions = renderOptions,
             navigator = navigator,
             zoom = zoom,
             onZoomChange = onZoomChange,
@@ -129,9 +134,15 @@ internal fun ReaderDocumentArea(
                 onIndicatorClick = onIndicatorClick,
                 onPrint = onPrintClick,
                 previewMaxHeight = maxHeight,
+                renderOptions = renderOptions,
             )
         } else {
-            FullscreenPageIndicator(page, state.pageSizes.size, Modifier.align(Alignment.BottomCenter))
+            FullscreenPageIndicator(
+                page,
+                state.pageSizes.size,
+                darkBackground = renderOptions.colorMode.isDark,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
         ReaderSnackbarHost(snackbar, controlsVisible, Modifier.align(Alignment.BottomCenter))
     }
@@ -149,6 +160,7 @@ private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransitio
 @Composable
 private fun DocumentPages(
     state: ReaderUiState.Ready,
+    renderOptions: RenderOptions,
     navigator: PageNavigator,
     zoom: Float,
     onZoomChange: (Float) -> Unit,
@@ -166,6 +178,7 @@ private fun DocumentPages(
             PdfPagesView(
                 pageSizes = state.pageSizes,
                 renderer = state.renderer,
+                renderOptions = renderOptions,
                 listState = navigator.listState,
                 zoom = zoom,
                 onZoomChange = onZoomChange,
@@ -183,6 +196,7 @@ private fun DocumentPages(
             PdfPagerView(
                 pageSizes = state.pageSizes,
                 renderer = state.renderer,
+                renderOptions = renderOptions,
                 pagerState = navigator.pagerState,
                 zoom = zoom,
                 onZoomChange = onZoomChange,
@@ -264,6 +278,7 @@ private fun BoxScope.ReaderPageBar(
     onIndicatorClick: () -> Unit,
     onPrint: () -> Unit,
     previewMaxHeight: Dp,
+    renderOptions: RenderOptions,
 ) {
     val scope = rememberCoroutineScope()
     FloatingPageBar(
@@ -286,6 +301,7 @@ private fun BoxScope.ReaderPageBar(
         modifier = Modifier.align(Alignment.BottomCenter),
         sectionTitle = state.outline::sectionTitleAt,
         canPrint = state.canPrint,
+        renderOptions = renderOptions,
     )
 }
 
@@ -322,13 +338,18 @@ private fun BoxScope.PreviewScrim() {
     )
 }
 
-/** Discreet page number shown in full screen (mockup E2-Lecteur-Nuit). */
+/**
+ * Discreet page number shown in full screen (mockup E2-Lecteur-Nuit), drawn on the reading
+ * background: in the colour of the dark scheme on the background of night mode, whatever the
+ * theme, so that it stays legible (F13, ADR 0028).
+ */
 @Composable
-private fun FullscreenPageIndicator(page: Int, pageCount: Int, modifier: Modifier = Modifier) {
+private fun FullscreenPageIndicator(page: Int, pageCount: Int, darkBackground: Boolean, modifier: Modifier = Modifier) {
+    val scheme = if (darkBackground) LutrinDarkColorScheme else MaterialTheme.colorScheme
     Text(
         text = stringResource(R.string.reader_fullscreen_page, page + 1, pageCount),
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = scheme.onSurfaceVariant,
         modifier = modifier.safeDrawingPadding().padding(FullscreenIndicatorPadding),
     )
 }

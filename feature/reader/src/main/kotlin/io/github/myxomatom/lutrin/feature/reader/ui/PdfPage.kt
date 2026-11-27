@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PixelRect
 import io.github.myxomatom.lutrin.feature.reader.render.RenderResult
@@ -46,11 +47,12 @@ private const val DETAIL_DELAY_MS = 150L
 /** Shadow lifting the page off the reading background (mockup E2). */
 internal val PAGE_ELEVATION = 1.dp
 
-/** Page background before its rendering arrives (pages are white paper, whatever the theme). */
-internal val PAPER = Color.White
-
-/** Page background in night mode, matching the inverted rendering (design tokens, reader.pageNight). */
-private val PAPER_NIGHT = Color(0xFF16181C)
+/**
+ * Paper of the pages drawn with [options]: the colour the engine gives a blank page (ADR 0028),
+ * shown until the rendering arrives and under a damaged page. White in the original colours,
+ * whatever the theme of the app.
+ */
+internal fun paperOf(options: RenderOptions): Color = Color(options.colorMode.paper)
 
 /**
  * One page: a base rendering of the whole page, stretched to the displayed size, and, when
@@ -59,6 +61,8 @@ private val PAPER_NIGHT = Color(0xFF16181C)
  * shows [DamagedPageMessage] on its paper instead (ADR 0031). The activity is reported fully drawn
  * once the pages first shown have their base rendering, or are known to be damaged.
  *
+ * @param options how the page is drawn (ADR 0028): its colours, original, night or sepia. A change
+ *   renders the page again, on the paper of the new colours.
  * @param pageModifier modifier applied to the page itself, first (the paper, not the margins
  *   around it): the shared element of the thumbnail transition ([SharedPage], ADR 0019).
  * @param highlights occurrences of the search drawn over the page (F07), `null` for none.
@@ -74,7 +78,7 @@ internal fun PdfPage(
     viewport: Viewport?,
     zoom: Float,
     settled: Boolean,
-    nightMode: Boolean,
+    options: RenderOptions,
     modifier: Modifier = Modifier,
     pageModifier: Modifier = Modifier,
     highlights: PageHighlights? = null,
@@ -82,8 +86,8 @@ internal fun PdfPage(
 ) {
     val displayedWidth = pageWidthPx(fitWidth, zoom)
     val baseWidth = baseRenderWidth(fitWidth, zoom)
-    val base by produceState<RenderResult?>(null, pageIndex, baseWidth, nightMode) {
-        value = renderer.renderPage(pageIndex, baseWidth, nightMode)
+    val base by produceState<RenderResult?>(null, pageIndex, baseWidth, options) {
+        value = renderer.renderPage(pageIndex, baseWidth, options)
     }
     // The activity reports itself fully drawn once every page first shown has its rendering:
     // the end of "open a document" for the startup metrics of :benchmark (ADR 0012). A damaged
@@ -100,7 +104,7 @@ internal fun PdfPage(
             viewport = viewport,
             zoom = zoom,
             settled = settled,
-            nightMode = nightMode,
+            options = options,
             coordinates = coordinates,
         )
     val density = LocalDensity.current
@@ -111,10 +115,10 @@ internal fun PdfPage(
             pageModifier
                 .size(with(density) { displayedWidth.toDp() }, with(density) { displayedHeight.toDp() })
                 .shadow(PAGE_ELEVATION)
-                .background(if (nightMode) PAPER_NIGHT else PAPER)
+                .background(paperOf(options))
                 .onGloballyPositioned { coordinates = it },
         ) {
-            PageImages(base, detail, nightMode)
+            PageImages(base, detail, options.colorMode.isDark)
             SearchHighlightLayer(highlights, page)
             SelectionHighlightLayer(selection?.selection, page)
         }
@@ -128,9 +132,9 @@ internal fun PdfPage(
  * message of a damaged page instead when the page cannot be read (ADR 0031).
  */
 @Composable
-private fun PageImages(base: RenderResult?, detail: Pair<PixelRect, Bitmap>?, nightMode: Boolean) {
+private fun PageImages(base: RenderResult?, detail: Pair<PixelRect, Bitmap>?, darkPaper: Boolean) {
     if (base is RenderResult.Unreadable) {
-        DamagedPageMessage(nightMode, Modifier.fillMaxSize())
+        DamagedPageMessage(darkPaper, Modifier.fillMaxSize())
         return
     }
     Box(Modifier.fillMaxSize()) {
@@ -167,11 +171,12 @@ private fun rememberDetail(
     viewport: Viewport?,
     zoom: Float,
     settled: Boolean,
-    nightMode: Boolean,
+    options: RenderOptions,
     coordinates: LayoutCoordinates?,
 ): Pair<PixelRect, Bitmap>? {
-    var detail by remember(pageIndex, zoom, nightMode) { mutableStateOf<Pair<PixelRect, Bitmap>?>(null) }
-    LaunchedEffect(pageIndex, zoom, settled, nightMode, coordinates, viewport) {
+    // Forgotten with the options: a detail of the previous colours is never drawn over the page.
+    var detail by remember(pageIndex, zoom, options) { mutableStateOf<Pair<PixelRect, Bitmap>?>(null) }
+    LaunchedEffect(pageIndex, zoom, settled, options, coordinates, viewport) {
         if (zoom <= 1f || !settled) return@LaunchedEffect
         val pageCoordinates = coordinates?.takeIf { it.isAttached } ?: return@LaunchedEffect
         val (viewportCoordinates, viewportSize) = viewport?.takeIf { it.coordinates.isAttached }
@@ -190,7 +195,7 @@ private fun rememberDetail(
                 viewportSize.height,
             )
         if (part != null && part != detail?.first) {
-            renderer.renderPart(pageIndex, displayedWidth, part, nightMode).bitmapOrNull?.let { detail = part to it }
+            renderer.renderPart(pageIndex, displayedWidth, part, options).bitmapOrNull?.let { detail = part to it }
         }
     }
     return detail

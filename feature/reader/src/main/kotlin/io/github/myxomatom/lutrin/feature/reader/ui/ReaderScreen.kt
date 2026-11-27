@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -51,7 +52,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
+import io.github.myxomatom.lutrin.core.ui.theme.LutrinReaderColors
 import io.github.myxomatom.lutrin.core.ui.theme.titleLargeCompact
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
 import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
@@ -79,6 +84,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onBack = onBack,
         onPageChange = viewModel::onPageChange,
         onScrollModeChange = viewModel::onScrollModeChange,
+        onDocumentColorModeChange = viewModel::onDocumentColorModeChange,
         onRemoveFromRecents = {
             viewModel.onRemoveFromRecents()
             onBack()
@@ -120,6 +126,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param modifier modifier applied to the screen.
  * @param onPageChange called with the zero-based page shown, whenever it changes.
  * @param onScrollModeChange called with the scroll mode chosen in the options (V6).
+ * @param onDocumentColorModeChange called with the colours of the document chosen in the options
+ *   (V6, F13, ADR 0028).
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
@@ -153,6 +161,7 @@ fun ReaderScreen(
     modifier: Modifier = Modifier,
     onPageChange: (Int) -> Unit = {},
     onScrollModeChange: (ScrollMode) -> Unit = {},
+    onDocumentColorModeChange: (DocumentColorMode) -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
@@ -183,6 +192,7 @@ fun ReaderScreen(
                     onBack = onBack,
                     onPageChange = onPageChange,
                     onScrollModeChange = onScrollModeChange,
+                    onDocumentColorModeChange = onDocumentColorModeChange,
                     links = links,
                     pageTransition = pageTransition,
                     onOutlineOpen = onOutlineOpen,
@@ -213,6 +223,7 @@ private fun ReaderContent(
     onBack: () -> Unit,
     onPageChange: (Int) -> Unit,
     onScrollModeChange: (ScrollMode) -> Unit,
+    onDocumentColorModeChange: (DocumentColorMode) -> Unit,
     links: ReaderLinks,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
@@ -276,19 +287,15 @@ private fun ReaderContent(
     }
     PropertiesSheet(properties, state.canPrint, onShareClick, rememberPrintClick(state.canPrint, onPrint, snackbar))
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
-    OptionsSheet(optionsVisible, state.scrollMode, onScrollModeChange, onDismiss = { optionsVisible = false })
-}
-
-/** The display options (V6) over the reader, when [visible]. */
-@Composable
-private fun OptionsSheet(
-    visible: Boolean,
-    scrollMode: ScrollMode,
-    onScrollModeChange: (ScrollMode) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    if (!visible) return
-    ReaderOptionsSheet(scrollMode = scrollMode, onScrollModeChange = onScrollModeChange, onDismiss = onDismiss)
+    if (optionsVisible) {
+        ReaderOptionsSheet(
+            scrollMode = state.scrollMode,
+            onScrollModeChange = onScrollModeChange,
+            colorMode = state.renderOptions(LocalDarkTheme.current).colorMode,
+            onColorModeChange = onDocumentColorModeChange,
+            onDismiss = { optionsVisible = false },
+        )
+    }
 }
 
 /**
@@ -339,7 +346,7 @@ private fun ReaderScaffold(
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = readingBackground(state.renderOptions(LocalDarkTheme.current)),
         // The pages run down to the bottom of the screen, under the floating bar and the
         // navigation bar: the bar keeps clear of the bottom insets itself (ADR 0018).
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(TopAndSides),
@@ -466,3 +473,12 @@ internal fun ReaderErrorContent(
         )
     }
 }
+
+/**
+ * Background of the reading area around the pages: that of the theme, or the darker background of
+ * night mode (design tokens, `reader.backgroundNight`), whatever the theme, so that the dark pages
+ * stand out from it (F13, ADR 0028).
+ */
+@Composable
+internal fun readingBackground(options: RenderOptions): Color =
+    if (options.colorMode.isDark) LutrinReaderColors.BackgroundNight else MaterialTheme.colorScheme.surfaceContainerHigh

@@ -11,6 +11,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
@@ -65,11 +66,11 @@ internal class MuPdfDocument(
         PageSize(bounds.width, bounds.height)
     }
 
-    override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean) {
+    override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, options: RenderOptions) {
         require(target.isMutable && target.config == Bitmap.Config.ARGB_8888) {
             "Target must be a mutable ARGB_8888 bitmap"
         }
-        val pixels = renderPixels(index, RenderSpec(region, scale, target.width, target.height, nightMode))
+        val pixels = renderPixels(index, RenderSpec(region, scale, target.width, target.height, options))
         target.setPixels(pixels, 0, target.width, 0, 0, target.width, target.height)
     }
 

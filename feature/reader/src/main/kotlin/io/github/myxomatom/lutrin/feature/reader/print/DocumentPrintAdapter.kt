@@ -14,6 +14,7 @@ import android.print.PrintDocumentInfo
 import androidx.core.graphics.createBitmap
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
@@ -172,7 +173,9 @@ internal class DocumentPrintAdapter(private val job: PrintJob, private val openI
                 bitmap = target
                 // Transparent areas of the page print as paper, not black.
                 target.eraseColor(Color.WHITE)
-                source.document.renderPage(index, target, PdfRect(0f, 0f, size.width, size.height), scale, false)
+                // Original colours: printing ignores the colours chosen for the reader (ADR 0028).
+                val page = PdfRect(0f, 0f, size.width, size.height)
+                source.document.renderPage(index, target, page, scale, RenderOptions.ORIGINAL)
                 writer.addPage(size.width, size.height, target.asPageImage())
             }
             writer.finish()

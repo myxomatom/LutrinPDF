@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.ui.theme.titleMediumSerif
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -72,9 +73,6 @@ private val PageCorner = 4.dp
 /** Edge of the page in the card. */
 private val PageEdgeWidth = 1.dp
 
-/** Pages are white paper, whatever the theme of the app (F13 sets the document colours). */
-private val Paper = Color.White
-
 /** Edge of the paper (mockup: `#C3C6CF`), the same in both themes, like the paper itself. */
 private val PaperEdge = Color(0xFFC3C6CF)
 
@@ -93,6 +91,8 @@ private val PaperEdge = Color(0xFFC3C6CF)
  * @param pageIndex zero-based page aimed at.
  * @param page its size, in points.
  * @param renderer draws the preview.
+ * @param options how the page is drawn: in the colours of the pages (ADR 0028), on their paper
+ *   ([paperOf]), whatever the theme of the app.
  * @param pageMaxHeight tallest page in the card, so that the card fits in the window.
  * @param modifier modifier applied to the card.
  * @param sectionTitle title of the section of the page; `null` shows none.
@@ -102,6 +102,7 @@ internal fun PagePreviewCard(
     pageIndex: Int,
     page: PageSize,
     renderer: PageRenderer,
+    options: RenderOptions,
     pageMaxHeight: Dp,
     modifier: Modifier = Modifier,
     sectionTitle: String? = null,
@@ -116,7 +117,7 @@ internal fun PagePreviewCard(
             Modifier.padding(CardPadding).semantics(mergeDescendants = true) {},
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PreviewPage(pageIndex, page, renderer, pageMaxHeight)
+            PreviewPage(pageIndex, page, renderer, options, pageMaxHeight)
             Spacer(Modifier.height(CaptionGap))
             Text(
                 stringResource(R.string.reader_page_preview_caption, pageIndex + 1),
@@ -141,7 +142,7 @@ internal fun PagePreviewCard(
 
 /** The page fitted in [PageMaxWidth] × [maxHeight], as rendered, or blank while it renders. */
 @Composable
-private fun PreviewPage(pageIndex: Int, page: PageSize, renderer: PageRenderer, maxHeight: Dp) {
+private fun PreviewPage(pageIndex: Int, page: PageSize, renderer: PageRenderer, options: RenderOptions, maxHeight: Dp) {
     val density = LocalDensity.current
     val widthPx =
         with(density) { fitPageWidth(page, PageMaxWidth.roundToPx(), maxHeight.roundToPx(), margin = 0) }
@@ -151,11 +152,11 @@ private fun PreviewPage(pageIndex: Int, page: PageSize, renderer: PageRenderer, 
         Modifier
             .size(with(density) { widthPx.toDp() }, with(density) { heightPx.toDp() })
             .clip(shape)
-            .background(Paper)
+            .background(paperOf(options))
             .border(PageEdgeWidth, PaperEdge, shape),
     ) {
         // One state per page: another page starts blank, never with the bitmap of the previous one.
-        val bitmap = key(pageIndex, widthPx) { rememberPreview(renderer, pageIndex, widthPx) }
+        val bitmap = key(pageIndex, widthPx, options) { rememberPreview(renderer, pageIndex, widthPx, options) }
         bitmap?.let {
             val image = remember(it) { it.asImageBitmap() }
             Image(
@@ -174,9 +175,10 @@ private fun PreviewPage(pageIndex: Int, page: PageSize, renderer: PageRenderer, 
  * page, cancels the rendering.
  */
 @Composable
-private fun rememberPreview(renderer: PageRenderer, pageIndex: Int, widthPx: Int): Bitmap? {
-    val preview by produceState(renderer.cachedPreview(pageIndex, widthPx), renderer, pageIndex, widthPx) {
-        if (value == null) value = renderer.renderPreview(pageIndex, widthPx).bitmapOrNull
+private fun rememberPreview(renderer: PageRenderer, pageIndex: Int, widthPx: Int, options: RenderOptions): Bitmap? {
+    val cached = renderer.cachedPreview(pageIndex, widthPx, options)
+    val preview by produceState(cached, renderer, pageIndex, widthPx, options) {
+        if (value == null) value = renderer.renderPreview(pageIndex, widthPx, options).bitmapOrNull
     }
     return preview
 }
