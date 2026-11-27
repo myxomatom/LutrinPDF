@@ -17,8 +17,10 @@ changement y est signalé.
   lien externe, erreurs) a un nom pour TalkBack et une cible tactile de 48 dp, aussi à 200 % de
   police ; `ThemeContrastTest` vérifie le contraste AA des couleurs des deux thèmes ;
   `AccessibilityInstrumentedTest` lance les contrôles de l'*Accessibility Test Framework* sur douze
-  écrans et dialogues. Aucun défaut de code n'a été trouvé par l'audit JVM ; les contrôles sur
-  appareil n'ont pas encore été exécutés.
+  écrans et dialogues. L'audit JVM n'a trouvé aucun défaut ; les contrôles de
+  l'*Accessibility Test Framework* (CI, émulateurs API 26 et 37) ont trouvé la poignée de 32 dp des
+  feuilles « Affichage » et « Propriétés », portée à une cible de 48 dp (`SheetDragHandle`). Ils n'ont
+  pas encore été lancés sur un téléphone.
 - **Test des textes** (F19) : `StringResourcesTest` lit tous les `strings.xml` (mêmes clés en français
   et en anglais dans chaque module, mêmes variables, typographie française, aucun texte visible écrit
   dans le code) et Lint garde `MissingTranslation` et `ExtraTranslation` au niveau fatal.

@@ -38,8 +38,9 @@ confirme ce que l'émulateur ne montre pas (polices du système, `PrintManager`,
 - [ ] `AccessibilityInstrumentedTest` (**nouveau**, 12 tests : bibliothèque avec un récent, lecteur,
       recherche, table des matières, « Affichage », « Propriétés », « Aller à la page », lien
       externe, mot de passe, erreur, paramètres, À propos). Chaque échec nomme la vue et la règle
-      de l'*Accessibility Test Framework* (cible tactile, nom, contraste). Ces contrôles n'ont **pas
-      pu être exécutés** pendant le lot de clôture : le premier passage est ici. Un défaut trouvé se
+      de l'*Accessibility Test Framework* (cible tactile, nom, contraste). Verts sur la CI
+      (émulateurs API 26 et 37) depuis la PR #57, où ils ont trouvé la poignée de 32 dp des feuilles ;
+      à relancer ici pour confirmer sur le téléphone. Un défaut trouvé se
       corrige dans l'interface, sans désactiver de règle (`AGENTS.md` §5) ;
 - [ ] `SearchInstrumentedTest`, `SelectionInstrumentedTest`, `LinksInstrumentedTest` (assertions
       explicites ajoutées, audit T2) ;
@@ -279,7 +280,7 @@ Constaté le 2026-11-27 sur la branche `chore/m5-closing`, sans appareil. ✅ v�
 
 **Ce que ce lot a ajouté sur F18 et F19** (sans appareil) :
 
-- *F18* : audit JVM de chaque contrôle (nom pour TalkBack, cible de 48 dp) sur 30 états d'écrans et de dialogues (3 + 5 + 5 + 17), dont 200 % de police ; contraste AA des couleurs des deux thèmes (`ThemeContrastTest`) ; les contrôles de l'*Accessibility Test Framework* sont écrits (`AccessibilityInstrumentedTest`) mais **pas encore exécutés** ; la lecture TalkBack (ordre, annonces) reste à faire à la main (§2.8) ;
+- *F18* : audit JVM de chaque contrôle (nom pour TalkBack, cible de 48 dp) sur 30 états d'écrans et de dialogues (3 + 5 + 5 + 17), dont 200 % de police ; contraste AA des couleurs des deux thèmes (`ThemeContrastTest`) ; les contrôles de l'*Accessibility Test Framework* (`AccessibilityInstrumentedTest`) sont verts sur la CI (API 26 et 37) mais **pas encore lancés sur un téléphone**; ils ont fait corriger la poignée des feuilles (32 dp, maintenant 48 dp) ; la lecture TalkBack (ordre, annonces) reste à faire à la main (§2.8) ;
 - *F19* : mêmes clés en français et en anglais dans les cinq modules, mêmes variables, typographie française (espaces insécables), orthographe anglaise unifiée, aucun texte visible dans le code (`StringResourcesTest`, Lint) ;
 - *Captures* : chaque écran et chaque vue de l'interface (E1 à E4, V1 à V8) a ses captures en clair, sombre, 200 % de police et français ; les états secondaires (nuit, sépia, rotation, page endommagée, etc.) ont celles qui leur sont utiles.
 
