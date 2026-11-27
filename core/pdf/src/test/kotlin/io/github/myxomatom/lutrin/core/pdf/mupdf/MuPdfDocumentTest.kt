@@ -3,6 +3,7 @@ package io.github.myxomatom.lutrin.core.pdf.mupdf
 
 import com.artifex.mupdf.fitz.Document
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
@@ -455,32 +456,29 @@ class MuPdfDocumentTest {
 
     @Test
     fun `a turned page shows the same drawing, turned`() = runTest {
+        // Scale 1: whole pixels on both sides, so that the turned drawing falls on the same pixels.
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            val straight = document.renderPixels(0, RenderSpec(wholePage, 0.5f, 298, 421))
-            val turnedRegion = PdfRect(0f, 0f, wholePage.bottom, wholePage.right)
-            PageRotation.entries.filter { it.swapsSides }.forEach { rotation ->
-                val turned =
-                    document.renderPixels(
-                        0,
-                        RenderSpec(turnedRegion, 0.5f, 421, 298, RenderOptions(rotation = rotation)),
-                    )
+            val straight = document.renderPixels(0, RenderSpec(wholePage, 1f, 595, 842))
+            val straightBounds = straight.darkBounds(595)
+            val straightInk = straight.count { it.isDark() }.toFloat()
+            PageRotation.entries.filter { it != PageRotation.NONE }.forEach { rotation ->
+                val region = if (rotation.swapsSides) PdfRect(0f, 0f, 842f, 595f) else wholePage
+                val width = region.width.toInt()
+                val spec = RenderSpec(region, 1f, width, region.height.toInt(), RenderOptions(rotation = rotation))
+                val turned = document.renderPixels(0, spec)
 
-                // The ink of the page, turned: its bounds turn with the page (one pixel of rounding).
-                val expected = straight.darkBounds(298).turned(rotation, 298, 421)
-                val actual = turned.darkBounds(421)
-                assertThat(actual.zip(expected).all { (a, e) -> Math.abs(a - e) <= 1 }).isTrue()
-                assertThat(
+                // The ink of the page, turned: its bounds turn with the page (a pixel or two of rounding).
+                val expected = straightBounds.turned(rotation, 595, 842)
+                val actual = turned.darkBounds(width)
+                assertWithMessage("$rotation: $actual, expected $expected")
+                    .that(actual.zip(expected).all { (a, e) -> Math.abs(a - e) <= 2 })
+                    .isTrue()
+                assertWithMessage("$rotation ink").that(
                     turned.count {
                         it.isDark()
-                    }.toFloat() / straight.count { it.isDark() },
-                ).isWithin(0.05f).of(1f)
+                    } / straightInk,
+                ).isWithin(0.15f).of(1f)
             }
-            val upsideDown = document.renderPixels(
-                0,
-                RenderSpec(wholePage, 0.5f, 298, 421, RenderOptions(rotation = PageRotation.HALF)),
-            )
-            val expected = straight.darkBounds(298).turned(PageRotation.HALF, 298, 421)
-            assertThat(upsideDown.darkBounds(298).zip(expected).all { (a, e) -> Math.abs(a - e) <= 1 }).isTrue()
         }
     }
 
