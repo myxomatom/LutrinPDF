@@ -82,6 +82,7 @@
       "background": "#E6E8ED",
       "pageNormal": "#FFFFFF",
       "pageNight": "#16181C",
+      "textNight": "#E1E2E8",
       "backgroundNight": "#0B0D10",
       "pageSepia": "#F4ECD8",
       "textSepia": "#3D2E14",

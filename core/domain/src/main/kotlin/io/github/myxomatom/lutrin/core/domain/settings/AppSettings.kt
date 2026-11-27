@@ -15,12 +15,18 @@ package io.github.myxomatom.lutrin.core.domain.settings
  * @property ignoreDocumentRestrictions whether the reader lets the user copy the text (F08, ADR
  *   0024) and print (F15, ADR 0026) a document whose author forbids it. Off by default: the
  *   permissions of the document are respected.
+ * @property appTheme light, dark or the system theme for the interface (F13, ADR 0028). The
+ *   system theme by default.
+ * @property documentColors the colours of the documents (F13, ADR 0028): original by default,
+ *   in the dark theme too.
  */
 data class AppSettings(
     val dynamicColor: Boolean = DEFAULT_DYNAMIC_COLOR,
     val scrollMode: ScrollMode = DEFAULT_SCROLL_MODE,
     val pagePreview: Boolean = DEFAULT_PAGE_PREVIEW,
     val ignoreDocumentRestrictions: Boolean = DEFAULT_IGNORE_DOCUMENT_RESTRICTIONS,
+    val appTheme: AppTheme = DEFAULT_APP_THEME,
+    val documentColors: DocumentColors = DocumentColors(),
 ) {
     /**
      * Whether the reader may copy the text of a document (F08, ADR 0024): always when the
@@ -53,5 +59,8 @@ data class AppSettings(
 
         /** The restrictions of a document are respected until the user chooses otherwise (ADR 0024, 0026). */
         const val DEFAULT_IGNORE_DOCUMENT_RESTRICTIONS: Boolean = false
+
+        /** The interface follows the theme of the system until the user forces one (ADR 0028). */
+        val DEFAULT_APP_THEME: AppTheme = AppTheme.SYSTEM
     }
 }
