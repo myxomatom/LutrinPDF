@@ -8,9 +8,11 @@ import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -94,6 +96,12 @@ class LinksInstrumentedTest {
             composeRule.waitUntil(TIMEOUT_MS) {
                 composeRule.onAllNodesWithContentDescription(document(3)).fetchSemanticsNodes().isNotEmpty()
             }
+            // The reader shows the page of the link, and the page indicator says so.
+            composeRule.onAllNodesWithContentDescription(document(3)).onFirst().assertIsDisplayed()
+            composeRule.onNodeWithContentDescription(
+                targetContext.getString(ReaderR.string.reader_page_slider_value, 3, PAGES),
+            )
+                .assertIsDisplayed()
         }
     }
 
