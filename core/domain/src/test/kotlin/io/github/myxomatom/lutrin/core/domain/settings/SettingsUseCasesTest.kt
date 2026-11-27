@@ -41,6 +41,18 @@ class SettingsUseCasesTest {
             val colors = settings.value.documentColors.copy(followDarkTheme = enabled)
             (settings as MutableStateFlow).value = settings.value.copy(documentColors = colors)
         }
+
+        override suspend fun setFitMode(mode: FitMode) {
+            (settings as MutableStateFlow).value = settings.value.copy(chosenFitMode = mode)
+        }
+
+        override suspend fun setKeepScreenOn(enabled: Boolean) {
+            (settings as MutableStateFlow).value = settings.value.copy(keepScreenOn = enabled)
+        }
+
+        override suspend fun setLockOrientation(enabled: Boolean) {
+            (settings as MutableStateFlow).value = settings.value.copy(lockOrientation = enabled)
+        }
     }
 
     private val repository = InMemorySettings()
@@ -189,5 +201,50 @@ class SettingsUseCasesTest {
         setFollowDarkTheme(false)
 
         assertThat(repository.settings.value.documentColors).isEqualTo(DocumentColors(chosen = DocumentColorMode.NIGHT))
+    }
+
+    @Test
+    fun `the fit follows the scroll mode until the user chooses one`() {
+        val settings = AppSettings()
+
+        assertThat(settings.chosenFitMode).isNull()
+        assertThat(settings.fitMode(ScrollMode.CONTINUOUS)).isEqualTo(FitMode.WIDTH)
+        assertThat(settings.fitMode(ScrollMode.PAGED)).isEqualTo(FitMode.PAGE)
+    }
+
+    @Test
+    fun `a chosen fit wins in both scroll modes`() = runTest {
+        SetFitModeUseCase(repository)(FitMode.PAGE)
+
+        val settings = repository.settings.value
+        assertThat(settings.fitMode(ScrollMode.CONTINUOUS)).isEqualTo(FitMode.PAGE)
+        assertThat(settings.fitMode(ScrollMode.PAGED)).isEqualTo(FitMode.PAGE)
+
+        SetFitModeUseCase(repository)(FitMode.WIDTH)
+        assertThat(repository.settings.value.fitMode(ScrollMode.PAGED)).isEqualTo(FitMode.WIDTH)
+    }
+
+    @Test
+    fun `the screen may sleep and the orientation is free by default`() {
+        assertThat(AppSettings().keepScreenOn).isFalse()
+        assertThat(AppSettings().lockOrientation).isFalse()
+    }
+
+    @Test
+    fun `keeping the screen on can be turned on and off`() = runTest {
+        SetKeepScreenOnUseCase(repository)(true)
+        assertThat(repository.settings.value.keepScreenOn).isTrue()
+
+        SetKeepScreenOnUseCase(repository)(false)
+        assertThat(repository.settings.value.keepScreenOn).isFalse()
+    }
+
+    @Test
+    fun `locking the orientation can be turned on and off`() = runTest {
+        SetLockOrientationUseCase(repository)(true)
+        assertThat(repository.settings.value.lockOrientation).isTrue()
+
+        SetLockOrientationUseCase(repository)(false)
+        assertThat(repository.settings.value.lockOrientation).isFalse()
     }
 }

@@ -10,6 +10,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
 import javax.inject.Inject
@@ -40,6 +41,9 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
                             chosen = documentColorModeOf(preferences[DOCUMENT_COLORS]),
                             followDarkTheme = preferences[FOLLOW_DARK_THEME] ?: false,
                         ),
+                    chosenFitMode = fitModeOf(preferences[FIT_MODE]),
+                    keepScreenOn = preferences[KEEP_SCREEN_ON] ?: AppSettings.DEFAULT_KEEP_SCREEN_ON,
+                    lockOrientation = preferences[LOCK_ORIENTATION] ?: AppSettings.DEFAULT_LOCK_ORIENTATION,
                 )
             }.distinctUntilChanged()
 
@@ -73,6 +77,18 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
         dataStore.edit { it[FOLLOW_DARK_THEME] = enabled }
     }
 
+    override suspend fun setFitMode(mode: FitMode) {
+        dataStore.edit { it[FIT_MODE] = mode.storedValue }
+    }
+
+    override suspend fun setKeepScreenOn(enabled: Boolean) {
+        dataStore.edit { it[KEEP_SCREEN_ON] = enabled }
+    }
+
+    override suspend fun setLockOrientation(enabled: Boolean) {
+        dataStore.edit { it[LOCK_ORIENTATION] = enabled }
+    }
+
     private companion object {
         /** Key names are stored on the device: never rename them without a migration. */
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
@@ -101,6 +117,18 @@ internal class DataStoreSettingsRepository @Inject constructor(private val dataS
 
         /** Whether documents without chosen colours turn to night in the dark theme (ADR 0028). */
         val FOLLOW_DARK_THEME = booleanPreferencesKey("follow_dark_theme")
+
+        /**
+         * Holds [storedValue] of the [FitMode] picked in the reader; absent until the user picks
+         * one, the fit then being that of the scroll mode (ADR 0029).
+         */
+        val FIT_MODE = stringPreferencesKey("fit_mode")
+
+        /** Whether the screen stays on while a document is shown (ADR 0029). */
+        val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
+
+        /** Whether the reader keeps its current orientation (F17, ADR 0029). */
+        val LOCK_ORIENTATION = booleanPreferencesKey("lock_orientation")
     }
 }
 
@@ -141,3 +169,13 @@ internal val DocumentColorMode.storedValue: String
 /** Document colours of a stored value; `null` (no choice) when nothing, or an unknown value, is stored. */
 internal fun documentColorModeOf(stored: String?): DocumentColorMode? =
     DocumentColorMode.entries.firstOrNull { it.storedValue == stored }
+
+/** Value written on the device for a fit mode; spelled out like [ScrollMode.storedValue]. */
+internal val FitMode.storedValue: String
+    get() = when (this) {
+        FitMode.WIDTH -> "width"
+        FitMode.PAGE -> "page"
+    }
+
+/** Fit mode of a stored value; `null` (no choice) when nothing, or an unknown value, is stored. */
+internal fun fitModeOf(stored: String?): FitMode? = FitMode.entries.firstOrNull { it.storedValue == stored }

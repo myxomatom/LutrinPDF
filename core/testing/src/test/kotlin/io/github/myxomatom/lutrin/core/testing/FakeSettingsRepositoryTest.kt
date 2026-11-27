@@ -3,6 +3,7 @@ package io.github.myxomatom.lutrin.core.testing
 
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -37,5 +38,17 @@ class FakeSettingsRepositoryTest {
 
         assertThat(repository.settings.value)
             .isEqualTo(AppSettings(dynamicColor = false, scrollMode = ScrollMode.PAGED, pagePreview = false))
+    }
+
+    @Test
+    fun `the reading option setters change only their own setting`() = runTest {
+        val repository = FakeSettingsRepository()
+
+        repository.setFitMode(FitMode.PAGE)
+        repository.setKeepScreenOn(true)
+        repository.setLockOrientation(true)
+
+        assertThat(repository.settings.value)
+            .isEqualTo(AppSettings(chosenFitMode = FitMode.PAGE, keepScreenOn = true, lockOrientation = true))
     }
 }

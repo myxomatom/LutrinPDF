@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.core.testing
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,5 +54,20 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
     /** Changes the dark theme follow in memory; [settings] emits the new value at once. */
     override suspend fun setFollowDarkTheme(enabled: Boolean) {
         state.value = state.value.copy(documentColors = state.value.documentColors.copy(followDarkTheme = enabled))
+    }
+
+    /** Changes the fit mode in memory; [settings] emits the new value at once. */
+    override suspend fun setFitMode(mode: FitMode) {
+        state.value = state.value.copy(chosenFitMode = mode)
+    }
+
+    /** Changes the keep-screen-on setting in memory; [settings] emits the new value at once. */
+    override suspend fun setKeepScreenOn(enabled: Boolean) {
+        state.value = state.value.copy(keepScreenOn = enabled)
+    }
+
+    /** Changes the orientation lock in memory; [settings] emits the new value at once. */
+    override suspend fun setLockOrientation(enabled: Boolean) {
+        state.value = state.value.copy(lockOrientation = enabled)
     }
 }
