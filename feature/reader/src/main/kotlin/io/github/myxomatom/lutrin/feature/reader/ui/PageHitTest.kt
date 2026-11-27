@@ -6,7 +6,8 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
-import io.github.myxomatom.lutrin.feature.reader.render.fitPageWidth
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
+import io.github.myxomatom.lutrin.feature.reader.render.pagedFitWidth
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
 import io.github.myxomatom.lutrin.feature.reader.render.zoomedExtent
@@ -119,8 +120,21 @@ internal fun continuousPlacements(
  * @property areaHeight height of the zoomable area, in pixels, without the clearance.
  * @property clearance free space under the area, in pixels.
  * @property fitWidth width of the page at zoom 1, in pixels.
+ * @property visibleHeight height of the reading area above the floating bar, in pixels.
  */
-internal data class PagedPageLayout(val areaWidth: Int, val areaHeight: Int, val clearance: Int, val fitWidth: Int) {
+internal data class PagedPageLayout(
+    val areaWidth: Int,
+    val areaHeight: Int,
+    val clearance: Int,
+    val fitWidth: Int,
+    val visibleHeight: Int = areaHeight,
+) {
+    /**
+     * Whether the page area is taller than what can be seen above the floating bar, so that it
+     * scrolls vertically: zoomed in, or a page fitted to the width that is taller than the screen.
+     */
+    val scrollsVertically: Boolean get() = areaHeight > visibleHeight
+
     /**
      * Where the page is drawn in the reading area at [zoom], with the area scrolled by
      * ([scrollX], [scrollY]) pixels.
@@ -145,21 +159,30 @@ internal data class PagedPageLayout(val areaWidth: Int, val areaHeight: Int, val
  * @param bottomClearance height of the floating bar over the bottom of the page, in pixels; never
  *   more than half the viewport, so that a window too low for the bar still shows the page.
  * @param margin free space around a page fitted to the screen, in pixels.
+ * @param fit what zoom 1 fits: the whole page, or its width, a page taller than the area then
+ *   making the zoomable area taller than the screen (ADR 0029).
  */
+@Suppress("LongParameterList") // Plain geometry: the page, the sizes of the area and the zoom.
 internal fun pagedPageLayout(
     page: PageSize,
     viewport: IntSize,
     bottomClearance: Int,
     margin: Int,
     zoom: Float,
+    fit: FitMode = FitMode.PAGE,
 ): PagedPageLayout {
     val clearance = minOf(bottomClearance, viewport.height / 2).coerceAtLeast(0)
     val pageAreaHeight = viewport.height - clearance
+    val fitWidth = pagedFitWidth(page, viewport.width, pageAreaHeight, fit, margin)
+    // At zoom 1 the area holds the page and its margins, and is at least the screen: taller than it
+    // for a page fitted to the width that does not fit in the height.
+    val baseHeight = maxOf(pageAreaHeight, pageHeightPx(page, fitWidth) + 2 * margin)
     return PagedPageLayout(
         areaWidth = zoomedExtent(viewport.width, zoom),
-        areaHeight = zoomedExtent(pageAreaHeight, zoom),
+        areaHeight = zoomedExtent(pageAreaHeight, zoom, baseHeight),
         clearance = clearance,
-        fitWidth = fitPageWidth(page, viewport.width, pageAreaHeight, margin),
+        fitWidth = fitWidth,
+        visibleHeight = pageAreaHeight,
     )
 }
 

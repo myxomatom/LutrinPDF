@@ -18,14 +18,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -42,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.feature.reader.R
 
@@ -88,53 +92,72 @@ private val SwatchLineHeight = 4.dp
 private const val SWATCH_LINE_ALPHA = 0.6f
 
 /**
- * Display options of the reader (V6), opened by « More options »: the scroll mode (F03, ADR 0011)
- * and the colours of the document (F13, ADR 0028); the other options of the mockup arrive with
- * the next lots of milestone M5. The page preview of the slider (ADR 0018) and the theme of the
- * app are in the settings screen (E3), with the other app-wide choices.
+ * What the display options show (V6).
  *
- * @param scrollMode current scroll mode.
- * @param onScrollModeChange called with the chosen scroll mode; the sheet stays open.
- * @param colorMode colours the pages are drawn with now.
- * @param onColorModeChange called with the chosen colours; the sheet stays open, so that the
- *   pages can be seen changing above it.
+ * @property scrollMode current scroll mode.
+ * @property fitMode what zoom 1 fits now.
+ * @property colorMode colours the pages are drawn with now.
+ * @property fullscreen whether the bars are hidden (F14).
+ * @property lockOrientation whether the orientation is locked (F17).
+ */
+internal data class ReaderDisplay(
+    val scrollMode: ScrollMode,
+    val fitMode: FitMode,
+    val colorMode: DocumentColorMode,
+    val fullscreen: Boolean,
+    val lockOrientation: Boolean,
+)
+
+/**
+ * What the choices of the display options do (V6). Each one is applied at once and the sheet stays
+ * open, so that the pages can be seen changing above it.
+ *
+ * @property onScrollModeChange called with the chosen scroll mode.
+ * @property onFitModeChange called with the chosen fit.
+ * @property onColorModeChange called with the chosen colours.
+ * @property onFullscreenChange called with the new state of the full screen switch.
+ * @property onLockOrientationChange called with the new state of the orientation switch.
+ */
+internal class ReaderDisplayActions(
+    val onScrollModeChange: (ScrollMode) -> Unit = {},
+    val onFitModeChange: (FitMode) -> Unit = {},
+    val onColorModeChange: (DocumentColorMode) -> Unit = {},
+    val onFullscreenChange: (Boolean) -> Unit = {},
+    val onLockOrientationChange: (Boolean) -> Unit = {},
+)
+
+/**
+ * Display options of the reader (V6), opened by « More options »: the scroll mode (F03, ADR 0011),
+ * the fit of the pages (F04, ADR 0029), the colours of the document (F13, ADR 0028), full screen
+ * (F14) and the orientation lock (F17, ADR 0029). The page preview of the slider (ADR 0018), the
+ * theme of the app and keeping the screen on are in the settings screen (E3), with the other
+ * app-wide choices.
+ *
+ * @param display what the options show.
+ * @param actions what the choices do; the sheet stays open after each one.
  * @param onDismiss called when the user closes the sheet.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ReaderOptionsSheet(
-    scrollMode: ScrollMode,
-    onScrollModeChange: (ScrollMode) -> Unit,
-    colorMode: DocumentColorMode,
-    onColorModeChange: (DocumentColorMode) -> Unit,
-    onDismiss: () -> Unit,
-) {
+internal fun ReaderOptionsSheet(display: ReaderDisplay, actions: ReaderDisplayActions, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
-        ReaderOptions(scrollMode, onScrollModeChange, colorMode, onColorModeChange)
+        ReaderOptions(display, actions)
     }
 }
 
 /**
- * Content of the [ReaderOptionsSheet], without the sheet: the title, the scroll section and the
- * colours of the document. It scrolls when the font is large.
+ * Content of the [ReaderOptionsSheet], without the sheet: the title, the scroll, fit and colour
+ * sections and the two switches. It scrolls when the font is large.
  *
- * @param scrollMode current scroll mode.
- * @param onScrollModeChange called with the chosen scroll mode.
- * @param colorMode colours the pages are drawn with now.
- * @param onColorModeChange called with the chosen colours.
+ * @param display what the options show.
+ * @param actions what the choices do.
  * @param modifier modifier applied to the content.
  */
 @Composable
-internal fun ReaderOptions(
-    scrollMode: ScrollMode,
-    onScrollModeChange: (ScrollMode) -> Unit,
-    colorMode: DocumentColorMode,
-    onColorModeChange: (DocumentColorMode) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+internal fun ReaderOptions(display: ReaderDisplay, actions: ReaderDisplayActions, modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxWidth()
@@ -148,11 +171,42 @@ internal fun ReaderOptions(
             modifier = Modifier.semantics { heading() },
         )
         OptionsSection(stringResource(R.string.reader_options_scrolling)) {
-            ScrollModeChoice(scrollMode, onScrollModeChange)
+            ExclusiveChoice(ScrollMode.entries, display.scrollMode, ScrollMode::label, actions.onScrollModeChange)
+        }
+        OptionsSection(stringResource(R.string.reader_options_fit)) {
+            ExclusiveChoice(FitMode.entries, display.fitMode, FitMode::label, actions.onFitModeChange)
         }
         OptionsSection(stringResource(R.string.reader_options_colors)) {
-            ColorModeChoice(colorMode, onColorModeChange)
+            ColorModeChoice(display.colorMode, actions.onColorModeChange)
         }
+        SwitchRow(stringResource(R.string.reader_options_fullscreen), display.fullscreen, actions.onFullscreenChange)
+        SwitchRow(
+            stringResource(R.string.reader_options_lock_orientation),
+            display.lockOrientation,
+            actions.onLockOrientationChange,
+        )
+    }
+}
+
+/** Smallest height of a row of the options (`AGENTS.md` §11: 48 dp targets). */
+private val RowMinHeight = 48.dp
+
+/** Gap between a radio button or a title and what follows it on a row. */
+private val RowGap = 16.dp
+
+/** A title and a switch on one line; the whole row toggles it, as one element for TalkBack. */
+@Composable
+private fun SwitchRow(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = RowMinHeight)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(RowGap),
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -247,17 +301,43 @@ private fun ColorModeSwatch(
     }
 }
 
-/** « Continuous » / « Page by page » segmented buttons. */
+/**
+ * A choice of one among a few labelled options: segmented buttons (mockup V6), or, with a large
+ * font that no longer fits the labels side by side, a list of radio buttons, one per line, as the
+ * theme choice of the settings does.
+ *
+ * @param options the choices, in order.
+ * @param selected the current choice.
+ * @param label string resource of the label of a choice.
+ * @param onSelect called with the choice the user picks.
+ */
 @Composable
-private fun ScrollModeChoice(scrollMode: ScrollMode, onScrollModeChange: (ScrollMode) -> Unit) {
-    val modes = ScrollMode.entries
+private fun <T> ExclusiveChoice(options: List<T>, selected: T, label: (T) -> Int, onSelect: (T) -> Unit) {
+    if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
+        Column(Modifier.fillMaxWidth().selectableGroup()) {
+            options.forEach { option ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = RowMinHeight)
+                        .selectable(selected = option == selected, role = Role.RadioButton) { onSelect(option) },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(RowGap),
+                ) {
+                    RadioButton(selected = option == selected, onClick = null)
+                    Text(stringResource(label(option)), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+        return
+    }
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        modes.forEachIndexed { index, mode ->
+        options.forEachIndexed { index, option ->
             SegmentedButton(
-                selected = mode == scrollMode,
-                onClick = { onScrollModeChange(mode) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                label = { Text(stringResource(mode.label)) },
+                selected = option == selected,
+                onClick = { onSelect(option) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                label = { Text(stringResource(label(option))) },
             )
         }
     }
@@ -269,6 +349,13 @@ private val DocumentColorMode.label: Int
         DocumentColorMode.NORMAL -> R.string.reader_colors_normal
         DocumentColorMode.NIGHT -> R.string.reader_colors_night
         DocumentColorMode.SEPIA -> R.string.reader_colors_sepia
+    }
+
+/** Label of a fit in the options. */
+private val FitMode.label: Int
+    get() = when (this) {
+        FitMode.WIDTH -> R.string.reader_fit_width
+        FitMode.PAGE -> R.string.reader_fit_page
     }
 
 /** Label of a scroll mode in the options. */

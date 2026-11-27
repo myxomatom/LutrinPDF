@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
@@ -54,12 +55,14 @@ private val PAGE_MARGIN = 16.dp
  * interface is right to left.
  *
  * @param pagerState current page and swipe state; hoisted so that the slider can move it.
- * @param zoom current zoom, 1 = whole page; hoisted so that the screen can reset it.
+ * @param zoom current zoom, 1 = the fit of [fitMode]; hoisted so that the screen can reset it.
  * @param onZoomChange called with the new, clamped zoom.
  * @param onTap called on a single tap with the page and the point tapped, `null` outside the
  *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
  * @param renderOptions how the pages are drawn: their colours (F13, ADR 0028).
+ * @param fitMode what zoom 1 fits (F04, ADR 0029): the whole page, or its width, a page taller than the
+ *   screen then scrolling vertically while swiping still changes the page.
  * @param bottomClearance height of the floating bar laid over the bottom of the pages (ADR 0018):
  *   a page at zoom 1 fits in the space above it, and a zoomed page can scroll above it.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
@@ -80,6 +83,7 @@ internal fun PdfPagerView(
     contentDescription: String,
     modifier: Modifier = Modifier,
     renderOptions: RenderOptions = RenderOptions.ORIGINAL,
+    fitMode: FitMode = FitMode.PAGE,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
@@ -107,6 +111,7 @@ internal fun PdfPagerView(
                 onLongPress = onLongPress,
                 pagerMoving = pagerState.isScrollInProgress,
                 renderOptions = renderOptions,
+                fitMode = fitMode,
                 bottomClearance = bottomClearance,
                 sharedPage = sharedPage,
                 highlights = highlights,
@@ -144,6 +149,7 @@ private fun ZoomablePage(
     onLongPress: (PageHit?) -> Unit,
     pagerMoving: Boolean,
     renderOptions: RenderOptions,
+    fitMode: FitMode,
     bottomClearance: Dp,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
@@ -156,7 +162,13 @@ private fun ZoomablePage(
     val commit = rememberPageCommit(zoom, onZoomChange, horizontal, vertical)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout =
-            rememberPagedLayout(page, IntSize(constraints.maxWidth, constraints.maxHeight), bottomClearance, zoom)
+            rememberPagedLayout(
+                page,
+                IntSize(constraints.maxWidth, constraints.maxHeight),
+                bottomClearance,
+                zoom,
+                fitMode,
+            )
         val onPageTap = layout.tapHandler(pageIndex, page, zoom, horizontal, vertical, onTap)
         val onPageLongPress = layout.tapHandler(pageIndex, page, zoom, horizontal, vertical, onLongPress)
         Box(
@@ -165,7 +177,7 @@ private fun ZoomablePage(
                 .onGloballyPositioned { viewport = Viewport(it, it.size) }
                 .zoomGestures(zoom, { pinch = it }, commit, onPageTap, onPageLongPress)
                 .pinchLayer { pinch }
-                .verticalScroll(vertical, enabled = zoom > 1f)
+                .verticalScroll(vertical, enabled = zoom > 1f || layout.scrollsVertically)
                 .horizontalScroll(horizontal, enabled = zoom > 1f),
         ) {
             ZoomedArea(layout) {
@@ -207,12 +219,18 @@ private fun PagedPageLayout.tapHandler(
 
 /** Layout of [page] in the [viewport] at [zoom], with the floating bar [bottomClearance] ([pagedPageLayout]). */
 @Composable
-private fun rememberPagedLayout(page: PageSize, viewport: IntSize, bottomClearance: Dp, zoom: Float): PagedPageLayout {
+private fun rememberPagedLayout(
+    page: PageSize,
+    viewport: IntSize,
+    bottomClearance: Dp,
+    zoom: Float,
+    fit: FitMode,
+): PagedPageLayout {
     val density = LocalDensity.current
     val clearance = with(density) { bottomClearance.roundToPx() }
     val margin = with(density) { PAGE_MARGIN.roundToPx() }
-    return remember(page, viewport, clearance, margin, zoom) {
-        pagedPageLayout(page, viewport, clearance, margin, zoom)
+    return remember(page, viewport, clearance, margin, zoom, fit) {
+        pagedPageLayout(page, viewport, clearance, margin, zoom, fit)
     }
 }
 

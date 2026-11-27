@@ -7,13 +7,18 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pinch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
+import io.github.myxomatom.lutrin.feature.reader.render.DOUBLE_TAP_ZOOM
 import io.github.myxomatom.lutrin.feature.reader.render.MAX_ZOOM
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import kotlinx.coroutines.Dispatchers
@@ -26,11 +31,12 @@ class PdfPagesViewTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val document = FakePdfDocument()
+    private var document = FakePdfDocument()
     private var zoom by mutableFloatStateOf(1f)
     private var zoomChanges = 0
 
-    private fun show() {
+    private fun show(fitMode: FitMode = FitMode.WIDTH, pageSizes: List<PageSize>? = null) {
+        pageSizes?.let { document = FakePdfDocument(it) }
         composeRule.setContent {
             LutrinTheme(dynamicColor = false) {
                 PdfPagesView(
@@ -44,6 +50,7 @@ class PdfPagesViewTest {
                     },
                     onTap = {},
                     contentDescription = DOCUMENT,
+                    fitMode = fitMode,
                 )
             }
         }
@@ -60,6 +67,49 @@ class PdfPagesViewTest {
             )
         }
         composeRule.waitForIdle()
+    }
+
+    @Test
+    fun `fit width renders every page as wide as the screen less the margins`() {
+        show(pageSizes = List(2) { PageSize(100f, 1000f) })
+        composeRule.waitForIdle()
+
+        val screenWidth = composeRule.onRoot().fetchSemanticsNode().size.width
+        assertThat(document.renders.first().width).isGreaterThan((screenWidth * MOST_OF_THE_WIDTH).toInt())
+    }
+
+    @Test
+    fun `fit page renders a tall page low enough to be whole in the screen`() {
+        show(fitMode = FitMode.PAGE, pageSizes = List(2) { PageSize(100f, 1000f) })
+        composeRule.waitForIdle()
+
+        val screen = composeRule.onRoot().fetchSemanticsNode().size
+        val render = document.renders.first()
+        assertThat(render.height).isAtMost(screen.height)
+        assertThat(render.width).isLessThan((screen.width * MOST_OF_THE_WIDTH).toInt())
+    }
+
+    @Test
+    fun `fit page keeps a page that already fits as wide as the screen`() {
+        // A4 on the screen of the test is shorter than it: the width decides, as for fit width.
+        show(fitMode = FitMode.PAGE, pageSizes = List(2) { PageSize(300f, 150f) })
+        composeRule.waitForIdle()
+
+        val screenWidth = composeRule.onRoot().fetchSemanticsNode().size.width
+        assertThat(document.renders.first().width).isGreaterThan((screenWidth * MOST_OF_THE_WIDTH).toInt())
+    }
+
+    @Test
+    fun `fit page, a double tap zooms in and a second one comes back to the whole page`() {
+        show(fitMode = FitMode.PAGE)
+
+        composeRule.onNodeWithContentDescription(DOCUMENT).performTouchInput { doubleClick(center) }
+        composeRule.waitForIdle()
+        assertThat(zoom).isEqualTo(DOUBLE_TAP_ZOOM)
+
+        composeRule.onNodeWithContentDescription(DOCUMENT).performTouchInput { doubleClick(center) }
+        composeRule.waitForIdle()
+        assertThat(zoom).isEqualTo(1f)
     }
 
     @Test
@@ -95,6 +145,9 @@ class PdfPagesViewTest {
 
     private companion object {
         const val DOCUMENT = "Document"
+
+        /** A page fitted to the width is wider than this share of the screen: only margins are left. */
+        const val MOST_OF_THE_WIDTH = 0.8f
 
         /** Touch injection moves the fingers in steps, so the measured ratio is approximate. */
         const val TOLERANCE = 0.15f

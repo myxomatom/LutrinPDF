@@ -19,8 +19,11 @@ import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetLockOrientationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
@@ -75,6 +78,9 @@ import kotlinx.coroutines.withContext
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param setDocumentColorMode stores the colours of the documents chosen in the reader options
  *   (F13, ADR 0028).
+ * @param setFitMode stores the fit chosen in the reader options (F04, ADR 0029).
+ * @param setLockOrientation stores whether the orientation is locked, chosen in the reader options (F17,
+ *   ADR 0029).
  * @param history the recent list and the reading position of this document.
  * @param getDocumentProperties gathers the properties of the document for the « Propriétés »
  *   sheet (F16, V5, ADR 0027).
@@ -99,6 +105,8 @@ constructor(
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
     private val setDocumentColorMode: SetDocumentColorModeUseCase,
+    private val setFitMode: SetFitModeUseCase,
+    private val setLockOrientation: SetLockOrientationUseCase,
     private val history: ReadingHistory,
     private val getDocumentProperties: GetDocumentPropertiesUseCase,
     private val checkExternalLink: CheckExternalLinkUseCase = CheckExternalLinkUseCase(),
@@ -180,6 +188,9 @@ constructor(
                     canCopyText = settings.allowsTextCopy(document?.canCopyText ?: true),
                     canPrint = settings.allowsPrinting(document?.canPrint ?: true),
                     documentColors = settings.documentColors,
+                    chosenFitMode = settings.chosenFitMode,
+                    keepScreenOn = settings.keepScreenOn,
+                    lockOrientation = settings.lockOrientation,
                 )
             } else {
                 state
@@ -217,6 +228,26 @@ constructor(
      */
     fun onDocumentColorModeChange(mode: DocumentColorMode) {
         viewModelScope.launch { setDocumentColorMode(mode) }
+    }
+
+    /**
+     * Stores what the user wants the pages fitted to (F04, V6, ADR 0029): the width or the whole
+     * page, for every document and in both scroll modes. The screen applies it to the zoom at once.
+     *
+     * @param mode the fit to use from now on.
+     */
+    fun onFitModeChange(mode: FitMode) {
+        viewModelScope.launch { setFitMode(mode) }
+    }
+
+    /**
+     * Stores whether the reader keeps the orientation it is shown in (F17, V6, ADR 0029); the screen
+     * applies it, the ViewModel knowing nothing of the activity.
+     *
+     * @param enabled whether the orientation is locked.
+     */
+    fun onLockOrientationChange(enabled: Boolean) {
+        viewModelScope.launch { setLockOrientation(enabled) }
     }
 
     /**

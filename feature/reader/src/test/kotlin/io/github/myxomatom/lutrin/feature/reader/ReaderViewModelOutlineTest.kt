@@ -17,6 +17,8 @@ import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCas
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetLockOrientationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.A4
@@ -77,6 +79,8 @@ class ReaderViewModelOutlineTest {
             ObserveSettingsUseCase(settings),
             SetScrollModeUseCase(settings),
             SetDocumentColorModeUseCase(settings),
+            SetFitModeUseCase(settings),
+            SetLockOrientationUseCase(settings),
             ReadingHistory(
                 GetStartPageUseCase(recents),
                 RecordDocumentOpeningUseCase(recents),

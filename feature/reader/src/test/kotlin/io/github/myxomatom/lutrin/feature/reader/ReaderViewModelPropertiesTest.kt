@@ -17,6 +17,8 @@ import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCas
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetLockOrientationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
@@ -84,6 +86,8 @@ class ReaderViewModelPropertiesTest {
             ObserveSettingsUseCase(FakeSettingsRepository()),
             SetScrollModeUseCase(FakeSettingsRepository()),
             SetDocumentColorModeUseCase(FakeSettingsRepository()),
+            SetFitModeUseCase(FakeSettingsRepository()),
+            SetLockOrientationUseCase(FakeSettingsRepository()),
             ReadingHistory(
                 GetStartPageUseCase(recents),
                 RecordDocumentOpeningUseCase(recents),
@@ -171,6 +175,8 @@ class ReaderViewModelPropertiesTest {
                 ObserveSettingsUseCase(FakeSettingsRepository()),
                 SetScrollModeUseCase(FakeSettingsRepository()),
                 SetDocumentColorModeUseCase(FakeSettingsRepository()),
+                SetFitModeUseCase(FakeSettingsRepository()),
+                SetLockOrientationUseCase(FakeSettingsRepository()),
                 ReadingHistory(
                     GetStartPageUseCase(recents),
                     RecordDocumentOpeningUseCase(recents),

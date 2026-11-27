@@ -31,3 +31,14 @@ fun fitPageWidth(page: PageSize, viewportWidth: Int, viewportHeight: Int, margin
  * @param viewportExtent width or height of the reading area, in pixels.
  */
 fun zoomedExtent(viewportExtent: Int, zoom: Float): Int = maxOf(viewportExtent, (viewportExtent * zoom).roundToInt())
+
+/**
+ * Like [zoomedExtent] for an area that is [baseExtent] pixels at zoom 1, possibly more than the
+ * viewport: a page fitted to the width that is taller than the screen (ADR 0029). Never smaller
+ * than the viewport.
+ *
+ * @param viewportExtent width or height of the reading area, in pixels.
+ * @param baseExtent size of the area at zoom 1, in pixels; at least [viewportExtent].
+ */
+fun zoomedExtent(viewportExtent: Int, zoom: Float, baseExtent: Int): Int =
+    maxOf(viewportExtent, (baseExtent * zoom).roundToInt())
