@@ -103,6 +103,10 @@ class AboutScreenshotTest {
     fun licenses() = captureList("about_licenses_light")
 
     @Test
+    @Config(qualifiers = "+fr")
+    fun licensesFrench() = captureList("about_licenses_light_fr")
+
+    @Test
     fun licensesDark() = captureList("about_licenses_dark", darkTheme = true)
 
     @Test
@@ -117,10 +121,23 @@ class AboutScreenshotTest {
     fun privacyFrench() = capture("about_privacy_light_fr", page = AboutPage.Privacy)
 
     @Test
+    @Config(fontScale = 2f)
+    fun privacyLargeFont() = capture("about_privacy_light_font200", page = AboutPage.Privacy)
+
+    @Test
     fun privacyDark() = capture("about_privacy_dark", darkTheme = true, page = AboutPage.Privacy)
 
     @Test
     fun componentLicense() = capture("about_component_light", page = AboutPage.Component("org.example:mupdf"))
+
+    @Test
+    @Config(fontScale = 2f)
+    fun componentLicenseLargeFont() =
+        capture("about_component_light_font200", page = AboutPage.Component("org.example:mupdf"))
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun componentLicenseFrench() = capture("about_component_light_fr", page = AboutPage.Component("org.example:mupdf"))
 
     @Test
     fun componentLicenseDark() =
@@ -128,6 +145,9 @@ class AboutScreenshotTest {
 
     @Test
     fun sourceCodeConfirmation() = captureDialog("about_source_dialog_light")
+
+    @Test
+    fun sourceCodeConfirmationDark() = captureDialog("about_source_dialog_dark", darkTheme = true)
 
     @Test
     @Config(qualifiers = "+fr", fontScale = 2f)

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -8,12 +9,15 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.testing.TestFiles
 import io.github.myxomatom.lutrin.feature.reader.R as ReaderR
 import org.junit.Rule
@@ -65,17 +69,28 @@ class SelectionInstrumentedTest {
         return text
     }
 
+    /** Replaces the clipboard with [text], so that a test can tell whether the app wrote to it. */
+    private fun putOnClipboard(text: String) {
+        instrumentation.runOnMainSync {
+            val clipboard = targetContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("witness", text))
+        }
+    }
+
     @Test
     fun theTextOfThePageIsCopied() {
         launch(TestFiles.Pdf.TEXT_SELECTION).use {
             copyFirstPage()
 
             composeRule.waitUntil(TIMEOUT_MS) { clipboardText().orEmpty().contains(ARABIC_WORD) }
+            assertThat(clipboardText()).contains(ARABIC_WORD)
         }
     }
 
     @Test
     fun theCopyForbiddenByTheAuthorIsRefused() {
+        // The real contract (ADR 0024): the clipboard is left as it was, the message is only the explanation.
+        putOnClipboard(WITNESS)
         launch(TestFiles.Pdf.OWNER_PASSWORD_ONLY).use {
             copyFirstPage()
 
@@ -83,12 +98,17 @@ class SelectionInstrumentedTest {
             composeRule.waitUntil(TIMEOUT_MS) {
                 composeRule.onAllNodesWithText(refused).fetchSemanticsNodes().isNotEmpty()
             }
+            composeRule.onAllNodesWithText(refused).onFirst().assertIsDisplayed()
+            assertThat(clipboardText()).isEqualTo(WITNESS)
         }
     }
 
     private companion object {
         const val PDF = "application/pdf"
         const val TIMEOUT_MS = 15_000L
+
+        /** Text put on the clipboard before a copy that must be refused. */
+        const val WITNESS = "witness text"
 
         /** A word of the Arabic sentence of `text_selection.pdf` (`core/testing/README.md`). */
         const val ARABIC_WORD = "مكتبة"

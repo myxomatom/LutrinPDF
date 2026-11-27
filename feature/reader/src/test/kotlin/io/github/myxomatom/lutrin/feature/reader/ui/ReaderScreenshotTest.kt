@@ -291,6 +291,20 @@ class ReaderScreenshotTest {
     fun error() = capture("reader_error_light", ReaderUiState.Error(ReaderError.UNREADABLE))
 
     @Test
+    fun errorDark() = capture("reader_error_dark", ReaderUiState.Error(ReaderError.UNREADABLE), darkTheme = true)
+
+    @Test
+    fun errorLargeFont() =
+        capture("reader_error_light_font200", ReaderUiState.Error(ReaderError.UNREADABLE), fontScale = 2f)
+
+    @Test
+    fun readerLargeFont() = capture("reader_light_font200", ready(), fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun readerFrench() = capture("reader_light_fr", ready())
+
+    @Test
     @Config(qualifiers = "+fr")
     fun errorFrench() = capture("reader_error_fr", ReaderUiState.Error(ReaderError.UNSUPPORTED_FORMAT))
 

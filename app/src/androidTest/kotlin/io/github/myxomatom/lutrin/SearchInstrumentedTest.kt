@@ -3,11 +3,15 @@ package io.github.myxomatom.lutrin
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
@@ -43,8 +47,10 @@ class SearchInstrumentedTest {
             .setClass(targetContext, MainActivity::class.java),
     )
 
+    /** Waits for [text] to be on screen, then asserts it: a failure names the text, not a timeout. */
     private fun waitForText(text: String) {
         composeRule.waitUntil(TIMEOUT_MS) { composeRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onAllNodesWithText(text).onFirst().assertIsDisplayed()
     }
 
     /** Opens the search once the document is shown, types [query] and validates it. */
@@ -64,6 +70,11 @@ class SearchInstrumentedTest {
             search("lutrin")
 
             waitForText(targetContext.getString(ReaderR.string.reader_search_counter, 1, MANY_HITS))
+            // The count is exact, not « 1 / 800+ »: the search finished without reaching its limit.
+            composeRule.onAllNodesWithText(
+                targetContext.getString(ReaderR.string.reader_search_counter_limit, 1, MANY_HITS),
+            )
+                .assertCountEquals(0)
         }
     }
 
@@ -73,6 +84,11 @@ class SearchInstrumentedTest {
             search("lutrin")
 
             waitForText(targetContext.getString(ReaderR.string.reader_search_no_result))
+            // No result, so no counter, and the hint says why: the document has no text to search.
+            composeRule.onAllNodesWithText(targetContext.getString(ReaderR.string.reader_search_counter, 1, 0))
+                .assertCountEquals(0)
+            composeRule.onNodeWithText(targetContext.getString(ReaderR.string.reader_search_no_text_hint))
+                .assertIsDisplayed()
         }
     }
 

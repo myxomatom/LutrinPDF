@@ -146,6 +146,7 @@ internal fun ReaderOptionsSheet(display: ReaderDisplay, actions: ReaderDisplayAc
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle = { SheetDragHandle() },
     ) {
         ReaderOptions(display, actions)
     }

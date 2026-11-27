@@ -99,6 +99,13 @@ class SearchScreenshotTest {
     fun searchNoResultFrench() = capture("reader_search_none_light_fr", noResult)
 
     @Test
+    fun searchNoResultLight() = capture("reader_search_none_light", noResult)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun searchNoResultLightFont200() = capture("reader_search_none_light_font200", noResult)
+
+    @Test
     fun searchNoResultDark() = capture("reader_search_none_dark", noResult, darkTheme = true)
 
     private companion object {

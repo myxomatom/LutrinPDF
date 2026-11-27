@@ -127,6 +127,24 @@ class LibraryScreenshotTest {
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
+    /** A state with no document at all: the list that cannot be read (E1 error state). */
+    private fun captureError(name: String, darkTheme: Boolean, fontScale: Float = 1f) {
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
+                    LibraryScreen(
+                        state = LibraryUiState.Error,
+                        onOpenFile = {},
+                        onOpenSettings = {},
+                        onOpenDocument = {},
+                    )
+                }
+            }
+        }
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    }
+
     /** The menu of the resume card, open; the menu is a separate window. */
     @OptIn(ExperimentalRoborazziApi::class)
     private fun captureMenu(name: String, darkTheme: Boolean, menuLabel: String, fontScale: Float = 1f) {
@@ -217,6 +235,19 @@ class LibraryScreenshotTest {
     @Test
     @Config(qualifiers = "+fr")
     fun menuFrench() = captureMenu("library_row_menu_light_fr", darkTheme = false, MENU_FR)
+
+    @Test
+    fun error() = captureError("library_error_light", darkTheme = false)
+
+    @Test
+    fun errorDark() = captureError("library_error_dark", darkTheme = true)
+
+    @Test
+    fun errorLargeFont() = captureError("library_error_light_font200", darkTheme = false, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun errorFrench() = captureError("library_error_light_fr", darkTheme = false)
 
     @Test
     fun removal() = captureRemoval("library_removed_light", darkTheme = false)

@@ -304,7 +304,7 @@ class SettingsScreenTest {
     fun `the last row opens the about screen`() {
         show(SettingsUiState(loading = false))
 
-        composeRule.onNodeWithText("About and licenses").performScrollTo().assertHasClickAction().performClick()
+        composeRule.onNodeWithText("About and licences").performScrollTo().assertHasClickAction().performClick()
 
         assertThat(aboutRequests).isEqualTo(1)
     }
@@ -313,7 +313,7 @@ class SettingsScreenTest {
     fun `the about row is there even while the recent list is empty`() {
         show(SettingsUiState(loading = false, recentCount = 0))
 
-        composeRule.onNodeWithText("About and licenses").performScrollTo().assertIsDisplayed().assertIsEnabled()
+        composeRule.onNodeWithText("About and licences").performScrollTo().assertIsDisplayed().assertIsEnabled()
     }
 
     @Test

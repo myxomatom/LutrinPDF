@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-27.**
+> session de travail. **Dernière mise à jour : 2026-11-27 (lot de clôture de M5).**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 5 **rotation de l'affichage** (F27, ADR 0032) en PR (`feat/page-rotation`) ; lot 4 **options de lecture et langue** (F04, F14, F17, F19, ADR 0029) en PR (`feat/reading-options`) ; lot 3 **thèmes et couleurs du document** (F13, ADR 0028) fusionné (PR #54) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 Tout le code est dans `main` (lots 1 à 5, PR #49 à #56, et la correction A1 de l'audit, PR #52) ; **lot de clôture** `chore/m5-closing` fait sans appareil : audit d'accessibilité de tous les écrans, test des traductions, captures complétées, bilan des critères du MVP. **Reste** : les essais sur téléphone, les benchmarks et le Baseline Profile, listés dans [`verification-appareil-m5.md`](verification-appareil-m5.md), puis la publication |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -60,47 +60,23 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
 
 ## 2. Prochaines tâches, dans l'ordre conseillé
 
-0. **État au 2026-11-26 : M4 terminé, M5 en cours.** Dans l'ordre :
-   1. ~~Benchmarks sur appareil~~ **faits le 2026-11-21** (ADR 0012, « Mesures M4 ») : reste à
-      décider d'une tâche sur le démarrage à froid (+20 % depuis M2, voir l'ADR) ;
-   2. ~~essais de [`verification-appareil-m4.md`](verification-appareil-m4.md)~~ **faits** (53
-      essais validés le 2026-11-21) ;
-   3. **Corrections de l'audit du 2026-11-26** : les corrections de code sont décrites dans
-      [`docs/audits/2026-11-26-plan-de-correction.md`](audits/2026-11-26-plan-de-correction.md) ;
-      **à faire en premier**. Lot 1 (**A1**, page illisible) : branche `fix/unreadable-page`,
-      PR #52 à fusionner une fois la CI verte (ADR 0031 ; décision D1 du mainteneur : message
-      « Page endommagée » sur la page). **À essayer sur appareil** : ouvrir
-      `page_tree_count_mismatch.pdf`, aller à la page 3, faire glisser le curseur, zoomer, passer
-      en page par page, TalkBack sur le message : aucun plantage, pages 1 et 2 dessinées. Ensuite
-      le lot 2 (mémoire et fil du rendu, qui s'appuie sur `RenderResult`). La documentation a été mise à jour le
-      2026-11-26 ; le constat complet est dans
-      [`docs/audits/2026-11-26-audit-complet.md`](audits/2026-11-26-audit-complet.md) ;
-   4. **M5**, lot 1 **impression (F15)** : **dans `main` (PR #50), pas encore essayée sur
-      appareil** (ADR 0026). **À essayer** : imprimer `simple_1page.pdf` et le PDF de 600 pages
-      vers une vraie imprimante et vers « Enregistrer au format PDF » (pages choisies « 2-5 » : le
-      fichier d'origine est envoyé entier, le service doit garder la plage) ; un PDF chiffré
-      ouvert avec son mot de passe (images à 150 ppp, aperçu qui arrive après le dessin de toutes
-      les pages, mémoire stable) ; `encrypted_owner_password_only.pdf` (bouton atténué, message),
-      puis E3 › Lecture › « Ignorer les restrictions du document » (impression permise) ;
-      TalkBack sur le bouton ; quitter le lecteur pendant l'impression d'un document protégé
-      (échec propre attendu) ; test instrumenté `PrintInstrumentedTest`. L'ajustement à la largeur
-      n'a plus de bouton : il ira dans la feuille « Affichage » au lot 4 ;
-   5. **E4 « À propos et licences »** : dans `main` (PR #49), à essayer sur appareil (paragraphe
-      « E4 sur appareil » ci-dessous) ;
-   6. **M5 lot 2, partage et propriétés (F15, F16, V5)** : PR `feat/share-properties` (ADR 0027), pas
-      encore essayé sur appareil. **À essayer** : ⋮ › « Partager » vers une messagerie, un
-      gestionnaire de fichiers et « Enregistrer sur l'appareil », pour un document ouvert par le
-      sélecteur, par « Ouvrir avec » et pour un PDF protégé (il part chiffré) ; une application ou
-      un fournisseur qui refuse l'URI (message « Ce fichier ne peut pas être partagé ») ; ⋮ ›
-      « Propriétés » (valeurs, « Non renseigné », dates dans la langue et le fuseau du téléphone,
-      grande police, TalkBack, rotation de l'écran) ; « Imprimer » depuis la feuille, y compris sur
-      `encrypted_owner_password_only.pdf` ; `ShareInstrumentedTest` ;
-   7. **M5 lot 3, thèmes et couleurs du document (F13)** : PR `feat/themes-document-colors`
-      (ADR 0028), pas encore essayé sur appareil. Essais dans la liste de M5 ci-dessous (§2 bis) ;
-   8. **M5 lot 4, options de lecture et langue (F04, F14, F17, F19)** : PR `feat/reading-options`
-      (ADR 0029), pas encore essayé sur appareil. Essais dans la liste de M5 ci-dessous (§2 bis) ;
-   9. lot suivant de M5 (voir `ROADMAP.md`) : rotation F27 (lot 5 : à ajouter dans `RenderOptions`,
-      ADR 0028 ; icône dans la barre du haut).
+0. **État au 2026-11-27 : M4 terminé, M5 écrit et fusionné, essais sur appareil à faire.** Dans l'ordre :
+   1. ~~Benchmarks M4~~ faits le 2026-11-21 (ADR 0012, « Mesures M4 ») ; ~~essais de
+      [`verification-appareil-m4.md`](verification-appareil-m4.md)~~ faits (53 essais) ;
+   2. ~~Corrections de l'audit du 2026-11-26~~ : **A1** (page illisible, ADR 0031) fusionnée par la
+      PR #52 ; **T1** et **T2** faites par le lot de clôture de M5 ; le reste est suivi dans
+      [`docs/audits/2026-11-26-plan-de-correction.md`](audits/2026-11-26-plan-de-correction.md) (lots
+      2 à 4 : mémoire et fil du rendu, qualité, tests restants T3 et T4) ;
+   3. **M5, lots 1 à 5**, tous dans `main` : impression (F15, ADR 0026, PR #50), partage et
+      propriétés (F15, F16, ADR 0027, PR #53), thèmes et couleurs du document (F13, ADR 0028,
+      PR #54), options de lecture et langue (F04, F14, F17, F19, ADR 0029, PR #55), rotation de
+      l'affichage (F27, ADR 0032, PR #56), et E4 « À propos et licences » (ADR 0030, PR #49) ;
+   4. **Lot de clôture de M5** (`chore/m5-closing`, sans appareil) : accessibilité, traductions,
+      captures, bilan des critères du MVP ;
+   5. **À faire avec le téléphone branché** : les essais, les tests instrumentés et les benchmarks de
+      [`verification-appareil-m5.md`](verification-appareil-m5.md), puis le **jalon de publication**
+      (build release signé et reproductible, Fastlane, soumission) ;
+   6. ensuite M6 (outils PDF, vues E5 à E9), voir `ROADMAP.md`.
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -152,111 +128,10 @@ permission réseau.
 
 ## 2 bis. Essais sur appareil de M5
 
-Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à cocher par le mainteneur.
-
-- **Lot 1, impression** et **lot 2, partage et propriétés** : voir les points 4 et 6 du §2.
-- **E4 « À propos et licences »** : paragraphe « E4 sur appareil » du §2.
-- **Lot 5, rotation de l'affichage** (F27, ADR 0032) :
-  - [ ] premier lancement après mise à jour : la migration Room 2 → 3 garde les récents et leur page,
-        aucun document n'est tourné ;
-  - [ ] icône « Tourner » entre « Rechercher » et la table des matières ; chaque toucher tourne de
-        90° dans le sens horaire, le quatrième revient droit ; TalkBack lit « Tourner les pages,
-        actuellement à 90° » ;
-  - [ ] police à 200 % (et écran étroit) : l'icône disparaît de la barre, « Tourner les pages (0°) » est
-        en tête du menu ⋮ et fait la même chose ;
-  - [ ] à 90°, 180° et 270°, en continu puis en page par page : le texte est net (zoom à 400 %, détail
-        aux bons endroits), la page affichée reste à l'écran après chaque toucher, « Largeur » et
-        « Page entière » ajustent la page tournée (un portrait tourné de 90° remplit la largeur en
-        paysage), double toucher et pincement zooment autour du doigt ;
-  - [ ] liens : un toucher sur un lien d'une page tournée ouvre ce lien-là (essayer deux liens voisins),
-        y compris en page par page sur une page autre que la première ; une entrée de sommaire mène
-        au haut de la page tournée (ADR 0032) ;
-  - [ ] recherche : surlignages sur les bons mots à chaque angle, « suivant » amène le résultat au
-        milieu de l'écran ;
-  - [ ] sélection : appui long sur un mot, poignées aux deux bouts, déplacer une poignée étend la
-        sélection dans le sens du texte tourné, « Copier » copie le bon texte ;
-  - [ ] aller à une page, curseur avec aperçu (l'aperçu est tourné), page illisible
-        (`page_tree_count_mismatch.pdf`) tournée, mode nuit et sépia tournés ;
-  - [ ] fermer, rouvrir le document (par la bibliothèque et par « Ouvrir avec ») : il revient avec sa
-        rotation et sa page ; un autre document reste droit ; retirer le document des récents puis le
-        rouvrir : il est droit ;
-  - [ ] l'impression et le partage d'un document tourné sont droits ; sa vignette aussi ;
-  - [ ] un PDF dont les pages ont déjà un `/Rotate` (paysage) : la rotation s'ajoute à celle du fichier ;
-  - [ ] tests instrumentés `MuPdfEngineInstrumentedTest.rendersTurnedPages`.
-- **Lot 4, options de lecture et langue** (ADR 0029) :
-  - [ ] premier lancement après mise à jour : rien ne change (documents en défilement continu à la
-        largeur, en page par page à la page entière, écran qui s'éteint, orientation libre, langue du
-        système) ;
-  - [ ] ⋮ › « Affichage » › « Ajustement » › « Page entière » en défilement continu : les pages
-        rétrécissent aussitôt pour que la plus haute tienne entière entre les deux bords, toutes
-        de la même largeur (essayer un document de formats mêlés, `large_600pages.pdf`, un PDF
-        paysage) ; double toucher : zoom puis retour à cette taille ; pincer puis rouvrir
-        « Affichage » et choisir « Largeur » : le zoom revient à 100 % ;
-  - [ ] « Largeur » en page par page : la page remplit la largeur, une page haute défile
-        verticalement, le balayage horizontal change de page au zoom de départ, le double toucher et le
-        pincement zooment dans la page, un lien et un appui long sur un mot restent justes sur une page
-        défilée ;
-  - [ ] le choix survit à la fermeture, à un autre document et au redémarrage ; changer de mode de
-        défilement ensuite garde le choix (largeur choisie : largeur dans les deux modes) ;
-  - [ ] rotation du téléphone avec un ajustement choisi, recherche et sélection (surlignage et poignées à
-        la bonne place) dans chaque ajustement ;
-  - [ ] « Plein écran » : l'interrupteur montre l'état (barres visibles = désactivé), l'activer masque les
-        barres du lecteur et du système pendant que la feuille reste ouverte, un toucher sur la page
-        revient et l'interrupteur suit ; rouvrir un document le montre avec ses barres ;
-  - [ ] « Verrouiller l'orientation » : activer en portrait puis tourner le téléphone (rien ne bouge),
-        recommencer en paysage ; quitter vers la bibliothèque : l'écran tourne de nouveau ; rouvrir
-        un document réapplique le verrouillage dans l'orientation du moment ; le désactiver rend la
-        rotation automatique ; la rotation automatique du système éteinte et le verrou éteint : la
-        rotation reste celle du système ;
-  - [ ] Paramètres › Lecture › « Garder l'écran allumé » : un document ouvert garde l'écran allumé
-        au-delà du délai de veille du téléphone, la bibliothèque et les paramètres non ; le
-        désactiver rend le délai ;
-  - [ ] Paramètres › Apparence › « Langue de l'application » (Android 13 et plus) : « Français » puis
-        « English » changent toute l'application aussitôt (bibliothèque, lecteur, E3, E4), la page du
-        document et le zoom sont gardés ; « Système » suit de nouveau la langue du téléphone ; les
-        réglages du système (Applications › Lutrin › Langue) montrent français et anglais et sont
-        suivis par la ligne de Lutrin à la réouverture de Paramètres ; sur Android 12 ou moins, la ligne
-        n'existe pas ;
-  - [ ] grande police (200 %) : « Affichage » montre défilement et ajustement en boutons radio, rien
-        n'est coupé, la feuille défile jusqu'aux deux interrupteurs ; E3 montre thème et langue en
-        boutons radio ;
-  - [ ] TalkBack : chaque choix lu « case d'option », les interrupteurs lus avec leur état, ajustement
-        et défilement atteignables sans les voir ;
-  - [ ] tests instrumentés `ReadingOptionsInstrumentedTest` (orientation verrouillée, langue par
-        application sur API 33 et plus).
-- **Lot 3, thèmes et couleurs du document** (ADR 0028) :
-  - [ ] premier lancement après mise à jour : thème « Système », couleurs du document d'origine,
-        « Suivre le thème sombre » désactivé ; un document en thème sombre reste **blanc** ;
-  - [ ] Paramètres › Apparence › « Sombre » sur un téléphone en thème clair, puis « Clair » sur un
-        téléphone en thème sombre : toute l'application change aussitôt, icônes de la barre d'état
-        et de la barre de navigation lisibles dans les deux cas ; « Système » suit ensuite un
-        changement du thème du téléphone sans relancer l'application ;
-  - [ ] couleurs dynamiques activées puis désactivées avec chaque thème (Android 12+) ;
-  - [ ] ⋮ › « Affichage » › « Nuit » : les pages visibles changent sous la feuille ouverte, fond de
-        lecture presque noir, texte clair ; une page avec des photos reste reconnaissable (teintes
-        gardées, luminosité inversée) ; « Sépia » : papier crème, texte brun ; « Normal » : retour
-        aux couleurs d'origine ;
-  - [ ] le choix survit à la fermeture du document, à un autre document, à la rotation de l'écran
-        et au redémarrage de l'application ;
-  - [ ] en Nuit et en Sépia : zoom à 400 % (le détail net arrive dans les mêmes couleurs, jamais
-        un rectangle blanc), défilement rapide sur `large_600pages.pdf` (pas de page aux anciennes
-        couleurs après un changement), curseur avec aperçu (carte aux couleurs du mode), page par
-        page, recherche (surlignage visible) et sélection (poignées visibles) ;
-  - [ ] `page_tree_count_mismatch.pdf` en Nuit : message « Page endommagée » clair sur papier sombre ;
-  - [ ] plein écran en Nuit avec l'application en thème clair : numéro de page lisible en bas ;
-  - [ ] mémoire : alterner dix fois Normal, Nuit, Sépia sur un document de 600 pages, puis
-        défiler ; pas de saccade durable ni de plantage (LeakCanary ne signale rien) ;
-  - [ ] « Suivre le thème sombre » activé, thème « Système » : passer le téléphone en sombre, le
-        document passe en Nuit ; en clair, il revient en Normal ; choisir ensuite « Sépia » dans
-        « Affichage » : il reste en Sépia dans les deux thèmes ; réactiver l'interrupteur : il suit
-        de nouveau le thème ;
-  - [ ] l'impression d'un document protégé et le partage restent en couleurs d'origine ; les
-        vignettes de la bibliothèque aussi ;
-  - [ ] grande police (200 %) : E3 montre le thème en liste de boutons radio, « Affichage »
-        montre les couleurs l'une sous l'autre, tout reste atteignable en faisant défiler ;
-  - [ ] TalkBack : « Thème de l'application » lu comme un choix, chaque échantillon de couleurs lu
-        « Nuit, case d'option, sélectionné » (ou équivalent), interrupteur « Suivre le thème sombre » ;
-  - [ ] tests instrumentés `MuPdfEngineInstrumentedTest.rendersInNightAndSepiaColours`.
+**Toute la liste est dans [`verification-appareil-m5.md`](verification-appareil-m5.md)** (écrite le
+2026-11-27 en reprenant les essais des lots 1 à 5, de la page endommagée de la PR #52, de E4, plus
+l'accessibilité et les langues, les tests instrumentés à lancer et les benchmarks à relancer). C'est
+elle qu'il faut cocher, pas ce fichier. Rien de M5 n'a encore été essayé sur appareil.
 
 ## 3. Décisions à connaître
 
