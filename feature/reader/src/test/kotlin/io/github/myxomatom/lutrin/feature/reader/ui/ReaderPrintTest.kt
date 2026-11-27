@@ -70,6 +70,7 @@ class ReaderPrintTest {
 
     private val printButton get() = composeRule.onNodeWithContentDescription("Print")
 
+    @Suppress("LongMethod") // Plain wiring of a real ReaderViewModel.
     private fun showReader(canPrintOnDevice: Boolean = true, printLabel: String = "Print") {
         val recents = FakeRecentDocumentsRepository()
         val viewModel =

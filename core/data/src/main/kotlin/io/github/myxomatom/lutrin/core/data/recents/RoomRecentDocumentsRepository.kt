@@ -47,6 +47,7 @@ import kotlinx.coroutines.withContext
  * @param clock the date of an opening, injected for deterministic tests.
  * @param ioDispatcher where the thumbnail files are checked.
  */
+@Suppress("TooManyFunctions") // One function per operation of the repository, plus private helpers.
 @Singleton
 internal class RoomRecentDocumentsRepository @Inject constructor(
     private val dao: RecentDocumentDao,

@@ -3,32 +3,16 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,27 +28,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinReaderColors
-import io.github.myxomatom.lutrin.core.ui.theme.titleLargeCompact
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
 import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
-import io.github.myxomatom.lutrin.feature.reader.OutlineEntry
-import io.github.myxomatom.lutrin.feature.reader.OutlineTarget
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
@@ -431,22 +407,6 @@ private fun GoToPage(visible: Boolean, navigator: PageNavigator, pageCount: Int,
 /** The insets the reading area keeps clear of; the bottom ones are left to the floating bar. */
 private val TopAndSides = WindowInsetsSides.Top + WindowInsetsSides.Horizontal
 
-/**
- * Keeps the page that was shown on screen when the pages turn (F27, ADR 0032): their heights
- * change, and the scroll position, in pixels, would otherwise land elsewhere. [page] is the page
- * last reported, read in the composition that sees the new [rotation], before any layout with it.
- */
-@Composable
-private fun KeepPageAfterRotation(rotation: PageRotation, page: Int, navigator: PageNavigator) {
-    val shown = remember { mutableStateOf(rotation) }
-    if (shown.value != rotation) {
-        LaunchedEffect(rotation) {
-            navigator.goTo(page)
-            shown.value = rotation
-        }
-    }
-}
-
 /** Tells [onPageChange] about every page the [navigator] reaches, so that a change of mode keeps it. */
 @Composable
 private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> Unit) {
@@ -454,90 +414,6 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
     LaunchedEffect(navigator) {
         snapshotFlow { navigator.currentPage }.collect { currentOnPageChange(it) }
     }
-}
-
-/**
- * Top bar of the reader: back, title and, once a document is open, « Rechercher » (V1), the
- * table of contents (V2) and « More options »: the menu of the display options (V6), « Partager »
- * and « Propriétés » (V5).
- *
- * @param menu what the items of the « More options » menu do; `null` hides the button (error
- *   screen).
- * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
- *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
- * @param onSearch opens the search bar; `null` hides the button (error screen).
- *
- * « Tourner » (F27, ADR 0032, [ReaderMenu.rotation]) sits between « Rechercher » and the table of
- * contents while the title keeps room enough ([rotationFitsInBar]); otherwise it moves to the top of
- * the menu.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ReaderTopBar(
-    title: String,
-    onBack: () -> Unit,
-    menu: ReaderMenu? = null,
-    onOutline: (() -> Unit)? = null,
-    onSearch: (() -> Unit)? = null,
-) {
-    BoxWithConstraints {
-        val actionCount = listOfNotNull(onSearch, onOutline, menu, menu?.rotation).size
-        val rotationInBar = rotationFitsInBar(maxWidth, LocalDensity.current.fontScale, actionCount)
-        ReaderTopAppBar(title, onBack, menu, onOutline, onSearch, rotationInBar)
-    }
-}
-
-/** [ReaderTopBar], with « Tourner » in the bar when [rotationInBar], in the menu otherwise. */
-@Suppress("LongParameterList") // The parameters of ReaderTopBar, and where « Tourner » goes.
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReaderTopAppBar(
-    title: String,
-    onBack: () -> Unit,
-    menu: ReaderMenu?,
-    onOutline: (() -> Unit)?,
-    onSearch: (() -> Unit)?,
-    rotationInBar: Boolean,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLargeCompact,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.reader_back))
-            }
-        },
-        actions = {
-            if (onSearch != null) {
-                IconButton(onClick = onSearch) {
-                    Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.reader_search_open))
-                }
-            }
-            menu?.rotation?.takeIf { rotationInBar }?.let { rotation ->
-                IconButton(onClick = rotation.onRotate) {
-                    Icon(
-                        RotateRightIcon,
-                        contentDescription = stringResource(R.string.reader_rotate, rotation.current.degrees),
-                    )
-                }
-            }
-            if (onOutline != null) {
-                IconButton(onClick = onOutline) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.List,
-                        contentDescription = stringResource(R.string.reader_outline_title),
-                    )
-                }
-            }
-            if (menu != null) ReaderMenuButton(menu, rotationInMenu = !rotationInBar)
-        },
-    )
 }
 
 /** Error screen (V8): what went wrong, « Retirer des récents » for a recent document, a way back. */

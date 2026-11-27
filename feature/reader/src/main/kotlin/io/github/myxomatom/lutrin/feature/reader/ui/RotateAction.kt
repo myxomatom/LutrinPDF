@@ -3,9 +3,42 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material.icons.materialPath
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
+import io.github.myxomatom.lutrin.feature.reader.R
+
+/** « Tourner » as an icon of the top bar: 48 dp target, the angle shown now in its description. */
+@Composable
+internal fun RotateButton(rotation: MenuRotation) {
+    IconButton(onClick = rotation.onRotate) {
+        Icon(RotateRightIcon, contentDescription = stringResource(R.string.reader_rotate, rotation.current.degrees))
+    }
+}
+
+/**
+ * Keeps the page that was shown on screen when the pages turn (F27, ADR 0032): their heights
+ * change, and the scroll position, in pixels, would otherwise land elsewhere. [page] is the page
+ * last reported, read in the composition that sees the new [rotation], before any layout with it.
+ */
+@Composable
+internal fun KeepPageAfterRotation(rotation: PageRotation, page: Int, navigator: PageNavigator) {
+    val shown = remember { mutableStateOf(rotation) }
+    if (shown.value != rotation) {
+        LaunchedEffect(rotation) {
+            navigator.goTo(page)
+            shown.value = rotation
+        }
+    }
+}
 
 /** Width of one icon button of the top bar: its 48 dp touch target (`AGENTS.md` §11). */
 private val BarActionWidth = 48.dp

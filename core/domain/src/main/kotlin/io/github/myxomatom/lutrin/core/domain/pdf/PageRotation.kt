@@ -14,6 +14,7 @@ package io.github.myxomatom.lutrin.core.domain.pdf
  *
  * @property degrees the angle, clockwise: 0, 90, 180 or 270.
  */
+@Suppress("MagicNumber") // The four angles are the values themselves.
 enum class PageRotation(val degrees: Int) {
     /** The page as the document shows it. */
     NONE(0),
@@ -108,5 +109,12 @@ enum class PageRotation(val degrees: Int) {
 /**
  * A 2D affine transform in the convention of PDF and MuPDF matrices: a point (x, y) goes to
  * (`a·x + c·y + e`, `b·x + d·y + f`).
+ *
+ * @property a factor of x in the new x.
+ * @property b factor of x in the new y.
+ * @property c factor of y in the new x.
+ * @property d factor of y in the new y.
+ * @property e shift of the new x.
+ * @property f shift of the new y.
  */
 data class AffineTransform(val a: Float, val b: Float, val c: Float, val d: Float, val e: Float, val f: Float)

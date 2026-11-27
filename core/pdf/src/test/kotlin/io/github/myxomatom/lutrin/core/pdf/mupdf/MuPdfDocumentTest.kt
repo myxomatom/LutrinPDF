@@ -736,29 +736,29 @@ class MuPdfDocumentTest {
         const val MIDDLE_OF_PAGE = 421f
         const val NAMED_DESTINATION_Y = 100f
     }
-}
 
-/** Left, top, right and bottom pixels (inclusive) of the dark pixels of an image [width] wide. */
-private fun IntArray.darkBounds(width: Int): List<Int> {
-    val dark = indices.filter { this[it].isDark() }
-    return listOf(
-        dark.minOf { it % width },
-        dark.minOf { it / width },
-        dark.maxOf { it % width },
-        dark.maxOf {
-            it /
-                width
-        },
-    )
-}
+    /** Left, top, right and bottom pixels (inclusive) of the dark pixels of an image [width] wide. */
+    private fun IntArray.darkBounds(width: Int): List<Int> {
+        val dark = indices.filter { this[it].isDark() }
+        return listOf(
+            dark.minOf { it % width },
+            dark.minOf { it / width },
+            dark.maxOf { it % width },
+            dark.maxOf { it / width },
+        )
+    }
 
-/** These bounds in an image [width] × [height], once the image is turned by [rotation]. */
-private fun List<Int>.turned(rotation: PageRotation, width: Int, height: Int): List<Int> {
-    val (left, top, right, bottom) = this
-    return when (rotation) {
-        PageRotation.NONE -> this
-        PageRotation.QUARTER -> listOf(height - 1 - bottom, left, height - 1 - top, right)
-        PageRotation.HALF -> listOf(width - 1 - right, height - 1 - bottom, width - 1 - left, height - 1 - top)
-        PageRotation.THREE_QUARTERS -> listOf(top, width - 1 - right, bottom, width - 1 - left)
+    /** These bounds in an image [width] × [height], once the image is turned by [rotation]. */
+    private fun List<Int>.turned(rotation: PageRotation, width: Int, height: Int): List<Int> {
+        val left = this[0]
+        val top = this[1]
+        val right = this[2]
+        val bottom = this[3]
+        return when (rotation) {
+            PageRotation.NONE -> this
+            PageRotation.QUARTER -> listOf(height - 1 - bottom, left, height - 1 - top, right)
+            PageRotation.HALF -> listOf(width - 1 - right, height - 1 - bottom, width - 1 - left, height - 1 - top)
+            PageRotation.THREE_QUARTERS -> listOf(top, width - 1 - right, bottom, width - 1 - left)
+        }
     }
 }
