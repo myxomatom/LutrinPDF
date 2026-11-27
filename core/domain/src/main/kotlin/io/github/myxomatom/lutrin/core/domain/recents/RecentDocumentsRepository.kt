@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.domain.recents
 
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
@@ -40,6 +41,15 @@ interface RecentDocumentsRepository {
      * @param page zero-based page.
      */
     suspend fun saveLastPage(uri: String, page: Int)
+
+    /**
+     * Remembers the rotation of the display chosen for the document (F27, ADR 0032). Does nothing
+     * for a document that is not in the list. A later [recordOpening] keeps it.
+     *
+     * @param uri the document URI.
+     * @param rotation the rotation now shown.
+     */
+    suspend fun saveRotation(uri: String, rotation: PageRotation)
 
     /**
      * Draws the thumbnail of the first page of a recent document, off the main thread. The

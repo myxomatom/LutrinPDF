@@ -23,11 +23,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.GetSavedRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
@@ -68,6 +70,7 @@ class ReaderPrintTest {
 
     private val printButton get() = composeRule.onNodeWithContentDescription("Print")
 
+    @Suppress("LongMethod") // Plain wiring of a real ReaderViewModel.
     private fun showReader(canPrintOnDevice: Boolean = true, printLabel: String = "Print") {
         val recents = FakeRecentDocumentsRepository()
         val viewModel =
@@ -81,6 +84,8 @@ class ReaderPrintTest {
                 SetFitModeUseCase(settings), SetLockOrientationUseCase(settings),
                 ReadingHistory(
                     GetStartPageUseCase(recents),
+                    GetSavedRotationUseCase(recents),
+                    SaveRotationUseCase(recents),
                     RecordDocumentOpeningUseCase(recents),
                     SaveLastPageUseCase(recents),
                     IsRecentDocumentUseCase(recents),

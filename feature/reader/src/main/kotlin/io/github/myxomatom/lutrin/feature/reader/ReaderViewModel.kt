@@ -12,6 +12,7 @@ import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.document.DocumentProperties
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
@@ -116,6 +117,7 @@ constructor(
     private val documentState = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
     private val currentPage = MutableStateFlow(0)
     private val outline = MutableStateFlow(ReaderOutline())
+    private val rotation = MutableStateFlow(PageRotation.NONE)
     private var document: PdfDocument? = null
     private val propertiesState = MutableStateFlow<DocumentProperties?>(null)
     private var propertiesJob: Job? = null
@@ -178,7 +180,7 @@ constructor(
 
     /** State of the screen; [ReaderUiState.Ready] once the document and the settings are read. */
     val uiState: StateFlow<ReaderUiState> =
-        combine(documentState, settings, currentPage, outline) { state, settings, page, outline ->
+        combine(documentState, settings, currentPage, outline, rotation) { state, settings, page, outline, rotation ->
             if (state is ReaderUiState.Ready) {
                 state.copy(
                     scrollMode = settings.scrollMode,
@@ -191,6 +193,7 @@ constructor(
                     chosenFitMode = settings.chosenFitMode,
                     keepScreenOn = settings.keepScreenOn,
                     lockOrientation = settings.lockOrientation,
+                    rotation = rotation,
                 )
             } else {
                 state
@@ -209,6 +212,18 @@ constructor(
     fun onPageChange(page: Int) {
         val pageCount = (documentState.value as? ReaderUiState.Ready)?.pageSizes?.size ?: return
         currentPage.value = page.coerceIn(0, pageCount - 1)
+    }
+
+    /**
+     * Turns the display of the pages a quarter clockwise (F27, ADR 0032), in the cycle
+     * 0 → 90 → 180 → 270 → 0, and remembers it for this document like its page. The file is never
+     * changed. Ignored before the document is open.
+     */
+    fun onRotate() {
+        if (documentState.value !is ReaderUiState.Ready) return
+        val next = rotation.value.next
+        rotation.value = next
+        history.saveRotation(uri, next)
     }
 
     /**
@@ -393,6 +408,7 @@ constructor(
         val title = opened.metadata.title ?: displayName(uri)
         // Before the Ready state: the screen starts on the page of its first Ready state.
         currentPage.value = history.startPage(uri, requestedPage, opened.pageCount)
+        rotation.value = history.startRotation(uri)
         printName = displayName(uri).removeSuffix(PDF_EXTENSION)
         documentState.value =
             ReaderUiState.Ready(

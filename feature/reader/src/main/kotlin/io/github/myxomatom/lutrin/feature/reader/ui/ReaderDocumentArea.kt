@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
@@ -104,23 +105,30 @@ internal fun ReaderDocumentArea(
     rememberLinkHandling(links, navigator, snackbar)
     SelectionHandling(selection, navigator, search.isOpen, snackbar)
     val onPrintClick = rememberPrintClick(state.canPrint, onPrint, snackbar)
-    val sharedPage = sharedPage(page, zoom, pageTransition)
+    // The thumbnail of the library is never turned: a turned page only fades in and out (ADR 0032).
+    val sharedPage = sharedPage(page, zoom, pageTransition.takeIf { state.rotation == PageRotation.NONE })
     val renderOptions = state.renderOptions(LocalDarkTheme.current)
+    // The views work on the pages as shown (F27, ADR 0032); what they report goes back to the document.
+    val frames = rememberPageFrames(state)
+    val onShownPageTap: (PageHit?) -> Unit = remember(frames, onPageTap) { { onPageTap(frames.toPage(it)) } }
+    val onShownLongPress: (PageHit?) -> Unit =
+        remember(frames, onPageLongPress) { { onPageLongPress(frames.toPage(it)) } }
     BoxWithConstraints(modifier.fillMaxSize()) {
         DocumentPages(
             state = state,
+            frames = frames,
             renderOptions = renderOptions,
             navigator = navigator,
             zoom = zoom,
             onZoomChange = onZoomChange,
-            onTap = onPageTap,
+            onTap = onShownPageTap,
             contentDescription = stringResource(R.string.reader_document, page + 1, state.pageSizes.size),
             bottomClearance = if (controlsVisible) floatingPageBarClearance() else 0.dp,
             sharedPage = sharedPage,
             linkActions = pageActions,
-            highlights = rememberSearchHighlights(search),
-            onLongPress = onPageLongPress,
-            selection = selection,
+            highlights = rememberSearchHighlights(search, frames),
+            onLongPress = onShownLongPress,
+            selection = remember(selection, frames) { selection.shownIn(frames) },
         )
         if (scrubber.isPreviewing) PreviewScrim()
         if (search.isOpen) {
@@ -148,6 +156,11 @@ internal fun ReaderDocumentArea(
     }
 }
 
+/** The pages of [state] as shown, turned by its rotation (F27, ADR 0032). */
+@Composable
+internal fun rememberPageFrames(state: ReaderUiState.Ready): PageFrames =
+    remember(state.rotation, state.pageSizes) { PageFrames(state.rotation, state.pageSizes) }
+
 /** The page shown as the shared element of the thumbnail transition, if any ([sharedPageIndex]). */
 @Composable
 private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransition?): SharedPage? =
@@ -160,6 +173,7 @@ private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransitio
 @Composable
 private fun DocumentPages(
     state: ReaderUiState.Ready,
+    frames: PageFrames,
     renderOptions: RenderOptions,
     navigator: PageNavigator,
     zoom: Float,
@@ -176,7 +190,7 @@ private fun DocumentPages(
     when (navigator) {
         is ContinuousNavigator ->
             PdfPagesView(
-                pageSizes = state.pageSizes,
+                pageSizes = frames.displaySizes,
                 renderer = state.renderer,
                 renderOptions = renderOptions,
                 fitMode = state.fitMode,
@@ -195,7 +209,7 @@ private fun DocumentPages(
 
         is PagedNavigator ->
             PdfPagerView(
-                pageSizes = state.pageSizes,
+                pageSizes = frames.displaySizes,
                 renderer = state.renderer,
                 renderOptions = renderOptions,
                 fitMode = state.fitMode,
@@ -285,7 +299,7 @@ private fun BoxScope.ReaderPageBar(
     val scope = rememberCoroutineScope()
     FloatingPageBar(
         page = page,
-        pageSizes = state.pageSizes,
+        pageSizes = state.displayPageSizes,
         renderer = state.renderer,
         scrubber = scrubber,
         onGoTo = { target ->

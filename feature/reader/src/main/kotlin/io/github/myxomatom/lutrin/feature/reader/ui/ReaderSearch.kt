@@ -88,7 +88,15 @@ internal fun SearchEffectsHandler(effects: Flow<SearchEffect>, navigator: PageNa
 
 /** The highlights of [search] on the pages, rebuilt only when its results or its current occurrence change. */
 @Composable
-internal fun rememberSearchHighlights(search: SearchState): SearchHighlights =
-    remember(search.results, search.current) {
-        if (search.results.isEmpty()) SearchHighlights.None else SearchHighlights(search.results, search.current)
+internal fun rememberSearchHighlights(search: SearchState, frames: PageFrames? = null): SearchHighlights =
+    remember(search.results, search.current, frames) {
+        if (search.results.isEmpty()) {
+            SearchHighlights.None
+        } else {
+            SearchHighlights(
+                search.results,
+                search.current,
+                frames,
+            )
+        }
     }

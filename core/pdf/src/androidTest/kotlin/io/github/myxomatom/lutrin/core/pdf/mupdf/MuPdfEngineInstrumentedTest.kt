@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
@@ -398,6 +399,29 @@ class MuPdfEngineInstrumentedTest {
         }
     }
 
+    @Test
+    fun rendersTurnedPages() = runTest {
+        engine.open(DocumentSource.FromFile(copyAsset(TestFiles.Pdf.SIMPLE))).getOrThrow().use { document ->
+            val straight = Bitmap.createBitmap(298, 421, Bitmap.Config.ARGB_8888)
+            document.renderPage(0, straight, PdfRect(0f, 0f, PAGE_WIDTH, PAGE_HEIGHT), scale = 0.5f)
+            val turned = Bitmap.createBitmap(421, 298, Bitmap.Config.ARGB_8888)
+            val turnedPage = PdfRect(0f, 0f, PAGE_HEIGHT, PAGE_WIDTH)
+
+            // A quarter turn (ADR 0032): the display is landscape, the ink is the same, turned.
+            document.renderPage(0, turned, turnedPage, 0.5f, RenderOptions(rotation = PageRotation.QUARTER))
+            val straightInk = straight.pixels().count { it.isInk() }
+            assertThat(turned.pixels().count { it.isInk() }.toFloat() / straightInk).isWithin(INK_TOLERANCE).of(1f)
+            // The blank bottom-right corner of the page is now at the bottom left.
+            assertThat(turned.getPixel(5, 290)).isEqualTo(Color.WHITE)
+            assertThat(straight.getPixel(290, 415)).isEqualTo(Color.WHITE)
+            straight.recycle()
+            turned.recycle()
+        }
+    }
+
+    private fun Int.isInk(): Boolean =
+        Color.red(this) < INK_LEVEL && Color.green(this) < INK_LEVEL && Color.blue(this) < INK_LEVEL
+
     private fun Bitmap.pixels(): IntArray = IntArray(width * height).also {
         getPixels(it, 0, width, 0, 0, width, height)
     }
@@ -429,6 +453,8 @@ class MuPdfEngineInstrumentedTest {
     private companion object {
         const val DARK = 0x60
         const val COLOR_TOLERANCE = 6
+        const val INK_LEVEL = 128
+        const val INK_TOLERANCE = 0.05f
         const val PAGE_WIDTH = 595f
         const val PAGE_HEIGHT = 842f
 

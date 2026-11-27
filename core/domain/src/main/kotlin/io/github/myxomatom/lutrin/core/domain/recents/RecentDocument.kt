@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.domain.recents
 
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import java.time.Instant
 
 /**
@@ -21,6 +22,8 @@ import java.time.Instant
  * @property isProtected whether the document asked for a password when it was last opened (F10,
  *   ADR 0017). Such a document never gets a thumbnail: it cannot be opened without its password,
  *   which is never stored, and a picture of its first page would show what the password protects.
+ * @property rotation rotation of the display chosen for this document (F27, ADR 0032), kept like the
+ *   last page; [PageRotation.NONE] until the user turns the pages.
  */
 data class RecentDocument(
     val documentId: String,
@@ -33,6 +36,7 @@ data class RecentDocument(
     val thumbnailPath: String?,
     val thumbnailDrawnAt: Instant? = null,
     val isProtected: Boolean = false,
+    val rotation: PageRotation = PageRotation.NONE,
 ) {
     /**
      * Whether the thumbnail has to be drawn (again): it is missing, or older than the last

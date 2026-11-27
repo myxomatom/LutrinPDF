@@ -26,19 +26,29 @@ private val CurrentOutlineWidth = 2.dp
  *
  * @property results the occurrences found so far.
  * @property current the occurrence shown, highlighted differently; `null` before the first one.
+ * @property frames the pages as shown (F27, ADR 0032): the areas are turned with them; `null`
+ *   for straight pages.
  */
 @Immutable
-internal class SearchHighlights(private val results: SearchResults, private val current: HitRef?) {
+internal class SearchHighlights(
+    private val results: SearchResults,
+    private val current: HitRef?,
+    private val frames: PageFrames? = null,
+) {
     /** What to draw on the page at [pageIndex], or `null` when it has no occurrence. */
     fun forPage(pageIndex: Int): PageHighlights? {
         val hits = results.onPage(pageIndex)
         if (hits.isEmpty()) return null
         val currentOnPage = current?.takeIf { it.pageIndex == pageIndex }?.indexOnPage
         return PageHighlights(
-            others = hits.filterIndexed { index, _ -> index != currentOnPage }.flatMap { it.areas },
-            current = currentOnPage?.let { hits.getOrNull(it) }?.areas.orEmpty(),
+            others = shown(pageIndex, hits.filterIndexed { index, _ -> index != currentOnPage }.flatMap { it.areas }),
+            current = shown(pageIndex, currentOnPage?.let { hits.getOrNull(it) }?.areas.orEmpty()),
         )
     }
+
+    /** [areas] of the document page as shown on the turned page (F27, ADR 0032). */
+    private fun shown(pageIndex: Int, areas: List<PdfQuad>): List<PdfQuad> =
+        frames?.toDisplay(pageIndex, areas) ?: areas
 
     /** No highlight. */
     companion object {
@@ -48,7 +58,7 @@ internal class SearchHighlights(private val results: SearchResults, private val 
 }
 
 /**
- * The areas to highlight on one page, in page coordinates.
+ * The areas to highlight on one page, in the coordinates of the page as shown.
  *
  * @property others the occurrences other than the current one.
  * @property current the areas of the current occurrence, empty when it is on another page.

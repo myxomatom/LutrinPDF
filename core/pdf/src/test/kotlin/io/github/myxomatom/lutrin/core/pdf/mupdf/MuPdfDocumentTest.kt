@@ -3,6 +3,8 @@ package io.github.myxomatom.lutrin.core.pdf.mupdf
 
 import com.artifex.mupdf.fitz.Document
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
@@ -453,6 +455,34 @@ class MuPdfDocumentTest {
     }
 
     @Test
+    fun `a turned page shows the same drawing, turned`() = runTest {
+        // Scale 1: whole pixels on both sides, so that the turned drawing falls on the same pixels.
+        openTestPdf("pdfs/simple_1page.pdf").use { document ->
+            val straight = document.renderPixels(0, RenderSpec(wholePage, 1f, 595, 842))
+            val straightBounds = straight.darkBounds(595)
+            val straightInk = straight.count { it.isDark() }.toFloat()
+            PageRotation.entries.filter { it != PageRotation.NONE }.forEach { rotation ->
+                val region = if (rotation.swapsSides) PdfRect(0f, 0f, 842f, 595f) else wholePage
+                val width = region.width.toInt()
+                val spec = RenderSpec(region, 1f, width, region.height.toInt(), RenderOptions(rotation = rotation))
+                val turned = document.renderPixels(0, spec)
+
+                // The ink of the page, turned: its bounds turn with the page (a pixel or two of rounding).
+                val expected = straightBounds.turned(rotation, 595, 842)
+                val actual = turned.darkBounds(width)
+                assertWithMessage("$rotation: $actual, expected $expected")
+                    .that(actual.zip(expected).all { (a, e) -> Math.abs(a - e) <= 2 })
+                    .isTrue()
+                assertWithMessage("$rotation ink").that(
+                    turned.count {
+                        it.isDark()
+                    } / straightInk,
+                ).isWithin(0.15f).of(1f)
+            }
+        }
+    }
+
+    @Test
     fun `night mode inverts the lightness onto the night paper and ink`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
             val night = RenderOptions(DocumentColorMode.NIGHT)
@@ -703,5 +733,30 @@ class MuPdfDocumentTest {
         // Targets of the links of links_internal_external.pdf, in points from the top of the page.
         const val MIDDLE_OF_PAGE = 421f
         const val NAMED_DESTINATION_Y = 100f
+    }
+
+    /** Left, top, right and bottom pixels (inclusive) of the dark pixels of an image [width] wide. */
+    private fun IntArray.darkBounds(width: Int): List<Int> {
+        val dark = indices.filter { this[it].isDark() }
+        return listOf(
+            dark.minOf { it % width },
+            dark.minOf { it / width },
+            dark.maxOf { it % width },
+            dark.maxOf { it / width },
+        )
+    }
+
+    /** These bounds in an image [width] × [height], once the image is turned by [rotation]. */
+    private fun List<Int>.turned(rotation: PageRotation, width: Int, height: Int): List<Int> {
+        val left = this[0]
+        val top = this[1]
+        val right = this[2]
+        val bottom = this[3]
+        return when (rotation) {
+            PageRotation.NONE -> this
+            PageRotation.QUARTER -> listOf(height - 1 - bottom, left, height - 1 - top, right)
+            PageRotation.HALF -> listOf(width - 1 - right, height - 1 - bottom, width - 1 - left, height - 1 - top)
+            PageRotation.THREE_QUARTERS -> listOf(top, width - 1 - right, bottom, width - 1 - left)
+        }
     }
 }

@@ -106,6 +106,9 @@
     <string name="reader_outline_collapsed">Replié</string>
     <!-- Recherche dans le document (F07, V1) -->
     <string name="reader_search_open">Rechercher</string>
+    <!-- « Tourner » (F27, ADR 0032) : l’angle est celui de la rotation affichée. -->
+    <string name="reader_rotate">Tourner les pages, actuellement à %1$d°</string>
+    <string name="reader_rotate_menu">Tourner les pages (%1$d°)</string>
     <string name="reader_search_close">Fermer la recherche</string>
     <string name="reader_search_field">Rechercher dans le document</string>
     <string name="reader_search_previous">Résultat précédent</string>

@@ -64,6 +64,11 @@ class LutrinDatabaseMigrationTest {
         }
     }
 
+    private fun SQLiteConnection.rotations(): List<Int> =
+        prepare("SELECT rotation FROM recent_documents ORDER BY document_id").use { statement ->
+            buildList { while (statement.step()) add(statement.getInt(0)) }
+        }
+
     @Test
     fun `version 2 keeps every entry of version 1, none of them protected`() {
         helper.createDatabase(1).apply {
@@ -83,12 +88,46 @@ class LutrinDatabaseMigrationTest {
     }
 
     @Test
+    fun `version 3 keeps every entry of version 2, none of them turned`() {
+        helper.createDatabase(2).apply {
+            insertVersion1Entry("a", thumbnail = "a-2000.png")
+            execSQL("UPDATE recent_documents SET is_protected = 1 WHERE document_id = 'a'")
+            insertVersion1Entry("b", thumbnail = null)
+            close()
+        }
+
+        val migrated = helper.runMigrationsAndValidate(3)
+
+        assertThat(migrated.entries())
+            .containsExactly(
+                listOf("a", "Contrat de location", 3, "a-2000.png", 1),
+                listOf("b", "Contrat de location", 3, null, 0),
+            ).inOrder()
+        assertThat(migrated.rotations()).containsExactly(0, 0)
+        migrated.close()
+    }
+
+    @Test
+    fun `a database of version 1 reaches the current version`() {
+        helper.createDatabase(1).apply {
+            insertVersion1Entry("a", thumbnail = null)
+            close()
+        }
+
+        val migrated = helper.runMigrationsAndValidate(LutrinDatabase.VERSION)
+
+        assertThat(migrated.entries()).containsExactly(listOf("a", "Contrat de location", 3, null, 0))
+        assertThat(migrated.rotations()).containsExactly(0)
+        migrated.close()
+    }
+
+    @Test
     fun `Room opens a migrated database and reads its entries`() = runTest {
         helper.createDatabase(1).apply {
             insertVersion1Entry("a", thumbnail = null)
             close()
         }
-        helper.runMigrationsAndValidate(2).close()
+        helper.runMigrationsAndValidate(LutrinDatabase.VERSION).close()
 
         val database =
             Room
@@ -100,6 +139,7 @@ class LutrinDatabaseMigrationTest {
 
             assertThat(entry?.lastPage).isEqualTo(3)
             assertThat(entry?.isProtected).isFalse()
+            assertThat(entry?.rotation).isEqualTo(0)
         } finally {
             database.close()
         }

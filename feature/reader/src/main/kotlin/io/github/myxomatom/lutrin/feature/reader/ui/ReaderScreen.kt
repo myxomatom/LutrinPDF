@@ -3,32 +3,16 @@ package io.github.myxomatom.lutrin.feature.reader.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,9 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
@@ -58,11 +39,8 @@ import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinReaderColors
-import io.github.myxomatom.lutrin.core.ui.theme.titleLargeCompact
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransition
 import io.github.myxomatom.lutrin.core.ui.transition.rememberDocumentTransition
-import io.github.myxomatom.lutrin.feature.reader.OutlineEntry
-import io.github.myxomatom.lutrin.feature.reader.OutlineTarget
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.ReaderUiState
 import io.github.myxomatom.lutrin.feature.reader.ReaderViewModel
@@ -88,6 +66,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onDocumentColorModeChange = viewModel::onDocumentColorModeChange,
         onFitModeChange = viewModel::onFitModeChange,
         onLockOrientationChange = viewModel::onLockOrientationChange,
+        onRotate = viewModel::onRotate,
         onRemoveFromRecents = {
             viewModel.onRemoveFromRecents()
             onBack()
@@ -135,6 +114,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   ADR 0029).
  * @param onLockOrientationChange called with the state of the orientation switch of the options (V6,
  *   F17, ADR 0029).
+ * @param onRotate called by « Tourner » of the top bar or of its menu (F27, ADR 0032): turns the
+ *   pages a quarter clockwise.
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
@@ -171,6 +152,7 @@ fun ReaderScreen(
     onDocumentColorModeChange: (DocumentColorMode) -> Unit = {},
     onFitModeChange: (FitMode) -> Unit = {},
     onLockOrientationChange: (Boolean) -> Unit = {},
+    onRotate: () -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
@@ -206,6 +188,7 @@ fun ReaderScreen(
                             onFitModeChange = onFitModeChange,
                             onColorModeChange = onDocumentColorModeChange,
                             onLockOrientationChange = onLockOrientationChange,
+                            onRotate = onRotate,
                         ),
                     links = links,
                     pageTransition = pageTransition,
@@ -250,8 +233,8 @@ private fun ReaderContent(
     properties: ReaderProperties = ReaderProperties(),
 ) {
     // Zoom 1 is what the pages are fitted to (the width or the whole page, ADR 0029): start again from it
-    // whenever the layout or the fit changes.
-    var zoom by rememberSaveable(state.scrollMode, state.fitMode) { mutableFloatStateOf(1f) }
+    // whenever the layout, the fit or the rotation of the pages (F27) changes.
+    var zoom by rememberSaveable(state.scrollMode, state.fitMode, state.rotation) { mutableFloatStateOf(1f) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var optionsVisible by rememberSaveable { mutableStateOf(false) }
     var goToPageVisible by rememberSaveable { mutableStateOf(false) }
@@ -259,7 +242,8 @@ private fun ReaderContent(
     val snackbar = remember { SnackbarHostState() }
     val onShareClick = rememberShareClick(onShare, snackbar)
     // A new navigator per mode, starting on the page the previous one last reported.
-    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, state.pageSizes)
+    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, rememberPageFrames(state))
+    KeepPageAfterRotation(state.rotation, state.currentPage, navigator)
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
     ReportCurrentPage(navigator, onPageChange)
     ImmersiveMode(enabled = !controlsVisible)
@@ -289,6 +273,7 @@ private fun ReaderContent(
                         onDisplay = { optionsVisible = true },
                         onShare = onShareClick,
                         onProperties = properties.onOpen,
+                        rotation = MenuRotation(state.rotation, display.onRotate),
                     ),
                 onOutline = openOutline,
                 onIndicatorClick = { goToPageVisible = true },
@@ -429,59 +414,6 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
     LaunchedEffect(navigator) {
         snapshotFlow { navigator.currentPage }.collect { currentOnPageChange(it) }
     }
-}
-
-/**
- * Top bar of the reader: back, title and, once a document is open, « Rechercher » (V1), the
- * table of contents (V2) and « More options »: the menu of the display options (V6), « Partager »
- * and « Propriétés » (V5).
- *
- * @param menu what the items of the « More options » menu do; `null` hides the button (error
- *   screen).
- * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
- *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
- * @param onSearch opens the search bar; `null` hides the button (error screen).
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ReaderTopBar(
-    title: String,
-    onBack: () -> Unit,
-    menu: ReaderMenu? = null,
-    onOutline: (() -> Unit)? = null,
-    onSearch: (() -> Unit)? = null,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLargeCompact,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.reader_back))
-            }
-        },
-        actions = {
-            if (onSearch != null) {
-                IconButton(onClick = onSearch) {
-                    Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.reader_search_open))
-                }
-            }
-            if (onOutline != null) {
-                IconButton(onClick = onOutline) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.List,
-                        contentDescription = stringResource(R.string.reader_outline_title),
-                    )
-                }
-            }
-            if (menu != null) ReaderMenuButton(menu)
-        },
-    )
 }
 
 /** Error screen (V8): what went wrong, « Retirer des récents » for a recent document, a way back. */

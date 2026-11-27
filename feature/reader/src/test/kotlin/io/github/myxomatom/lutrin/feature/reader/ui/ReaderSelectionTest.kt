@@ -41,11 +41,13 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
+import io.github.myxomatom.lutrin.core.domain.recents.GetSavedRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
@@ -123,6 +125,8 @@ class ReaderSelectionTest {
                 SetLockOrientationUseCase(settings),
                 ReadingHistory(
                     GetStartPageUseCase(recents),
+                    GetSavedRotationUseCase(recents),
+                    SaveRotationUseCase(recents),
                     RecordDocumentOpeningUseCase(recents),
                     SaveLastPageUseCase(recents),
                     IsRecentDocumentUseCase(recents),
@@ -184,6 +188,28 @@ class ReaderSelectionTest {
         handle(START_HANDLE).assertDoesNotExist()
         handle(END_HANDLE).assertDoesNotExist()
         composeRule.onNodeWithText("Copy").assertDoesNotExist()
+    }
+
+    @Test
+    fun `on a page turned a quarter, a long press selects the word drawn under the finger`() {
+        showReader()
+        composeRule.onNodeWithContentDescription("Rotate pages, now at 0°").performClick()
+        composeRule.waitForIdle()
+
+        // The point (120, 207) of the page is shown at (842 - 207, 120) once turned (ADR 0032).
+        documentNode(1).performTouchInput {
+            val scale = (width - 2 * 16.dp.toPx()) / A4.height
+            longClick(Offset(16.dp.toPx() + (A4.height - 207f) * scale, 8.dp.toPx() + 120f * scale))
+        }
+        composeRule.waitForIdle()
+
+        assertSelectionShown()
+        val pressed = document.selectionRequests.single().start
+        assertThat(pressed.x).isWithin(1f).of(120f)
+        assertThat(pressed.y).isWithin(1f).of(207f)
+        composeRule.onNodeWithText("Copy").performClick()
+        composeRule.waitForIdle()
+        assertThat(copied()).isEqualTo("bail")
     }
 
     @Test

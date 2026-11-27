@@ -3,15 +3,19 @@ package io.github.myxomatom.lutrin.feature.reader
 
 import io.github.myxomatom.lutrin.core.domain.dispatchers.ApplicationScope
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
+import io.github.myxomatom.lutrin.core.domain.recents.GetSavedRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +37,12 @@ import kotlinx.coroutines.launch
  * Nothing here ever sees the password of a protected document (ADR 0017): an opening only says
  * that one was needed.
  *
+ * The rotation of the display (F27, ADR 0032) is kept the same way, at once when it changes: in
+ * [applicationScope], once the opening is recorded (so that the recording never overwrites it).
+ *
  * @param getStartPage chooses the first page: explicit, saved, or the first one.
+ * @param getSavedRotation the rotation the document was last shown with.
+ * @param saveRotation stores the rotation.
  * @param recordOpening adds the document to the recent list; its thumbnail is drawn later, by
  *   the library, so that it never competes with this opening (ADR 0015).
  * @param saveLastPage stores the page.
@@ -45,6 +54,8 @@ import kotlinx.coroutines.launch
 @Suppress("LongParameterList") // Use cases injected by Hilt.
 class ReadingHistory @Inject constructor(
     private val getStartPage: GetStartPageUseCase,
+    private val getSavedRotation: GetSavedRotationUseCase,
+    private val saveRotation: SaveRotationUseCase,
     private val recordOpening: RecordDocumentOpeningUseCase,
     private val saveLastPage: SaveLastPageUseCase,
     private val isRecentDocument: IsRecentDocumentUseCase,
@@ -52,6 +63,9 @@ class ReadingHistory @Inject constructor(
     private val getDocumentName: GetDocumentNameUseCase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
 ) {
+    /** Whether the opening was recorded: `false` when it could not be, or once [follow] stopped first. */
+    private val recorded = CompletableDeferred<Boolean>()
+
     /** Last page stored for the followed document; `null` until it is recorded. */
     private var savedPage: Int? = null
 
@@ -75,9 +89,35 @@ class ReadingHistory @Inject constructor(
      */
     @OptIn(FlowPreview::class)
     suspend fun follow(opening: DocumentOpening, currentPage: Flow<Int>) {
-        val recorded = recordOpening(opening) ?: return
-        savedPage = recorded.lastPage
-        currentPage.distinctUntilChanged().debounce(SAVE_DELAY).collect { save(opening.uri, it) }
+        try {
+            val entry = recordOpening(opening)
+            recorded.complete(entry != null)
+            entry ?: return
+            savedPage = entry.lastPage
+            currentPage.distinctUntilChanged().debounce(SAVE_DELAY).collect { save(opening.uri, it) }
+        } finally {
+            // Cancelled before the recording: a rotation waiting for it is dropped, never left hanging.
+            recorded.complete(false)
+        }
+    }
+
+    /**
+     * The rotation to show a document with: the one saved with its reading position, or none.
+     *
+     * @param uri the document.
+     */
+    suspend fun startRotation(uri: String): PageRotation = getSavedRotation(uri)
+
+    /**
+     * Saves [rotation] for the document, once its opening is recorded. Does not suspend: the write
+     * runs in the application scope, so that a rotation chosen just before leaving is kept. Nothing
+     * is saved for a document that could not be recorded.
+     *
+     * @param uri the document.
+     * @param rotation the rotation now shown.
+     */
+    fun saveRotation(uri: String, rotation: PageRotation) {
+        applicationScope.launch { if (recorded.await()) saveRotation.invoke(uri, rotation) }
     }
 
     /**

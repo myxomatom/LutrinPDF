@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.share.ShareOutcome
 
@@ -31,18 +32,36 @@ import io.github.myxomatom.lutrin.feature.reader.share.ShareOutcome
  * @property onDisplay « Affichage »: opens the display options (V6).
  * @property onShare « Partager »: opens the chooser of the system (F15).
  * @property onProperties « Propriétés »: opens the properties sheet (V5, F16).
+ * @property rotation « Tourner » (F27): in the top bar, or first in this menu when the bar lacks room;
+ *   `null` hides it.
  */
 @Stable
-class ReaderMenu(val onDisplay: () -> Unit, val onShare: () -> Unit, val onProperties: () -> Unit)
+class ReaderMenu(
+    val onDisplay: () -> Unit,
+    val onShare: () -> Unit,
+    val onProperties: () -> Unit,
+    val rotation: MenuRotation? = null,
+)
+
+/**
+ * « Tourner » (F27, ADR 0032): an icon of the top bar, or an item of the menu when the bar lacks
+ * room ([rotationFitsInBar]).
+ *
+ * @property current the rotation shown now, announced by TalkBack.
+ * @property onRotate turns the pages a quarter clockwise.
+ */
+@Stable
+class MenuRotation(val current: PageRotation, val onRotate: () -> Unit)
 
 /**
  * The « More options » button of the top bar and the menu it opens: « Affichage », « Partager » and
  * « Propriétés ». The menu stays open across a rotation of the screen.
  *
  * @param menu what its items do.
+ * @param rotationInMenu whether « Tourner » is an item of the menu rather than an icon of the bar.
  */
 @Composable
-internal fun ReaderMenuButton(menu: ReaderMenu) {
+internal fun ReaderMenuButton(menu: ReaderMenu, rotationInMenu: Boolean = false) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val chosen: (() -> Unit) -> Unit = { action ->
         expanded = false
@@ -53,6 +72,12 @@ internal fun ReaderMenuButton(menu: ReaderMenu) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.reader_more_options))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            menu.rotation?.takeIf { rotationInMenu }?.let { rotation ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.reader_rotate_menu, rotation.current.degrees)) },
+                    onClick = { chosen(rotation.onRotate) },
+                )
+            }
             MenuItem(R.string.reader_options_title) { chosen(menu.onDisplay) }
             MenuItem(R.string.reader_menu_share) { chosen(menu.onShare) }
             MenuItem(R.string.reader_menu_properties) { chosen(menu.onProperties) }

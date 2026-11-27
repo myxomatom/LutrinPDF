@@ -3,6 +3,7 @@ package io.github.myxomatom.lutrin.core.data.recents
 
 import android.database.sqlite.SQLiteException
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
@@ -46,6 +47,7 @@ import kotlinx.coroutines.withContext
  * @param clock the date of an opening, injected for deterministic tests.
  * @param ioDispatcher where the thumbnail files are checked.
  */
+@Suppress("TooManyFunctions") // One function per operation of the repository, plus private helpers.
 @Singleton
 internal class RoomRecentDocumentsRepository @Inject constructor(
     private val dao: RecentDocumentDao,
@@ -84,6 +86,8 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
                 thumbnailFile = thumbnail?.thumbnailFile,
                 thumbnailDrawnAt = thumbnail?.thumbnailDrawnAt,
                 isProtected = opening.isProtected,
+                // The rotation chosen for the document survives its reopenings, like its page.
+                rotation = previous?.rotation ?: PageRotation.NONE.degrees,
             )
         try {
             dao.upsert(entry)
@@ -104,6 +108,14 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
             dao.updateLastPage(uri, page)
         } catch (expected: SQLiteException) {
             // Same as recordOpening: losing a reading position must not close the document.
+        }
+    }
+
+    override suspend fun saveRotation(uri: String, rotation: PageRotation) {
+        try {
+            dao.updateRotation(uri, rotation.degrees)
+        } catch (expected: SQLiteException) {
+            // Same as saveLastPage: the document stays turned, only not remembered.
         }
     }
 
@@ -186,6 +198,7 @@ internal class RoomRecentDocumentsRepository @Inject constructor(
         thumbnailDrawnAt = thumbnailDrawnAt?.takeIf { thumbnailFile?.let(thumbnails::isCurrent) == true }
             ?.let(Instant::ofEpochMilli),
         isProtected = isProtected,
+        rotation = PageRotation.fromDegrees(rotation),
     )
 }
 

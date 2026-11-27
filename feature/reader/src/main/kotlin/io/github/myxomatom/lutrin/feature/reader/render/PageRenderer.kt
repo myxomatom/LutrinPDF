@@ -30,7 +30,9 @@ private const val PREVIEW_CACHE_BYTES = 8L * 1024 * 1024
  * engine, and the caches key on them. The first request with other options than the last ones
  * empties both caches: the bitmaps of the previous colours would never be shown again, and are
  * left to the garbage collector at once instead of filling the memory until evicted. A rendering
- * still under way when the options change is returned to its caller but not cached.
+ * still under way when the options change is returned to its caller but not cached. The rotation
+ * of the display (F27, ADR 0032) is one of these options: widths, heights and parts are then those
+ * of the turned page, its sides swapped at 90° and 270°.
  *
  * @param dispatcher where bitmaps are allocated (CPU-bound work, off the main thread).
  * @param cache base renderings of the pages.
@@ -64,7 +66,7 @@ class PageRenderer(
         useOptions(options)
         val key = RenderKey(pageIndex, widthPx, options)
         cache[key]?.let { return RenderResult.Rendered(it) }
-        val page = pageSizes[pageIndex]
+        val page = displaySize(pageIndex, options)
         val result =
             render(pageIndex, PdfRect(0f, 0f, page.width, page.height), widthPx, pageHeightPx(page, widthPx), options)
         cacheIfCurrent(cache, key, result)
@@ -88,7 +90,7 @@ class PageRenderer(
         useOptions(options)
         val key = RenderKey(pageIndex, widthPx, options)
         previewCache[key]?.let { return RenderResult.Rendered(it) }
-        val page = pageSizes[pageIndex]
+        val page = displaySize(pageIndex, options)
         val result =
             render(pageIndex, PdfRect(0f, 0f, page.width, page.height), widthPx, pageHeightPx(page, widthPx), options)
         cacheIfCurrent(previewCache, key, result)
@@ -115,10 +117,18 @@ class PageRenderer(
         options: RenderOptions = RenderOptions.ORIGINAL,
     ): RenderResult {
         useOptions(options)
-        val page = pageSizes[pageIndex]
+        val page = displaySize(pageIndex, options)
         val region = part.toPageRect(page, pageWidthPx)
         return render(pageIndex, region, part.width, part.height, options, scale = pageWidthPx / page.width)
     }
+
+    /**
+     * Size of the page as it is shown with [options]: its sides swapped when it is turned a quarter
+     * (F27, ADR 0032). Widths, heights and regions of the reader are in this display space; the
+     * engine turns the page itself, from [RenderOptions.rotation].
+     */
+    private fun displaySize(pageIndex: Int, options: RenderOptions): PageSize =
+        options.rotation.displaySize(pageSizes[pageIndex])
 
     /** Empties both caches when [options] differ from those of the previous request. */
     private fun useOptions(options: RenderOptions) {
