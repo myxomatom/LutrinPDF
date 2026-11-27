@@ -10,6 +10,18 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Options de lecture, feuille « Affichage » et langue** (F04, F14, F17, F19, M5 lot 4, ADR 0029) :
+  la feuille « Affichage » (V6) gagne « Ajustement » (**Largeur** ou **Page entière**, appliqué
+  aussitôt au zoom, point de départ à l'ouverture et cible du double toucher, en défilement continu
+  comme en page par page ; sans choix, l'ajustement reste celui d'avant : largeur en continu, page
+  entière page par page), un interrupteur « Plein écran » qui reflète et pilote le mode immersif, et
+  « Verrouiller l'orientation » (désactivé par défaut, mémorisé, applique l'orientation du moment
+  tant que le lecteur est affiché). Paramètres : « Garder l'écran allumé » (désactivé par défaut,
+  pendant la lecture seulement) et, dès Android 13, « Langue de l'application » (Système, Français,
+  English) par la langue par application du système ; l'application déclare ses langues
+  (`locales_config.xml`), sans dépendance ni permission. Avant Android 13 elle suit la langue du
+  système. Les boutons segmentés de « Affichage » deviennent des boutons radio à partir d'une
+  police à 150 %, ce qui corrige les libellés coupés (« Continuou s ») à 200 %.
 - **Thème de l'application et couleurs du document** (F13, M5 lot 3, ADR 0028) : réglage « Thème de
   l'application » (Clair, Sombre, Système ; **Système** par défaut) en tête de Paramètres ›
   Apparence ; l'interface et les icônes des barres système suivent le thème choisi, même quand il
