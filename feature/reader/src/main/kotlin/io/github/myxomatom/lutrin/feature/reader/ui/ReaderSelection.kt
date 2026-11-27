@@ -183,6 +183,29 @@ internal fun SelectionEffectsHandler(
 }
 
 /**
+ * This selection as the views show it on turned pages (F27, ADR 0032): its areas and handles in
+ * the display space of [frames], and a dragged handle turned back into the page before it moves
+ * the selection. Everything else is the same selection.
+ */
+internal fun ReaderSelection.shownIn(frames: PageFrames): ReaderSelection {
+    if (!frames.isTurned) return this
+    val pageIndex = selection?.pageIndex
+    return ReaderSelection(
+        selection = selection?.let(frames::toDisplay),
+        canCopy = canCopy,
+        effects = effects,
+        onLongPress = onLongPress,
+        onHandleDragStart = onHandleDragStart,
+        onHandleDrag = { point -> onHandleDrag(pageIndex?.let { frames.toPage(it, point) } ?: point) },
+        onHandleDragEnd = onHandleDragEnd,
+        onCopy = onCopy,
+        onSelectAll = onSelectAll,
+        onCopyPage = onCopyPage,
+        onClear = onClear,
+    )
+}
+
+/**
  * A tap on the pages while text is selected only closes the selection (ADR 0024); otherwise it
  * goes to [onTap] (link, or full screen).
  */

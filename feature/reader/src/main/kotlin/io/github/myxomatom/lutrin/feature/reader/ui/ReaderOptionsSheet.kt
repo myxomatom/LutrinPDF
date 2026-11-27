@@ -117,6 +117,8 @@ internal data class ReaderDisplay(
  * @property onColorModeChange called with the chosen colours.
  * @property onFullscreenChange called with the new state of the full screen switch.
  * @property onLockOrientationChange called with the new state of the orientation switch.
+ * @property onRotate turns the pages a quarter clockwise (F27, ADR 0032), from the top bar or its
+ *   menu rather than from this sheet.
  */
 internal class ReaderDisplayActions(
     val onScrollModeChange: (ScrollMode) -> Unit = {},
@@ -124,6 +126,7 @@ internal class ReaderDisplayActions(
     val onColorModeChange: (DocumentColorMode) -> Unit = {},
     val onFullscreenChange: (Boolean) -> Unit = {},
     val onLockOrientationChange: (Boolean) -> Unit = {},
+    val onRotate: () -> Unit = {},
 )
 
 /**

@@ -191,6 +191,28 @@ class ReaderSelectionTest {
     }
 
     @Test
+    fun `on a page turned a quarter, a long press selects the word drawn under the finger`() {
+        showReader()
+        composeRule.onNodeWithContentDescription("Rotate pages, now at 0°").performClick()
+        composeRule.waitForIdle()
+
+        // The point (120, 207) of the page is shown at (842 - 207, 120) once turned (ADR 0032).
+        documentNode(1).performTouchInput {
+            val scale = (width - 2 * 16.dp.toPx()) / A4.height
+            longClick(Offset(16.dp.toPx() + (A4.height - 207f) * scale, 8.dp.toPx() + 120f * scale))
+        }
+        composeRule.waitForIdle()
+
+        assertSelectionShown()
+        val pressed = document.selectionRequests.single().start
+        assertThat(pressed.x).isWithin(1f).of(120f)
+        assertThat(pressed.y).isWithin(1f).of(207f)
+        composeRule.onNodeWithText("Copy").performClick()
+        composeRule.waitForIdle()
+        assertThat(copied()).isEqualTo("bail")
+    }
+
+    @Test
     fun `a long press on a word selects it, and copy puts it on the clipboard`() {
         showReader()
 

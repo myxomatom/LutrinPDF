@@ -17,6 +17,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
@@ -61,6 +62,7 @@ class ReaderScreenshotTest {
         colors: DocumentColors = DocumentColors(),
         fit: FitMode? = null,
         lockOrientation: Boolean = false,
+        rotation: PageRotation = PageRotation.NONE,
     ): ReaderUiState = ReaderUiState.Ready(
         "Contrat de location",
         document.pageSizes,
@@ -69,6 +71,7 @@ class ReaderScreenshotTest {
         documentColors = colors,
         chosenFitMode = fit,
         lockOrientation = lockOrientation,
+        rotation = rotation,
     )
 
     /** The display options sheet (V6) over the reader; the sheet is a separate window. */
@@ -128,6 +131,32 @@ class ReaderScreenshotTest {
         composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
         composeRule.onNodeWithContentDescription("Go to page").performTouchInput { cancel() }
     }
+
+    // F27, ADR 0032: the fake pages are plain, the turned ones are landscape.
+    @Test
+    fun readerTurnedQuarter() = capture("reader_turned90_light", ready(rotation = PageRotation.QUARTER))
+
+    @Test
+    fun readerTurnedQuarterDark() =
+        capture("reader_turned90_dark", ready(rotation = PageRotation.QUARTER), darkTheme = true)
+
+    @Test
+    fun readerTurnedHalf() = capture("reader_turned180_light", ready(rotation = PageRotation.HALF))
+
+    @Test
+    fun readerTurnedQuarterPaged() =
+        capture("reader_turned90_paged_light", ready(ScrollMode.PAGED, rotation = PageRotation.QUARTER))
+
+    @Test
+    fun readerTurnedQuarterPagedDark() = capture(
+        "reader_turned90_paged_dark",
+        ready(ScrollMode.PAGED, rotation = PageRotation.QUARTER),
+        darkTheme = true,
+    )
+
+    @Test
+    fun readerTurnedHalfPaged() =
+        capture("reader_turned180_paged_light", ready(ScrollMode.PAGED, rotation = PageRotation.HALF))
 
     @Test
     fun reader() = capture("reader_light", ready())

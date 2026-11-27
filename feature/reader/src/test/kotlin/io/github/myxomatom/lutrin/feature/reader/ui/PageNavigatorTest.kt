@@ -6,6 +6,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
@@ -32,7 +33,8 @@ class PageNavigatorTest {
         val document = FakePdfDocument(pageSizes = pageSizes)
         composeRule.setContent {
             LutrinTheme(dynamicColor = false) {
-                navigator = rememberPageNavigator(mode, initialPage = 0, pageSizes = pageSizes)
+                navigator =
+                    rememberPageNavigator(mode, initialPage = 0, frames = PageFrames(PageRotation.NONE, pageSizes))
                 scope = rememberCoroutineScope()
                 val renderer = PageRenderer(document, pageSizes, Dispatchers.Unconfined)
                 when (val nav = navigator) {

@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.FitMode
@@ -88,6 +90,7 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onDocumentColorModeChange = viewModel::onDocumentColorModeChange,
         onFitModeChange = viewModel::onFitModeChange,
         onLockOrientationChange = viewModel::onLockOrientationChange,
+        onRotate = viewModel::onRotate,
         onRemoveFromRecents = {
             viewModel.onRemoveFromRecents()
             onBack()
@@ -135,6 +138,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  *   ADR 0029).
  * @param onLockOrientationChange called with the state of the orientation switch of the options (V6,
  *   F17, ADR 0029).
+ * @param onRotate called by « Tourner » of the top bar or of its menu (F27, ADR 0032): turns the
+ *   pages a quarter clockwise.
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
@@ -171,6 +176,7 @@ fun ReaderScreen(
     onDocumentColorModeChange: (DocumentColorMode) -> Unit = {},
     onFitModeChange: (FitMode) -> Unit = {},
     onLockOrientationChange: (Boolean) -> Unit = {},
+    onRotate: () -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
@@ -206,6 +212,7 @@ fun ReaderScreen(
                             onFitModeChange = onFitModeChange,
                             onColorModeChange = onDocumentColorModeChange,
                             onLockOrientationChange = onLockOrientationChange,
+                            onRotate = onRotate,
                         ),
                     links = links,
                     pageTransition = pageTransition,
@@ -250,8 +257,8 @@ private fun ReaderContent(
     properties: ReaderProperties = ReaderProperties(),
 ) {
     // Zoom 1 is what the pages are fitted to (the width or the whole page, ADR 0029): start again from it
-    // whenever the layout or the fit changes.
-    var zoom by rememberSaveable(state.scrollMode, state.fitMode) { mutableFloatStateOf(1f) }
+    // whenever the layout, the fit or the rotation of the pages (F27) changes.
+    var zoom by rememberSaveable(state.scrollMode, state.fitMode, state.rotation) { mutableFloatStateOf(1f) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var optionsVisible by rememberSaveable { mutableStateOf(false) }
     var goToPageVisible by rememberSaveable { mutableStateOf(false) }
@@ -259,7 +266,8 @@ private fun ReaderContent(
     val snackbar = remember { SnackbarHostState() }
     val onShareClick = rememberShareClick(onShare, snackbar)
     // A new navigator per mode, starting on the page the previous one last reported.
-    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, state.pageSizes)
+    val navigator = rememberPageNavigator(state.scrollMode, state.currentPage, rememberPageFrames(state))
+    KeepPageAfterRotation(state.rotation, state.currentPage, navigator)
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
     ReportCurrentPage(navigator, onPageChange)
     ImmersiveMode(enabled = !controlsVisible)
@@ -289,6 +297,7 @@ private fun ReaderContent(
                         onDisplay = { optionsVisible = true },
                         onShare = onShareClick,
                         onProperties = properties.onOpen,
+                        rotation = MenuRotation(state.rotation, display.onRotate),
                     ),
                 onOutline = openOutline,
                 onIndicatorClick = { goToPageVisible = true },
@@ -422,6 +431,22 @@ private fun GoToPage(visible: Boolean, navigator: PageNavigator, pageCount: Int,
 /** The insets the reading area keeps clear of; the bottom ones are left to the floating bar. */
 private val TopAndSides = WindowInsetsSides.Top + WindowInsetsSides.Horizontal
 
+/**
+ * Keeps the page that was shown on screen when the pages turn (F27, ADR 0032): their heights
+ * change, and the scroll position, in pixels, would otherwise land elsewhere. [page] is the page
+ * last reported, read in the composition that sees the new [rotation], before any layout with it.
+ */
+@Composable
+private fun KeepPageAfterRotation(rotation: PageRotation, page: Int, navigator: PageNavigator) {
+    val shown = remember { mutableStateOf(rotation) }
+    if (shown.value != rotation) {
+        LaunchedEffect(rotation) {
+            navigator.goTo(page)
+            shown.value = rotation
+        }
+    }
+}
+
 /** Tells [onPageChange] about every page the [navigator] reaches, so that a change of mode keeps it. */
 @Composable
 private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> Unit) {
@@ -441,6 +466,10 @@ private fun ReportCurrentPage(navigator: PageNavigator, onPageChange: (Int) -> U
  * @param onOutline opens the table of contents; `null` hides the button (error screen, and a
  *   document without an outline: a button to an empty panel would be a dead end, ADR 0021).
  * @param onSearch opens the search bar; `null` hides the button (error screen).
+ *
+ * « Tourner » (F27, ADR 0032, [ReaderMenu.rotation]) sits between « Rechercher » and the table of
+ * contents while the title keeps room enough ([rotationFitsInBar]); otherwise it moves to the top of
+ * the menu.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -450,6 +479,25 @@ internal fun ReaderTopBar(
     menu: ReaderMenu? = null,
     onOutline: (() -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
+) {
+    BoxWithConstraints {
+        val actionCount = listOfNotNull(onSearch, onOutline, menu, menu?.rotation).size
+        val rotationInBar = rotationFitsInBar(maxWidth, LocalDensity.current.fontScale, actionCount)
+        ReaderTopAppBar(title, onBack, menu, onOutline, onSearch, rotationInBar)
+    }
+}
+
+/** [ReaderTopBar], with « Tourner » in the bar when [rotationInBar], in the menu otherwise. */
+@Suppress("LongParameterList") // The parameters of ReaderTopBar, and where « Tourner » goes.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReaderTopAppBar(
+    title: String,
+    onBack: () -> Unit,
+    menu: ReaderMenu?,
+    onOutline: (() -> Unit)?,
+    onSearch: (() -> Unit)?,
+    rotationInBar: Boolean,
 ) {
     TopAppBar(
         title = {
@@ -471,6 +519,14 @@ internal fun ReaderTopBar(
                     Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.reader_search_open))
                 }
             }
+            menu?.rotation?.takeIf { rotationInBar }?.let { rotation ->
+                IconButton(onClick = rotation.onRotate) {
+                    Icon(
+                        RotateRightIcon,
+                        contentDescription = stringResource(R.string.reader_rotate, rotation.current.degrees),
+                    )
+                }
+            }
             if (onOutline != null) {
                 IconButton(onClick = onOutline) {
                     Icon(
@@ -479,7 +535,7 @@ internal fun ReaderTopBar(
                     )
                 }
             }
-            if (menu != null) ReaderMenuButton(menu)
+            if (menu != null) ReaderMenuButton(menu, rotationInMenu = !rotationInBar)
         },
     )
 }

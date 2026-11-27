@@ -36,7 +36,8 @@ internal sealed interface PageNavigator {
      *
      * @param page zero-based page, within the document.
      * @param yOffset distance from the top edge of the page, in PDF points (the unit of
-     *   [PageSize]); clamped to the page height, 0 shows the top of the page.
+     *   [PageSize]), in the document; clamped to the page height, 0 shows the top of the page.
+     *   On turned pages (F27), the top of the page is shown ([PageFrames.displayOffset]).
      */
     suspend fun goTo(page: Int, yOffset: Float = 0f)
 
@@ -47,7 +48,8 @@ internal sealed interface PageNavigator {
      * whole, as [goTo] does.
      *
      * @param page zero-based page, within the document.
-     * @param area part of the page to show, in page coordinates (points, from the top-left corner).
+     * @param area part of the page to show, in the coordinates of the document page (points, from
+     *   its top-left corner), wherever the rotation of the display (F27) shows it.
      */
     suspend fun reveal(page: Int, area: PdfRect)
 }
@@ -56,28 +58,31 @@ internal sealed interface PageNavigator {
  * Continuous vertical scroll: the current page is the one occupying the middle of the screen.
  *
  * @property listState scroll position of the list of pages.
- * @property pageSizes size of every page, in points: gives the height of a page, to turn a
- *   distance in points into pixels.
+ * @property frames the pages as shown (F27, ADR 0032): gives the height of a shown page, to turn
+ *   a distance in points into pixels, and turns the areas of the document into the display.
  */
-internal class ContinuousNavigator(val listState: LazyListState, private val pageSizes: List<PageSize>) :
-    PageNavigator {
+internal class ContinuousNavigator(val listState: LazyListState, private val frames: PageFrames) : PageNavigator {
+    private val pageSizes: List<PageSize> get() = frames.displaySizes
+
     override val currentPage: Int by derivedStateOf { listState.currentPageIndex(pageSizes.size) }
 
     override suspend fun goTo(page: Int, yOffset: Float) {
         listState.scrollToItem(page)
-        if (yOffset <= 0f) return
+        val offset = frames.displayOffset(yOffset)
+        if (offset <= 0f) return
         // The page is laid out now, at the zoom and the width of the screen: its height in
         // pixels is read there, instead of repeating the layout computation here.
         val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page } ?: return
-        val fraction = (yOffset / pageSizes[page].height).coerceIn(0f, 1f)
+        val fraction = (offset / pageSizes[page].height).coerceIn(0f, 1f)
         listState.scrollBy(fraction * item.size)
     }
 
     override suspend fun reveal(page: Int, area: PdfRect) {
+        val shown = frames.toDisplay(page, area)
         listState.scrollToItem(page)
         val layout = listState.layoutInfo
         val item = layout.visibleItemsInfo.firstOrNull { it.index == page } ?: return
-        val centre = ((area.top + area.bottom) / 2f / pageSizes[page].height).coerceIn(0f, 1f) * item.size
+        val centre = ((shown.top + shown.bottom) / 2f / pageSizes[page].height).coerceIn(0f, 1f) * item.size
         // The end padding keeps the last page clear of the floating controls: the free part of
         // the reading area is above it.
         val visibleHeight = (layout.viewportSize.height - layout.afterContentPadding).coerceAtLeast(0)
@@ -105,18 +110,18 @@ internal class PagedNavigator(val pagerState: PagerState) : PageNavigator {
  *
  * @param mode scroll mode of the reader.
  * @param initialPage zero-based page shown first.
- * @param pageSizes size of every page of the document, at least one.
+ * @param frames the pages of the document as shown, at least one.
  */
 @Composable
-internal fun rememberPageNavigator(mode: ScrollMode, initialPage: Int, pageSizes: List<PageSize>): PageNavigator =
+internal fun rememberPageNavigator(mode: ScrollMode, initialPage: Int, frames: PageFrames): PageNavigator =
     when (mode) {
         ScrollMode.CONTINUOUS -> {
             val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialPage)
-            remember(listState, pageSizes) { ContinuousNavigator(listState, pageSizes) }
+            remember(listState, frames) { ContinuousNavigator(listState, frames) }
         }
 
         ScrollMode.PAGED -> {
-            val pagerState = rememberPagerState(initialPage = initialPage) { pageSizes.size }
+            val pagerState = rememberPagerState(initialPage = initialPage) { frames.pageSizes.size }
             remember(pagerState) { PagedNavigator(pagerState) }
         }
     }

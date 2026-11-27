@@ -130,6 +130,48 @@ class ReaderLinksTest {
         settleTap()
     }
 
+    /** Turns the pages a quarter clockwise with « Tourner » of the top bar (F27). */
+    private fun turnQuarter() {
+        composeRule.onNodeWithContentDescription("Rotate pages, now at 0°").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Rotate pages, now at 90°").assertExists()
+    }
+
+    /**
+     * Taps the point ([x], [y]) of the first page, in PDF points, once turned a quarter in
+     * continuous scroll at zoom 1: the turned page, 842 points wide, fills the width of the area
+     * minus 16 dp on each side; the point (x, y) of the page is shown at (842 - y, x).
+     */
+    private fun tapContinuousTurned(x: Float, y: Float) {
+        documentNode(1).performTouchInput {
+            val scale = (width - 2 * 16.dp.toPx()) / A4.height
+            click(Offset(16.dp.toPx() + (A4.height - y) * scale, 8.dp.toPx() + x * scale))
+        }
+        settleTap()
+    }
+
+    @Test
+    fun `on a page turned a quarter, a tap on a link follows the link drawn there`() {
+        showReader()
+        turnQuarter()
+
+        tapContinuousTurned(250f, 155f)
+
+        documentNode(3).assertIsDisplayed()
+        composeRule.onNodeWithText("You were on page 1.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `on a page turned a quarter, the link next to it is told apart`() {
+        showReader()
+        turnQuarter()
+
+        tapContinuousTurned(250f, 165f)
+
+        composeRule.onNodeWithText("Open an external link?").assertIsDisplayed()
+        composeRule.onNodeWithText("https://example.org/conditions").assertIsDisplayed()
+    }
+
     private fun settleTap() {
         composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_WAIT_MS)
         composeRule.waitForIdle()
