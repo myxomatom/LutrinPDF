@@ -64,3 +64,45 @@ class SetIgnoreDocumentRestrictionsUseCase @Inject constructor(private val repos
         repository.setIgnoreDocumentRestrictions(enabled)
     }
 }
+
+/**
+ * Chooses the theme of the interface: light, dark or that of the system (F13, ADR 0028). The
+ * colours of the documents do not change with it, unless the user asked them to follow it.
+ *
+ * @param repository where the settings are stored.
+ */
+class SetAppThemeUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param theme the theme of the interface from now on. */
+    suspend operator fun invoke(theme: AppTheme) {
+        repository.setAppTheme(theme)
+    }
+}
+
+/**
+ * Stores the colours the user picked for the documents in the reader (F13, V6, ADR 0028): one
+ * choice for every document, which wins over the dark theme of the app, even when it is
+ * « Normal ».
+ *
+ * @param repository where the settings are stored.
+ */
+class SetDocumentColorModeUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param mode the colours to draw every document with from now on. */
+    suspend operator fun invoke(mode: DocumentColorMode) {
+        repository.setDocumentColorMode(mode)
+    }
+}
+
+/**
+ * Chooses whether documents turn to night while the app is dark (E3, ADR 0028). Turning it on
+ * forgets the colours picked in the reader, otherwise it would have no visible effect; turning it
+ * off keeps them.
+ *
+ * @param repository where the settings are stored.
+ */
+class SetFollowDarkThemeUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param enabled whether documents follow the dark theme of the app from now on. */
+    suspend operator fun invoke(enabled: Boolean) {
+        repository.setFollowDarkTheme(enabled)
+        if (enabled) repository.setDocumentColorMode(null)
+    }
+}

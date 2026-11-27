@@ -49,6 +49,18 @@ class LutrinThemeTest {
     }
 
     @Test
+    fun `the content knows whether the theme is dark, forced or not`() {
+        val seen = mutableListOf<Boolean>()
+        composeRule.setContent {
+            LutrinTheme(darkTheme = true, dynamicColor = false) { seen += LocalDarkTheme.current }
+            LutrinTheme(darkTheme = false, dynamicColor = false) { seen += LocalDarkTheme.current }
+        }
+        composeRule.waitForIdle()
+
+        assertThat(seen).containsExactly(true, false).inOrder()
+    }
+
+    @Test
     @Config(sdk = [Build.VERSION_CODES.R])
     fun `dynamic colour is ignored before Android 12`() {
         assertThat(lutrinColorScheme(context, darkTheme = false, dynamicColor = true)).isEqualTo(LutrinLightColorScheme)

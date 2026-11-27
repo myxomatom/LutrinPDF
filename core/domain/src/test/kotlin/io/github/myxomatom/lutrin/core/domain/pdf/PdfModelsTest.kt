@@ -2,6 +2,7 @@
 package io.github.myxomatom.lutrin.core.domain.pdf
 
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -50,5 +51,19 @@ class PdfModelsTest {
 
         assertThat(metadata.title).isNull()
         assertThat(metadata.isEncrypted).isFalse()
+    }
+
+    @Test
+    fun `render options draw the original colours by default`() {
+        assertThat(RenderOptions().colorMode).isEqualTo(DocumentColorMode.NORMAL)
+        assertThat(RenderOptions.ORIGINAL).isEqualTo(RenderOptions())
+    }
+
+    @Test
+    fun `render options with another colour mode are another rendering`() {
+        val night = RenderOptions(DocumentColorMode.NIGHT)
+
+        assertThat(night).isNotEqualTo(RenderOptions.ORIGINAL)
+        assertThat(night).isEqualTo(RenderOptions(DocumentColorMode.NIGHT))
     }
 }

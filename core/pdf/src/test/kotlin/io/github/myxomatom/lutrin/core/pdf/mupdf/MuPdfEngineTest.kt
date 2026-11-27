@@ -182,7 +182,7 @@ class MuPdfEngineTest {
             val failures =
                 listOf<suspend () -> Unit>(
                     { document.pageSize(2) },
-                    { document.renderPixels(2, RenderSpec(wholePage, 0.1f, 60, 84, nightMode = false)) },
+                    { document.renderPixels(2, RenderSpec(wholePage, 0.1f, 60, 84)) },
                     { document.links(2) },
                     { document.allText(2) },
                 ).map { call -> runCatching { call() }.exceptionOrNull() }
@@ -200,7 +200,7 @@ class MuPdfEngineTest {
         runCatching { document.pageSize(2) }
 
         val size = document.pageSize(0)
-        val pixels = document.renderPixels(1, RenderSpec(wholePage, 0.5f, 298, 421, nightMode = false))
+        val pixels = document.renderPixels(1, RenderSpec(wholePage, 0.5f, 298, 421))
         val text = document.allText(1)
         document.close()
 

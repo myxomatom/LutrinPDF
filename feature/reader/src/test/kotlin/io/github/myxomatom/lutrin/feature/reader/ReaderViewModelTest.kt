@@ -9,6 +9,7 @@ import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
@@ -17,8 +18,11 @@ import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCas
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
+import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
@@ -70,6 +74,7 @@ class ReaderViewModelTest {
         dispatcher,
         ObserveSettingsUseCase(settings),
         SetScrollModeUseCase(settings),
+        SetDocumentColorModeUseCase(settings),
         ReadingHistory(
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
@@ -240,6 +245,41 @@ class ReaderViewModelTest {
         assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
         assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
     }
+
+    @Test
+    fun `the document keeps its original colours by default, in the dark theme too`() = runTest(dispatcher) {
+        val ready = openDocument().ready
+
+        assertThat(ready.documentColors).isEqualTo(DocumentColors())
+        assertThat(ready.renderOptions(darkTheme = false)).isEqualTo(RenderOptions.ORIGINAL)
+        assertThat(ready.renderOptions(darkTheme = true)).isEqualTo(RenderOptions.ORIGINAL)
+    }
+
+    @Test
+    fun `choosing the document colours stores them and draws the pages with them`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        viewModel.onDocumentColorModeChange(DocumentColorMode.SEPIA)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.documentColors.chosen).isEqualTo(DocumentColorMode.SEPIA)
+        assertThat(viewModel.ready.renderOptions(darkTheme = true)).isEqualTo(RenderOptions(DocumentColorMode.SEPIA))
+    }
+
+    @Test
+    fun `following the dark theme set elsewhere turns the open document to night in the dark theme`() =
+        runTest(dispatcher) {
+            val settings = FakeSettingsRepository()
+            val viewModel = openDocument(settings = settings)
+
+            settings.setFollowDarkTheme(true)
+            advanceUntilIdle()
+
+            val night = RenderOptions(DocumentColorMode.NIGHT)
+            assertThat(viewModel.ready.renderOptions(darkTheme = true)).isEqualTo(night)
+            assertThat(viewModel.ready.renderOptions(darkTheme = false)).isEqualTo(RenderOptions.ORIGINAL)
+        }
 
     @Test
     fun `the page preview of the slider is on by default`() = runTest(dispatcher) {

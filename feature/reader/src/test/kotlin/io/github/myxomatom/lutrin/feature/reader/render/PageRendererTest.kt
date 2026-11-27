@@ -5,10 +5,19 @@ import android.graphics.Bitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.FAKE_PAGE_COLOR
+import io.github.myxomatom.lutrin.core.testing.FAKE_PAGE_COLOR_NIGHT
+import io.github.myxomatom.lutrin.core.testing.FAKE_PAGE_COLOR_SEPIA
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +31,7 @@ class PageRendererTest {
 
     @Test
     fun `renders a whole page at the requested width`() = runTest {
-        val bitmap = renderer().renderPage(pageIndex = 1, widthPx = 595, nightMode = false).bitmapOrNull
+        val bitmap = renderer().renderPage(pageIndex = 1, widthPx = 595).bitmapOrNull
 
         assertThat(bitmap?.width).isEqualTo(595)
         assertThat(bitmap?.height).isEqualTo(842)
@@ -35,12 +44,72 @@ class PageRendererTest {
     fun `serves a repeated base rendering from the cache`() = runTest {
         val renderer = renderer()
 
-        val first = renderer.renderPage(0, 300, nightMode = false).bitmapOrNull
-        val second = renderer.renderPage(0, 300, nightMode = false).bitmapOrNull
-        renderer.renderPage(0, 300, nightMode = true)
+        val first = renderer.renderPage(0, 300).bitmapOrNull
+        val second = renderer.renderPage(0, 300).bitmapOrNull
 
         assertThat(second).isSameInstanceAs(first)
+        assertThat(document.renders).hasSize(1)
+    }
+
+    @Test
+    fun `passes the render options down to the engine, for pages, parts and previews`() = runTest {
+        val renderer = renderer()
+
+        renderer.renderPage(0, 300, NIGHT)
+        renderer.renderPart(0, pageWidthPx = 1190, part = PixelRect(0, 0, 595, 842), options = SEPIA)
+        renderer.renderPreview(1, 128, NIGHT)
+
+        assertThat(document.renders.map { it.options }).containsExactly(NIGHT, SEPIA, NIGHT).inOrder()
+        assertThat(renderer.renderPage(1, 300, SEPIA).bitmapOrNull?.getPixel(5, 5)).isEqualTo(FAKE_PAGE_COLOR_SEPIA)
+    }
+
+    @Test
+    fun `a rendering with other options is drawn again, never taken from the cache`() = runTest {
+        val renderer = renderer()
+
+        val normal = renderer.renderPage(0, 300).bitmapOrNull
+        val night = renderer.renderPage(0, 300, NIGHT).bitmapOrNull
+
+        assertThat(night).isNotSameInstanceAs(normal)
+        assertThat(night?.getPixel(5, 5)).isEqualTo(FAKE_PAGE_COLOR_NIGHT)
         assertThat(document.renders).hasSize(2)
+        assertThat(renderer.renderPage(0, 300, NIGHT).bitmapOrNull).isSameInstanceAs(night)
+    }
+
+    @Test
+    fun `a change of options empties both caches, so that no bitmap of the old colours stays in memory`() = runTest {
+        val pages = BitmapCache(maxBytes = 64L * 1024 * 1024)
+        val previews = BitmapCache(maxBytes = 64L * 1024 * 1024)
+        val renderer =
+            PageRenderer(document, document.pageSizes, StandardTestDispatcher(testScheduler), pages, previews)
+        renderer.renderPage(0, 300)
+        renderer.renderPage(1, 300)
+        renderer.renderPreview(0, 128)
+
+        renderer.renderPage(0, 300, NIGHT)
+
+        assertThat(pages.sizeBytes).isEqualTo(300 * pageHeightPx(document.pageSizes[0], 300) * 4)
+        assertThat(previews.sizeBytes).isEqualTo(0)
+        assertThat(renderer.cachedPreview(0, 128)).isNull()
+        assertThat(renderer.cachedPreview(0, 128, NIGHT)).isNull()
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class) // runCurrent
+    fun `a rendering that ends after a change of options is shown but not cached`() = runTest {
+        val gated = GatedDocument(document)
+        val pages = BitmapCache(maxBytes = 64L * 1024 * 1024)
+        val renderer = PageRenderer(gated, document.pageSizes, StandardTestDispatcher(testScheduler), pages)
+        val late = async { renderer.renderPage(0, 300) }
+        runCurrent()
+        assertThat(gated.waiting).isTrue()
+
+        val night = renderer.renderPage(1, 300, NIGHT).bitmapOrNull
+        gated.gate.complete(Unit)
+        val stale = late.await().bitmapOrNull
+
+        assertThat(stale).isNotNull()
+        assertThat(pages.sizeBytes).isEqualTo(night?.allocationByteCount)
     }
 
     @Test
@@ -50,7 +119,6 @@ class PageRendererTest {
             0,
             pageWidthPx = 1190,
             part = PixelRect(595, 842, 1190, 1684),
-            nightMode = false,
         ).bitmapOrNull
 
         assertThat(bitmap?.width).isEqualTo(595)
@@ -66,7 +134,7 @@ class PageRendererTest {
         document.unreadablePages = setOf(1)
         val cache = BitmapCache(maxBytes = 64L * 1024 * 1024)
 
-        val result = renderer(cache).renderPage(1, 300, nightMode = false)
+        val result = renderer(cache).renderPage(1, 300)
 
         assertThat(result).isEqualTo(RenderResult.Unreadable)
         assertThat(cache.sizeBytes).isEqualTo(0)
@@ -76,7 +144,7 @@ class PageRendererTest {
     fun `renderPart returns no image for an unreadable page`() = runTest {
         document.unreadablePages = setOf(0)
 
-        val result = renderer().renderPart(0, pageWidthPx = 1190, part = PixelRect(0, 0, 595, 842), nightMode = false)
+        val result = renderer().renderPart(0, pageWidthPx = 1190, part = PixelRect(0, 0, 595, 842))
 
         assertThat(result).isEqualTo(RenderResult.Unreadable)
     }
@@ -96,7 +164,7 @@ class PageRendererTest {
     fun `bitmap cache evicts the least recently used rendering`() {
         val bytesPerBitmap = 100 * 100 * 4L
         val cache = BitmapCache(maxBytes = 2 * bytesPerBitmap)
-        val keys = (0..2).map { RenderKey(it, 100, nightMode = false) }
+        val keys = (0..2).map { RenderKey(it, 100, RenderOptions.ORIGINAL) }
 
         keys.forEach { cache[it] = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888) }
 
@@ -145,7 +213,7 @@ class PageRendererTest {
         assertThat(pages.sizeBytes).isEqualTo(0)
         assertThat(previews.sizeBytes).isEqualTo(128 * 181 * 4)
         // A page rendered at the same width is not taken for its preview, nor the other way round.
-        assertThat(renderer.renderPage(0, 128, nightMode = false).bitmapOrNull).isNotSameInstanceAs(first)
+        assertThat(renderer.renderPage(0, 128).bitmapOrNull).isNotSameInstanceAs(first)
         assertThat(document.renders).hasSize(2)
     }
 
@@ -161,5 +229,30 @@ class PageRendererTest {
         assertThat(previews.sizeBytes).isEqualTo(2 * bytesPerPreview)
         assertThat(renderer.cachedPreview(0, 128)).isNull()
         assertThat(renderer.cachedPreview(2, 128)).isNotNull()
+    }
+
+    /** Holds the rendering of the original colours until [gate] completes; other options render at once. */
+    private class GatedDocument(private val document: FakePdfDocument) : PdfDocument by document {
+        val gate = CompletableDeferred<Unit>()
+        var waiting = false
+
+        override suspend fun renderPage(
+            index: Int,
+            target: Bitmap,
+            region: PdfRect,
+            scale: Float,
+            options: RenderOptions,
+        ) {
+            if (options == RenderOptions.ORIGINAL) {
+                waiting = true
+                gate.await()
+            }
+            document.renderPage(index, target, region, scale, options)
+        }
+    }
+
+    private companion object {
+        val NIGHT = RenderOptions(DocumentColorMode.NIGHT)
+        val SEPIA = RenderOptions(DocumentColorMode.SEPIA)
     }
 }

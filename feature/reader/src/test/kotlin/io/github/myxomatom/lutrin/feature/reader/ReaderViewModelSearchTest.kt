@@ -15,6 +15,7 @@ import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCa
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
@@ -61,6 +62,7 @@ class ReaderViewModelSearchTest {
             dispatcher,
             ObserveSettingsUseCase(settings),
             SetScrollModeUseCase(settings),
+            SetDocumentColorModeUseCase(settings),
             ReadingHistory(
                 GetStartPageUseCase(recents),
                 RecordDocumentOpeningUseCase(recents),

@@ -25,4 +25,10 @@ object LutrinReaderColors {
 
     /** Handles of a selection, opaque so that they stand out on any page. */
     val SelectionHandle: Color = Color(0xFF2A5B8C)
+
+    /**
+     * Reading area around the pages in night mode (F13, ADR 0028), darker than the night paper so
+     * that the edges of the pages show, whatever the theme of the interface.
+     */
+    val BackgroundNight: Color = Color(0xFF0B0D10)
 }

@@ -1,7 +1,7 @@
 # Reprendre le développement
 
 > Point d'entrée d'une nouvelle session (personne ou agent). Mis à jour à la fin de chaque
-> session de travail. **Dernière mise à jour : 2026-11-26.**
+> session de travail. **Dernière mise à jour : 2026-11-27.**
 > L'état détaillé par jalon et par vue est dans [`ROADMAP.md` §0](../ROADMAP.md) ; ce fichier dit
 > où on en est, ce qui reste à faire en premier, et les pièges déjà rencontrés.
 
@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 En cours : lot 3 **thèmes et couleurs du document** (F13, ADR 0028) en PR (`feat/themes-document-colors`) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -95,8 +95,11 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
       « Propriétés » (valeurs, « Non renseigné », dates dans la langue et le fuseau du téléphone,
       grande police, TalkBack, rotation de l'écran) ; « Imprimer » depuis la feuille, y compris sur
       `encrypted_owner_password_only.pdf` ; `ShareInstrumentedTest` ;
-   7. lots suivants de M5 (voir `ROADMAP.md`) : thèmes, feuille « Affichage » (lot 4, ouverte par
-      ⋮ › « Affichage » depuis le lot 2), rotation F27 (lot 5).
+   7. **M5 lot 3, thèmes et couleurs du document (F13)** : PR `feat/themes-document-colors`
+      (ADR 0028), pas encore essayé sur appareil. Essais dans la liste de M5 ci-dessous (§2 bis) ;
+   8. lots suivants de M5 (voir `ROADMAP.md`) : feuille « Affichage » (lot 4 : ajustement à la
+      largeur, plein écran, orientation ; ouverte par ⋮ › « Affichage » depuis le lot 2), rotation
+      F27 (lot 5 : à ajouter dans `RenderOptions`, ADR 0028).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -146,10 +149,53 @@ permission réseau.
 - Un document protégé ouvert avec son mot de passe : récents avec cadenas et sans vignette (schéma
   Room 2, ADR 0017) ; jeu de test chiffré dans `core/testing/README.md`.
 
+## 2 bis. Essais sur appareil de M5
+
+Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à cocher par le mainteneur.
+
+- **Lot 1, impression** et **lot 2, partage et propriétés** : voir les points 4 et 6 du §2.
+- **E4 « À propos et licences »** : paragraphe « E4 sur appareil » du §2.
+- **Lot 3, thèmes et couleurs du document** (ADR 0028) :
+  - [ ] premier lancement après mise à jour : thème « Système », couleurs du document d'origine,
+        « Suivre le thème sombre » désactivé ; un document en thème sombre reste **blanc** ;
+  - [ ] Paramètres › Apparence › « Sombre » sur un téléphone en thème clair, puis « Clair » sur un
+        téléphone en thème sombre : toute l'application change aussitôt, icônes de la barre d'état
+        et de la barre de navigation lisibles dans les deux cas ; « Système » suit ensuite un
+        changement du thème du téléphone sans relancer l'application ;
+  - [ ] couleurs dynamiques activées puis désactivées avec chaque thème (Android 12+) ;
+  - [ ] ⋮ › « Affichage » › « Nuit » : les pages visibles changent sous la feuille ouverte, fond de
+        lecture presque noir, texte clair ; une page avec des photos reste reconnaissable (teintes
+        gardées, luminosité inversée) ; « Sépia » : papier crème, texte brun ; « Normal » : retour
+        aux couleurs d'origine ;
+  - [ ] le choix survit à la fermeture du document, à un autre document, à la rotation de l'écran
+        et au redémarrage de l'application ;
+  - [ ] en Nuit et en Sépia : zoom à 400 % (le détail net arrive dans les mêmes couleurs, jamais
+        un rectangle blanc), défilement rapide sur `large_600pages.pdf` (pas de page aux anciennes
+        couleurs après un changement), curseur avec aperçu (carte aux couleurs du mode), page par
+        page, recherche (surlignage visible) et sélection (poignées visibles) ;
+  - [ ] `page_tree_count_mismatch.pdf` en Nuit : message « Page endommagée » clair sur papier sombre ;
+  - [ ] plein écran en Nuit avec l'application en thème clair : numéro de page lisible en bas ;
+  - [ ] mémoire : alterner dix fois Normal, Nuit, Sépia sur un document de 600 pages, puis
+        défiler ; pas de saccade durable ni de plantage (LeakCanary ne signale rien) ;
+  - [ ] « Suivre le thème sombre » activé, thème « Système » : passer le téléphone en sombre, le
+        document passe en Nuit ; en clair, il revient en Normal ; choisir ensuite « Sépia » dans
+        « Affichage » : il reste en Sépia dans les deux thèmes ; réactiver l'interrupteur : il suit
+        de nouveau le thème ;
+  - [ ] l'impression d'un document protégé et le partage restent en couleurs d'origine ; les
+        vignettes de la bibliothèque aussi ;
+  - [ ] grande police (200 %) : E3 montre le thème en liste de boutons radio, « Affichage »
+        montre les couleurs l'une sous l'autre, tout reste atteignable en faisant défiler ;
+  - [ ] TalkBack : « Thème de l'application » lu comme un choix, chaque échantillon de couleurs lu
+        « Nuit, case d'option, sélectionné » (ou équivalent), interrupteur « Suivre le thème sombre » ;
+  - [ ] tests instrumentés `MuPdfEngineInstrumentedTest.rendersInNightAndSepiaColours`.
+
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0027, 0030 et 0031) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0028, 0030 et 0031) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
+  - **ADR 0028** : thème de l'application (E3), couleurs du document (V6, Normal par défaut),
+    « Suivre le thème sombre » facultatif, `RenderOptions` jusqu'au moteur (la rotation F27 s'y
+    ajoutera), caches vidés au changement d'options ;
   - **ADR 0008** : rendu du lecteur (rendu de base et détail de la partie visible) ;
   - **ADR 0031** : page illisible dans un document qui s'ouvre : taille de repli, message
     « Page endommagée » mis à l'échelle de la page, `PageRenderer` renvoie `RenderResult` ;
@@ -458,6 +504,24 @@ permission réseau.
   attendre sa fin avant de relancer. Après une synchronisation de la copie courte suivie d'un
   merge, des tests de `app` peuvent échouer avec `NoSuchMethodException ReaderViewModel.<init>()`
   (code Hilt périmé) : `:app:clean` avant de conclure.
+
+- **Thèmes et couleurs du document** (M5 lot 3, ADR 0028) :
+  - toute nouvelle façon de dessiner une page (rotation F27…) va dans `RenderOptions`
+    (`core:domain`) : `PageRenderer` et `RenderKey` s'en servent de clé et vident leurs caches au
+    premier rendu avec d'autres options ; ne pas ajouter de paramètre à côté ;
+  - le ViewModel du lecteur ne connaît pas le thème : il expose `documentColors`, l'écran résout
+    avec `LocalDarkTheme` (`core:ui`, fourni par `LutrinTheme`) ; ne pas utiliser
+    `isSystemInDarkTheme()` dans un écran, il ignore le thème forcé par l'utilisateur ;
+  - `FakePdfDocument` peint une couleur différente par mode (`fakePageColor`) et note les options
+    reçues (`Render.options`) ;
+  - en nuit, le blanc inversé par MuPDF vaut (4, 4, 4) avant la projection sur le papier : les
+    tests de couleurs du moteur ont une tolérance de quelques unités ;
+  - captures Roborazzi sous Windows : `testDebugUnitTest -Proborazzi.test.record=true
+    -Proborazzi.test.verify=false --rerun` réécrit **toutes** les captures du module, dont des
+    dizaines sans rapport (différences invisibles) : remettre celles-là avec `git checkout` et ne
+    garder que celles que `verify` signalait, plus les nouvelles ;
+  - sous Git Bash, un `python - <<'EOF'` dont le texte contient certaines apostrophes a échoué
+    (« unexpected EOF while looking for matching `'` ») : écrire le script dans un fichier.
 
 - **Les tests en page par page n'appuyaient que sur la page d'index 0** : `hitTest` cherchait la
   taille de la page par `PagePlacement.pageIndex` dans la liste reçue, et le mode page par page

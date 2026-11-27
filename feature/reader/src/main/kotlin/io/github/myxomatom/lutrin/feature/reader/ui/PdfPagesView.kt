@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
@@ -61,6 +62,7 @@ internal val PAGE_GUTTER = 16.dp
  * @param onTap called on a single tap with the page and the point tapped, `null` outside every
  *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
+ * @param renderOptions how the pages are drawn: their colours (F13, ADR 0028).
  * @param bottomClearance extra free space after the last page, so that it can scroll above the
  *   floating bar laid over the bottom of the list (ADR 0018); not scaled by the zoom.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
@@ -81,7 +83,7 @@ internal fun PdfPagesView(
     onTap: (PageHit?) -> Unit,
     contentDescription: String,
     modifier: Modifier = Modifier,
-    nightMode: Boolean = false,
+    renderOptions: RenderOptions = RenderOptions.ORIGINAL,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
@@ -107,7 +109,7 @@ internal fun PdfPagesView(
             zoom = zoom,
             layout = layout,
             pinch = pinch,
-            nightMode = nightMode,
+            renderOptions = renderOptions,
             sharedPage = sharedPage,
             highlights = highlights,
             selection = selection,
@@ -207,7 +209,7 @@ private fun PagesList(
     zoom: Float,
     layout: PagesLayout,
     pinch: PinchTransform?,
-    nightMode: Boolean,
+    renderOptions: RenderOptions,
     sharedPage: SharedPage?,
     highlights: SearchHighlights,
     selection: ReaderSelection,
@@ -239,7 +241,7 @@ private fun PagesList(
                 viewport = viewport,
                 zoom = zoom,
                 settled = pinch == null && !listState.isScrollInProgress && !horizontal.isScrollInProgress,
-                nightMode = nightMode,
+                options = renderOptions,
                 modifier = Modifier.width(with(density) { layout.contentWidth.toDp() }),
                 pageModifier = Modifier.sharedPage(sharedPage, index),
                 highlights = rememberPageHighlights(highlights, index),

@@ -13,8 +13,10 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.TestFiles
@@ -364,7 +366,7 @@ class MuPdfEngineInstrumentedTest {
     fun rendersIntoABitmap() = runTest {
         engine.open(DocumentSource.FromFile(copyAsset(TestFiles.Pdf.SIMPLE))).getOrThrow().use { document ->
             val bitmap = Bitmap.createBitmap(298, 421, Bitmap.Config.ARGB_8888)
-            document.renderPage(0, bitmap, PdfRect(0f, 0f, 595f, 842f), scale = 0.5f, nightMode = false)
+            document.renderPage(0, bitmap, PdfRect(0f, 0f, 595f, 842f), scale = 0.5f)
 
             assertThat(bitmap.getPixel(290, 415)).isEqualTo(Color.WHITE)
             val pixels = IntArray(bitmap.width * bitmap.height).also {
@@ -376,19 +378,49 @@ class MuPdfEngineInstrumentedTest {
     }
 
     @Test
+    fun rendersInNightAndSepiaColours() = runTest {
+        engine.open(DocumentSource.FromFile(copyAsset(TestFiles.Pdf.SIMPLE))).getOrThrow().use { document ->
+            val bitmap = Bitmap.createBitmap(298, 421, Bitmap.Config.ARGB_8888)
+            val page = PdfRect(0f, 0f, PAGE_WIDTH, PAGE_HEIGHT)
+
+            document.renderPage(0, bitmap, page, scale = 0.5f, options = RenderOptions(DocumentColorMode.SEPIA))
+            // The blank corner takes the paper of the mode, the text its ink (ADR 0028).
+            assertThat(bitmap.getPixel(290, 415)).isEqualTo(DocumentColorMode.SEPIA.paper)
+            assertThat(bitmap.pixels().any { it.isNear(DocumentColorMode.SEPIA.ink) }).isTrue()
+
+            document.renderPage(0, bitmap, page, scale = 0.5f, options = RenderOptions(DocumentColorMode.NIGHT))
+            assertThat(bitmap.getPixel(290, 415).isNear(DocumentColorMode.NIGHT.paper)).isTrue()
+            assertThat(bitmap.pixels().any { it.isNear(DocumentColorMode.NIGHT.ink) }).isTrue()
+
+            document.renderPage(0, bitmap, page, scale = 0.5f)
+            assertThat(bitmap.getPixel(290, 415)).isEqualTo(Color.WHITE)
+            bitmap.recycle()
+        }
+    }
+
+    private fun Bitmap.pixels(): IntArray = IntArray(width * height).also {
+        getPixels(it, 0, width, 0, 0, width, height)
+    }
+
+    /** Whether every channel is within [COLOR_TOLERANCE] of [color]'s: night turns white into (4, 4, 4). */
+    private fun Int.isNear(color: Int): Boolean = Math.abs(Color.red(this) - Color.red(color)) <= COLOR_TOLERANCE &&
+        Math.abs(Color.green(this) - Color.green(color)) <= COLOR_TOLERANCE &&
+        Math.abs(Color.blue(this) - Color.blue(color)) <= COLOR_TOLERANCE
+
+    @Test
     fun aPageMissingFromThePageTreeIsUnreadableAndTheOthersStillRender() = runTest {
         open(TestFiles.Pdf.PAGE_TREE_COUNT_MISMATCH).use { document ->
             val page = PdfRect(0f, 0f, PAGE_WIDTH, PAGE_HEIGHT)
             val bitmap = Bitmap.createBitmap(298, 421, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(Color.MAGENTA)
 
-            val error = runCatching { document.renderPage(2, bitmap, page, scale = 0.5f, nightMode = false) }
+            val error = runCatching { document.renderPage(2, bitmap, page, scale = 0.5f) }
 
             assertThat(document.pageCount).isEqualTo(3)
             assertThat(error.exceptionOrNull()).isInstanceOf(PdfError.Unreadable::class.java)
             // Left as it was, and the next page renders into it.
             assertThat(bitmap.getPixel(0, 0)).isEqualTo(Color.MAGENTA)
-            document.renderPage(1, bitmap, page, scale = 0.5f, nightMode = false)
+            document.renderPage(1, bitmap, page, scale = 0.5f)
             assertThat(bitmap.getPixel(290, 415)).isEqualTo(Color.WHITE)
             bitmap.recycle()
         }
@@ -396,6 +428,7 @@ class MuPdfEngineInstrumentedTest {
 
     private companion object {
         const val DARK = 0x60
+        const val COLOR_TOLERANCE = 6
         const val PAGE_WIDTH = 595f
         const val PAGE_HEIGHT = 842f
 

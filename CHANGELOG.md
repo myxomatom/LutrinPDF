@@ -10,6 +10,18 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Thème de l'application et couleurs du document** (F13, M5 lot 3, ADR 0028) : réglage « Thème de
+  l'application » (Clair, Sombre, Système ; **Système** par défaut) en tête de Paramètres ›
+  Apparence ; l'interface et les icônes des barres système suivent le thème choisi, même quand il
+  diffère de celui du système. Section « Couleurs du document » dans la feuille « Affichage » (V6) :
+  **Normal** (couleurs d'origine du PDF, par défaut, y compris en thème sombre), **Nuit**
+  (luminosité inversée en gardant les teintes, puis texte clair `#E1E2E8` sur papier `#16181C`, fond
+  de lecture `#0B0D10`) et **Sépia** (filtre de couleur, texte `#3D2E14` sur papier `#F4ECD8`). Un
+  seul choix pour tous les documents, mémorisé. Réglage facultatif « Suivre le thème sombre »
+  (désactivé par défaut) : un document sans couleurs choisies passe en nuit quand l'application est
+  sombre ; un choix fait dans « Affichage » l'emporte. Les pages, les détails zoomés et l'aperçu du
+  curseur sont dessinés dans ces couleurs ; l'impression, le partage et les vignettes de la
+  bibliothèque gardent les couleurs d'origine. Grande police : les choix passent en liste.
 - **Impression** (F15, M5 lot 1, ADR 0026) : bouton « Imprimer » de la barre flottante, boîte
   d'impression du système, travail nommé d'après le document. Un document ouvert sans mot de passe
   est envoyé tel quel (fichier d'origine, le service d'impression garde les pages choisies) ; un
@@ -328,6 +340,10 @@ changement y est signalé.
 - Métadonnées F-Droid initiales (`fastlane/metadata/android/fr-FR`, `en-US`).
 
 ### Modifié
+- **`PdfDocument.renderPage`** (`core:pdf`, ADR 0028) : le booléen `nightMode` devient
+  `options: RenderOptions` (`core:domain`), qui porte les couleurs du document et accueillera la
+  rotation de l'affichage (F27) ; `PageRenderer` et ses caches s'en servent de clé et se vident au
+  premier rendu avec d'autres options. Jeton de design ajouté : `color.reader.textNight`.
 - `settingsScreen` et `SettingsRoute` (`feature:settings`) prennent un rappel `onOpenAbout` : E3 a une
   ligne « À propos et licences » qui ouvre E4, la navigation restant dans `app`.
 - **Réglage « Ignorer l'interdiction de copie »** renommé « Ignorer les restrictions du document »

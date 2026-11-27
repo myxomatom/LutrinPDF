@@ -10,10 +10,12 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import java.io.Closeable
 import java.io.File
 import kotlinx.coroutines.flow.Flow
@@ -110,11 +112,19 @@ interface PdfDocument : Closeable {
      * @param target mutable [Bitmap.Config.ARGB_8888] bitmap receiving the pixels.
      * @param region area of the page to draw, in page coordinates.
      * @param scale pixels per point (1 = 72 dpi).
-     * @param nightMode whether to invert the lightness of the result (F13), keeping hues.
+     * @param options how to draw the page (ADR 0028): its colours, original by default. Night
+     *   inverts the lightness, keeping hues, then maps the result onto the night paper and ink;
+     *   sepia filters the colours onto its paper and ink ([DocumentColorMode]).
      * @throws PdfError.Unreadable if the page cannot be loaded or drawn; [target] is then left
      *   unchanged.
      */
-    suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean)
+    suspend fun renderPage(
+        index: Int,
+        target: Bitmap,
+        region: PdfRect,
+        scale: Float,
+        options: RenderOptions = RenderOptions.ORIGINAL,
+    )
 
     /**
      * Table of contents (F06); empty when the document has none. Entries whose destination

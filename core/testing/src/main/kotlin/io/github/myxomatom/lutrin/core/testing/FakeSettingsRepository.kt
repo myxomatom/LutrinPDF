@@ -2,6 +2,8 @@
 package io.github.myxomatom.lutrin.core.testing
 
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,5 +38,20 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRep
     /** Changes the document restrictions setting in memory; [settings] emits the new value at once. */
     override suspend fun setIgnoreDocumentRestrictions(enabled: Boolean) {
         state.value = state.value.copy(ignoreDocumentRestrictions = enabled)
+    }
+
+    /** Changes the app theme in memory; [settings] emits the new value at once. */
+    override suspend fun setAppTheme(theme: AppTheme) {
+        state.value = state.value.copy(appTheme = theme)
+    }
+
+    /** Changes, or forgets, the document colours in memory; [settings] emits the new value at once. */
+    override suspend fun setDocumentColorMode(mode: DocumentColorMode?) {
+        state.value = state.value.copy(documentColors = state.value.documentColors.copy(chosen = mode))
+    }
+
+    /** Changes the dark theme follow in memory; [settings] emits the new value at once. */
+    override suspend fun setFollowDarkTheme(enabled: Boolean) {
+        state.value = state.value.copy(documentColors = state.value.documentColors.copy(followDarkTheme = enabled))
     }
 }

@@ -10,10 +10,12 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import java.io.IOException
 import java.time.Instant
@@ -39,6 +41,9 @@ import org.junit.Test
 
 /** Whole A4 page, used to select or render everything. */
 internal val wholePage = PdfRect(0f, 0f, 595f, 842f)
+
+/** Bottom-right corner of `simple_1page.pdf`: blank. */
+private val blankCorner = PdfRect(500f, 800f, 595f, 842f)
 
 /** The whole text of a page, selected from corner to corner. */
 internal suspend fun PdfDocument.allText(index: Int = 0): String =
@@ -437,7 +442,7 @@ class MuPdfDocumentTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
             val pixels = document.renderPixels(
                 0,
-                RenderSpec(wholePage, scale = 0.5f, width = 298, height = 421, nightMode = false),
+                RenderSpec(wholePage, scale = 0.5f, width = 298, height = 421),
             )
 
             assertThat(pixels.size).isEqualTo(298 * 421)
@@ -448,24 +453,52 @@ class MuPdfDocumentTest {
     }
 
     @Test
-    fun `night mode inverts the lightness`() = runTest {
+    fun `night mode inverts the lightness onto the night paper and ink`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            val pixels = document.renderPixels(
-                0,
-                RenderSpec(wholePage, scale = 0.5f, width = 298, height = 421, nightMode = true),
-            )
+            val night = RenderOptions(DocumentColorMode.NIGHT)
+            val pixels = document.renderPixels(0, RenderSpec(wholePage, 0.5f, 298, 421, night))
+            val blank = document.renderPixels(0, RenderSpec(blankCorner, 1f, 95, 42, night))
 
             assertThat(pixels.count { it.isDark() }).isGreaterThan(pixels.size / 2)
+            // White becomes (4, 4, 4) when its lightness is inverted, hence the tolerance.
+            assertThat(blank.all { it.isNear(DocumentColorMode.NIGHT.paper) }).isTrue()
+            assertThat(pixels.any { it.isNear(DocumentColorMode.NIGHT.ink) }).isTrue()
+            assertThat(pixels.all { it ushr ALPHA_SHIFT == OPAQUE }).isTrue()
+        }
+    }
+
+    @Test
+    fun `sepia filters the colours onto the sepia paper and ink`() = runTest {
+        openTestPdf("pdfs/simple_1page.pdf").use { document ->
+            val sepia = RenderOptions(DocumentColorMode.SEPIA)
+            val pixels = document.renderPixels(0, RenderSpec(wholePage, 0.5f, 298, 421, sepia))
+            val blank = document.renderPixels(0, RenderSpec(blankCorner, 1f, 95, 42, sepia))
+
+            assertThat(blank.all { it == DocumentColorMode.SEPIA.paper }).isTrue()
+            assertThat(pixels.any { it.isNear(DocumentColorMode.SEPIA.ink) }).isTrue()
+            assertThat(pixels.none { it == WHITE }).isTrue()
+        }
+    }
+
+    @Test
+    fun `night mode also applies to the images of a scanned page`() = runTest {
+        openTestPdf("pdfs/scanned_images_only.pdf").use { document ->
+            val title = PdfRect(60f, 60f, 400f, 110f)
+            val options = RenderOptions(DocumentColorMode.NIGHT)
+            val night = document.renderPixels(0, RenderSpec(title, 2f, 680, 100, options))
+
+            // The dark text of the scan is drawn light, on the dark paper of night mode.
+            assertThat(night.count { it.isDark() }).isGreaterThan(night.size / 2)
+            assertThat(night.any { !it.isDark() }).isTrue()
         }
     }
 
     @Test
     fun `renders only the requested region`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            // Bottom-right corner of the page: blank.
             val pixels = document.renderPixels(
                 0,
-                RenderSpec(PdfRect(500f, 800f, 595f, 842f), scale = 1f, width = 95, height = 42, nightMode = false),
+                RenderSpec(blankCorner, scale = 1f, width = 95, height = 42),
             )
 
             assertThat(pixels.all { it == WHITE }).isTrue()
@@ -479,7 +512,7 @@ class MuPdfDocumentTest {
             val title = PdfRect(60f, 60f, 400f, 110f)
             val pixels = document.renderPixels(
                 0,
-                RenderSpec(title, scale = 2f, width = 680, height = 100, nightMode = false),
+                RenderSpec(title, scale = 2f, width = 680, height = 100),
             )
 
             assertThat(pixels.any { it.isDark() }).isTrue()
@@ -489,7 +522,7 @@ class MuPdfDocumentTest {
     @Test
     fun `rejects an invalid render size`() = runTest {
         openTestPdf("pdfs/simple_1page.pdf").use { document ->
-            val error = runCatching { RenderSpec(wholePage, 1f, 0, 10, false) }.exceptionOrNull()
+            val error = runCatching { RenderSpec(wholePage, 1f, 0, 10) }.exceptionOrNull()
 
             assertThat(error).isInstanceOf(IllegalArgumentException::class.java)
         }
@@ -528,7 +561,7 @@ class MuPdfDocumentTest {
         ).isInstanceOf(PdfError.Closed::class.java)
         assertThat(runCatching { document.links(0) }.exceptionOrNull()).isInstanceOf(PdfError.Closed::class.java)
         assertThat(
-            runCatching { document.renderPixels(0, RenderSpec(wholePage, 0.1f, 60, 84, false)) }.exceptionOrNull(),
+            runCatching { document.renderPixels(0, RenderSpec(wholePage, 0.1f, 60, 84)) }.exceptionOrNull(),
         ).isInstanceOf(PdfError.Closed::class.java)
     }
 
@@ -649,6 +682,11 @@ class MuPdfDocumentTest {
 
     private fun PageSize.rounded() = Math.round(width) to Math.round(height)
 
+    /** Whether every channel of this colour is within [COLOR_TOLERANCE] of [color]'s. */
+    private fun Int.isNear(color: Int): Boolean = listOf(RED_SHIFT, GREEN_SHIFT, 0).all { shift ->
+        Math.abs((this shr shift and BYTE) - (color shr shift and BYTE)) <= COLOR_TOLERANCE
+    }
+
     private fun Int.isDark(): Boolean =
         (this shr RED_SHIFT and BYTE) + (this shr GREEN_SHIFT and BYTE) + (this and BYTE) < DARK_SUM
 
@@ -660,6 +698,7 @@ class MuPdfDocumentTest {
         const val BYTE = 0xFF
         const val OPAQUE = 0xFF
         const val DARK_SUM = 3 * 0x60
+        const val COLOR_TOLERANCE = 6
 
         // Targets of the links of links_internal_external.pdf, in points from the top of the page.
         const val MIDDLE_OF_PAGE = 421f

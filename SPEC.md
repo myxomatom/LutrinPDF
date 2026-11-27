@@ -38,7 +38,7 @@ Principes non négociables :
 | F10 | PDF protégés | Saisie du mot de passe pour les PDF chiffrés. Le mot de passe n'est jamais stocké. |
 | F11 | Fichiers récents | Liste des documents récents (URI persistés via `takePersistableUriPermission`), avec vignette, possibilité de retirer un élément ou de vider la liste. |
 | F12 | Reprise de lecture | Mémorisation de la dernière page par document. Le zoom n'est pas mémorisé (décision du mainteneur du 2026-11-25 : jugé inutile). |
-| F13 | Thèmes | Clair, sombre, suivre le système. Couleurs dynamiques (Material You, Android 12+) désactivables, activées par défaut (ADR 0010). **Mode nuit du document** (inversion des couleurs du rendu) et mode sépia. |
+| F13 | Thèmes | Clair, sombre, suivre le système. Couleurs dynamiques (Material You, Android 12+) désactivables, activées par défaut (ADR 0010). **Mode nuit du document** (inversion des couleurs du rendu) et mode sépia. Thème choisi dans les paramètres, « Système » par défaut ; couleurs du document choisies dans « Affichage », **couleurs d'origine par défaut, y compris en thème sombre** ; option « Suivre le thème sombre », désactivée par défaut (ADR 0028). |
 | F14 | Plein écran | Mode immersif (barres masquées), réaffichage au tap. |
 | F15 | Partager / imprimer | Partage du fichier via intent ; impression via `PrintManager`. |
 | F16 | Propriétés | Titre, auteur, nombre de pages, taille, version PDF, dates. |

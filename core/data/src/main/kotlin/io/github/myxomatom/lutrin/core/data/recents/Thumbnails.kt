@@ -10,6 +10,7 @@ import dagger.Lazy
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
@@ -119,7 +120,8 @@ internal class PdfThumbnailRenderer @Inject constructor(
             withContext(ioDispatcher) {
                 createBitmap(pixels(page.width * scale), pixels(page.height * scale)).apply { eraseColor(Color.WHITE) }
             }
-        document.renderPage(0, bitmap, PdfRect(0f, 0f, page.width, page.height), scale, nightMode = false)
+        // Original colours, whatever the colours chosen for the reader (ADR 0028).
+        document.renderPage(0, bitmap, PdfRect(0f, 0f, page.width, page.height), scale, RenderOptions.ORIGINAL)
         return bitmap
     }
 

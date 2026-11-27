@@ -9,10 +9,13 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -21,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import org.junit.Rule
 import org.junit.Test
@@ -38,6 +42,8 @@ class SettingsScreenTest {
     private var backClicks = 0
     private var clearRequests = 0
     private var aboutRequests = 0
+    private val themeChanges = mutableListOf<AppTheme>()
+    private val followChanges = mutableListOf<Boolean>()
 
     private fun show(state: SettingsUiState, supported: Boolean = true) {
         composeRule.setContent {
@@ -51,6 +57,8 @@ class SettingsScreenTest {
                     onPagePreviewChange = { previewChanges += it },
                     onIgnoreDocumentRestrictionsChange = { copyChanges += it },
                     onOpenAbout = { aboutRequests++ },
+                    onAppThemeChange = { themeChanges += it },
+                    onFollowDarkThemeChange = { followChanges += it },
                 )
             }
         }
@@ -105,10 +113,10 @@ class SettingsScreenTest {
     fun `offers the page preview of the reader in the reading section, on by default`() {
         show(SettingsUiState(loading = false))
 
-        composeRule.onNodeWithText("Reading").assertIsDisplayed()
+        composeRule.onNodeWithText("Reading").performScrollTo().assertIsDisplayed()
         val summary =
             "Shows the page while you drag the slider of the reader; the document moves there when you let go."
-        composeRule.onNodeWithText(summary).assertIsDisplayed()
+        composeRule.onNodeWithText(summary).performScrollTo().assertIsDisplayed()
         composeRule
             .onNode(isToggleable() and hasText("Page preview"))
             .assertIsOn()
@@ -119,7 +127,7 @@ class SettingsScreenTest {
     fun `tapping the row turns the page preview off, without touching the colours`() {
         show(SettingsUiState(loading = false, pagePreview = true))
 
-        composeRule.onNode(isToggleable() and hasText("Page preview")).performClick()
+        composeRule.onNode(isToggleable() and hasText("Page preview")).performScrollTo().performClick()
 
         assertThat(previewChanges).containsExactly(false)
         assertThat(changes).isEmpty()
@@ -129,7 +137,7 @@ class SettingsScreenTest {
     fun `tapping the row turns the page preview back on`() {
         show(SettingsUiState(loading = false, pagePreview = false))
 
-        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsOff().performClick()
+        composeRule.onNode(isToggleable() and hasText("Page preview")).performScrollTo().assertIsOff().performClick()
 
         assertThat(previewChanges).containsExactly(true)
     }
@@ -138,7 +146,11 @@ class SettingsScreenTest {
     fun `the page preview stays available before Android 12`() {
         show(SettingsUiState(loading = false), supported = false)
 
-        composeRule.onNode(isToggleable() and hasText("Page preview")).assertIsEnabled().performClick()
+        composeRule
+            .onNode(isToggleable() and hasText("Page preview"))
+            .performScrollTo()
+            .assertIsEnabled()
+            .performClick()
 
         assertThat(previewChanges).containsExactly(false)
     }
@@ -212,12 +224,12 @@ class SettingsScreenTest {
 
         composeRule.onNodeWithText("Paramètres").assertIsDisplayed()
         composeRule.onNodeWithText("Couleurs dynamiques").assertIsDisplayed()
-        composeRule.onNodeWithText("Lecture").assertIsDisplayed()
-        composeRule.onNodeWithText("Aperçu de la page").assertIsDisplayed()
+        composeRule.onNodeWithText("Lecture").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Aperçu de la page").performScrollTo().assertIsDisplayed()
         val summary =
             "Montre la page pendant que vous faites glisser le curseur du lecteur\u00A0; " +
                 "le document s’y rend quand vous relâchez."
-        composeRule.onNodeWithText(summary).assertIsDisplayed()
+        composeRule.onNodeWithText(summary).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -296,5 +308,81 @@ class SettingsScreenTest {
         show(SettingsUiState(loading = false, recentCount = 0))
 
         composeRule.onNodeWithText("About and licenses").performScrollTo().assertIsDisplayed().assertIsEnabled()
+    }
+
+    @Test
+    fun `the app theme is a choice between light, dark and system, system by default`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNodeWithText("App theme").assertIsDisplayed()
+        composeRule.onNode(hasText("System") and isSelectable()).assertIsSelected()
+        composeRule.onNode(hasText("Light") and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText("Dark") and isSelectable()).assertIsNotSelected().performClick()
+
+        assertThat(themeChanges).containsExactly(AppTheme.DARK)
+        assertThat(changes).isEmpty()
+    }
+
+    @Test
+    fun `the stored app theme is shown selected`() {
+        show(SettingsUiState(loading = false, appTheme = AppTheme.LIGHT))
+
+        composeRule.onNode(hasText("Light") and isSelectable()).assertIsSelected()
+        composeRule.onNode(hasText("System") and isSelectable()).assertIsNotSelected()
+    }
+
+    @Test
+    fun `documents do not follow the dark theme by default, and the row turns it on`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Follow the dark theme"))
+            .performScrollTo()
+            .assertIsOff()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+            .performClick()
+
+        assertThat(followChanges).containsExactly(true)
+        assertThat(changes).isEmpty()
+        assertThat(themeChanges).isEmpty()
+    }
+
+    @Test
+    fun `the dark theme follow can be turned off again`() {
+        show(SettingsUiState(loading = false, followDarkTheme = true))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Follow the dark theme"))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+
+        assertThat(followChanges).containsExactly(false)
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the theme settings are translated in French`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNodeWithText("Thème de l’application").assertIsDisplayed()
+        composeRule.onNode(hasText("Clair") and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText("Sombre") and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText("Système") and isSelectable()).assertIsSelected()
+        composeRule.onNode(isToggleable() and hasText("Suivre le thème sombre")).performScrollTo().assertIsOff()
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `with a large font the app theme is a list of radio buttons`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule
+            .onNode(hasText("System") and isSelectable())
+            .assertIsSelected()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        composeRule.onNode(hasText("Light") and isSelectable()).assertIsNotSelected().performClick()
+
+        assertThat(themeChanges).containsExactly(AppTheme.LIGHT)
     }
 }

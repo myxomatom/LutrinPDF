@@ -9,6 +9,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -236,5 +239,105 @@ class DataStoreSettingsRepositoryTest {
 
         val expected = AppSettings(scrollMode = ScrollMode.PAGED, ignoreDocumentRestrictions = true)
         assertThat(repository.settings.first()).isEqualTo(expected)
+    }
+
+    @Test
+    fun `stores the app theme and emits every change`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.settings.test {
+            assertThat(awaitItem().appTheme).isEqualTo(AppTheme.SYSTEM)
+            repository.setAppTheme(AppTheme.DARK)
+            assertThat(awaitItem()).isEqualTo(AppSettings(appTheme = AppTheme.DARK))
+            repository.setAppTheme(AppTheme.LIGHT)
+            assertThat(awaitItem().appTheme).isEqualTo(AppTheme.LIGHT)
+            repository.setAppTheme(AppTheme.SYSTEM)
+            assertThat(awaitItem()).isEqualTo(AppSettings())
+        }
+    }
+
+    @Test
+    fun `stores the document colours, and forgets them`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.settings.test {
+            assertThat(awaitItem().documentColors).isEqualTo(DocumentColors())
+            repository.setDocumentColorMode(DocumentColorMode.SEPIA)
+            assertThat(awaitItem().documentColors).isEqualTo(DocumentColors(chosen = DocumentColorMode.SEPIA))
+            repository.setDocumentColorMode(DocumentColorMode.NORMAL)
+            assertThat(awaitItem().documentColors.chosen).isEqualTo(DocumentColorMode.NORMAL)
+            repository.setDocumentColorMode(null)
+            assertThat(awaitItem()).isEqualTo(AppSettings())
+        }
+    }
+
+    @Test
+    fun `stores the dark theme follow and keeps the other settings`() = runTest(UnconfinedTestDispatcher()) {
+        val repository = repository()
+
+        repository.setAppTheme(AppTheme.DARK)
+        repository.setDocumentColorMode(DocumentColorMode.NIGHT)
+        repository.setFollowDarkTheme(true)
+
+        val expected =
+            AppSettings(
+                appTheme = AppTheme.DARK,
+                documentColors = DocumentColors(chosen = DocumentColorMode.NIGHT, followDarkTheme = true),
+            )
+        assertThat(repository.settings.first()).isEqualTo(expected)
+        repository.setFollowDarkTheme(false)
+        assertThat(repository.settings.first().documentColors.followDarkTheme).isFalse()
+    }
+
+    @Test
+    fun `keeps the theme and the document colours in the file`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "colors.preferences_pb")
+        val firstScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        DataStoreSettingsRepository(PreferenceDataStoreFactory.create(scope = firstScope, produceFile = { file }))
+            .run {
+                setAppTheme(AppTheme.LIGHT)
+                setDocumentColorMode(DocumentColorMode.NIGHT)
+                setFollowDarkTheme(true)
+            }
+        firstScope.cancel()
+
+        val settings = repository(file).settings.first()
+
+        assertThat(settings.appTheme).isEqualTo(AppTheme.LIGHT)
+        assertThat(settings.documentColors).isEqualTo(DocumentColors(DocumentColorMode.NIGHT, followDarkTheme = true))
+    }
+
+    @Test
+    fun `theme and colours are stored under stable keys and values`() = runTest(UnconfinedTestDispatcher()) {
+        // Written on the devices of the users: renaming a key or a value would reset every choice.
+        val file = File(folder.root, "stable.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit {
+            it[stringPreferencesKey("app_theme")] = "dark"
+            it[stringPreferencesKey("document_colors")] = "sepia"
+            it[booleanPreferencesKey("follow_dark_theme")] = true
+        }
+
+        val settings = DataStoreSettingsRepository(dataStore).settings.first()
+
+        assertThat(settings.appTheme).isEqualTo(AppTheme.DARK)
+        assertThat(settings.documentColors).isEqualTo(DocumentColors(DocumentColorMode.SEPIA, followDarkTheme = true))
+        assertThat(AppTheme.entries.map { it.storedValue }).containsExactly("light", "dark", "system").inOrder()
+        assertThat(DocumentColorMode.entries.map { it.storedValue })
+            .containsExactly("normal", "night", "sepia")
+            .inOrder()
+    }
+
+    @Test
+    fun `unknown stored theme and colours read as the defaults`() = runTest(UnconfinedTestDispatcher()) {
+        // Values written by a future version, or a damaged file.
+        val file = File(folder.root, "unknown.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit {
+            it[stringPreferencesKey("app_theme")] = "purple"
+            it[stringPreferencesKey("document_colors")] = "negative"
+        }
+
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first()).isEqualTo(AppSettings())
     }
 }

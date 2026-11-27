@@ -3,6 +3,7 @@ package io.github.myxomatom.lutrin.feature.reader.render
 
 import android.graphics.Bitmap
 import android.util.LruCache
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 
 /** Share of the app heap given to rendered pages (`SPEC.md` §3, Mémoire). */
 private const val HEAP_SHARE = 4
@@ -15,9 +16,9 @@ private const val MAX_CACHE_BYTES = 128L * 1024 * 1024
  *
  * @property pageIndex zero-based page.
  * @property widthPx rendering width in pixels.
- * @property nightMode whether colours were inverted.
+ * @property options how it was drawn (colours, ADR 0028): a rendering is never served for others.
  */
-data class RenderKey(val pageIndex: Int, val widthPx: Int, val nightMode: Boolean)
+data class RenderKey(val pageIndex: Int, val widthPx: Int, val options: RenderOptions)
 
 /**
  * Least-recently-used cache of rendered pages, bounded in bytes. Evicted bitmaps are not

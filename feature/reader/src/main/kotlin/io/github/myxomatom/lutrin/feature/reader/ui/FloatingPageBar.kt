@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinDimens
 import io.github.myxomatom.lutrin.feature.reader.R
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
@@ -144,6 +145,7 @@ internal fun floatingPageBarClearance(): Dp =
  *   the document has an outline (milestone M4); `null` shows none.
  * @param canPrint whether the document may be printed; otherwise the print button is dimmed and
  *   read as forbidden, but still answers a tap, so that the reader can explain why.
+ * @param renderOptions how the preview is drawn: in the colours of the pages (ADR 0028).
  */
 @Suppress("LongParameterList") // The bar gathers three controls and the preview of the slider.
 @Composable
@@ -159,6 +161,7 @@ internal fun FloatingPageBar(
     modifier: Modifier = Modifier,
     sectionTitle: (Int) -> String? = { null },
     canPrint: Boolean = true,
+    renderOptions: RenderOptions = RenderOptions.ORIGINAL,
 ) {
     // A bar removed in the middle of a gesture (full screen, new document) does not move the document.
     DisposableEffect(scrubber) { onDispose { scrubber.cancel() } }
@@ -175,6 +178,7 @@ internal fun FloatingPageBar(
                 pageIndex = aimed,
                 page = pageSizes[aimed],
                 renderer = renderer,
+                options = renderOptions,
                 pageMaxHeight = (previewMaxHeight - PreviewChrome - PreviewGap).coerceAtLeast(MinPreviewHeight),
                 sectionTitle = sectionTitle(aimed),
                 modifier = Modifier.centeredAt { thumbAnchor.centerX },

@@ -126,6 +126,13 @@ class DesignTokensTest {
         assertThat(LutrinReaderColors.SelectionHandle).isEqualTo(tokenColor(reader.getString("selectionHandle")))
     }
 
+    @Test
+    fun `background of night mode is the reader token`() {
+        val reader = tokens.getJSONObject("color").getJSONObject("reader")
+
+        assertThat(LutrinReaderColors.BackgroundNight).isEqualTo(tokenColor(reader.getString("backgroundNight")))
+    }
+
     private fun styles(typography: Typography): Map<String, TextStyle> = mapOf(
         "displayLarge" to typography.displayLarge,
         "headlineLarge" to typography.headlineLarge,

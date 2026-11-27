@@ -36,15 +36,16 @@ private val TitleGap = 8.dp
  * The message is laid out at [MessageLayoutWidth], with the font size chosen by the user, then
  * scaled as a whole to cover at most [PAGE_SHARE] of the page: it follows the size of the page on
  * screen, small page, zoom out or zoom in, and never spills over it. Its colours are those of the
- * text of the interface on white paper, or on the dark paper of night mode (F13), whatever the
- * theme, like the page itself. TalkBack reads the title and the explanation together.
+ * text of the interface on light paper (original colours and sepia), or on the dark paper of
+ * night mode (F13, ADR 0028), whatever the theme, like the page itself. TalkBack reads the title
+ * and the explanation together.
  *
- * @param nightMode whether the page is drawn with the colours of night mode.
+ * @param darkPaper whether the page is dark (night mode).
  * @param modifier modifier of the area of the page, which the message is centred in.
  */
 @Composable
-internal fun DamagedPageMessage(nightMode: Boolean, modifier: Modifier = Modifier) {
-    val colors = if (nightMode) LutrinDarkColorScheme else LutrinLightColorScheme
+internal fun DamagedPageMessage(darkPaper: Boolean, modifier: Modifier = Modifier) {
+    val colors = if (darkPaper) LutrinDarkColorScheme else LutrinLightColorScheme
     ScaledToFit(modifier) {
         Column(
             Modifier.semantics(mergeDescendants = true) {},

@@ -36,4 +36,26 @@ interface SettingsRepository {
      * @param enabled whether the copy and print restrictions of a document are ignored.
      */
     suspend fun setIgnoreDocumentRestrictions(enabled: Boolean)
+
+    /**
+     * Chooses the theme of the interface (F13, ADR 0028).
+     *
+     * @param theme light, dark, or the theme of the system.
+     */
+    suspend fun setAppTheme(theme: AppTheme)
+
+    /**
+     * Stores the colours chosen for every document (F13, ADR 0028), or forgets the choice.
+     *
+     * @param mode the colours picked by the user; `null` forgets the choice, so that the
+     *   original colours apply again, or night in the dark theme when it is followed.
+     */
+    suspend fun setDocumentColorMode(mode: DocumentColorMode?)
+
+    /**
+     * Chooses whether documents without chosen colours turn to night while the app is dark.
+     *
+     * @param enabled whether the dark theme of the app is followed.
+     */
+    suspend fun setFollowDarkTheme(enabled: Boolean)
 }

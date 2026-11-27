@@ -12,11 +12,13 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfMetadata
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchHit
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchOptions
 import io.github.myxomatom.lutrin.core.domain.pdf.SearchPageResult
 import io.github.myxomatom.lutrin.core.domain.pdf.SelectionMode
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.pdf.PdfEngine
@@ -31,6 +33,22 @@ import kotlinx.coroutines.flow.flow
 
 /** Grey drawn by [FakePdfDocument.renderPage], so that tests and screenshots see the rendering. */
 const val FAKE_PAGE_COLOR: Int = 0xFFB0B4BA.toInt()
+
+/** [FAKE_PAGE_COLOR] as the night mode would draw it: lightness inverted, on the night paper. */
+const val FAKE_PAGE_COLOR_NIGHT: Int = 0xFF4E5157.toInt()
+
+/** [FAKE_PAGE_COLOR] as the sepia mode would draw it: between the sepia ink and paper. */
+const val FAKE_PAGE_COLOR_SEPIA: Int = 0xFFB3A78F.toInt()
+
+/**
+ * Colour [FakePdfDocument.renderPage] fills a page with for [options] (ADR 0028), so that tests
+ * and screenshots tell the colour modes apart.
+ */
+fun fakePageColor(options: RenderOptions): Int = when (options.colorMode) {
+    DocumentColorMode.NORMAL -> FAKE_PAGE_COLOR
+    DocumentColorMode.NIGHT -> FAKE_PAGE_COLOR_NIGHT
+    DocumentColorMode.SEPIA -> FAKE_PAGE_COLOR_SEPIA
+}
 
 /** A4 portrait, in points. */
 val A4: PageSize = PageSize(595f, 842f)
@@ -154,8 +172,16 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
      * @property height height of the target bitmap.
      * @property region requested region.
      * @property scale requested scale.
+     * @property options requested options (ADR 0028).
      */
-    data class Render(val pageIndex: Int, val width: Int, val height: Int, val region: PdfRect, val scale: Float)
+    data class Render(
+        val pageIndex: Int,
+        val width: Int,
+        val height: Int,
+        val region: PdfRect,
+        val scale: Float,
+        val options: RenderOptions = RenderOptions.ORIGINAL,
+    )
 
     /** Number of [pageSizes]. */
     override val pageCount: Int = pageSizes.size
@@ -169,11 +195,11 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
         return pageSizes[index]
     }
 
-    /** Records the request in [renders] and fills [target] with [FAKE_PAGE_COLOR]. */
-    override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean) {
+    /** Records the request in [renders] and fills [target] with the [fakePageColor] of [options]. */
+    override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, options: RenderOptions) {
         checkPage(index)
-        renders += Render(index, target.width, target.height, region, scale)
-        target.eraseColor(FAKE_PAGE_COLOR)
+        renders += Render(index, target.width, target.height, region, scale, options)
+        target.eraseColor(fakePageColor(options))
     }
 
     /** Returns the [outline] set by the test. */

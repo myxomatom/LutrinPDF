@@ -4,6 +4,14 @@
     <string name="settings_title">Paramètres</string>
     <string name="settings_back">Retour</string>
     <string name="settings_section_appearance">Apparence</string>
+    <!-- Theme of the interface (F13, ADR 0028). -->
+    <string name="settings_app_theme">Thème de l’application</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_theme_system">Système</string>
+    <!-- Documents turn to night mode while the app is dark; off by default (ADR 0028). -->
+    <string name="settings_follow_dark_theme">Suivre le thème sombre</string>
+    <string name="settings_follow_dark_theme_summary">Mode nuit pour les documents quand l’application est sombre, tant que vous ne choisissez pas leurs couleurs dans le lecteur</string>
     <string name="settings_dynamic_color">Couleurs dynamiques</string>
     <string name="settings_dynamic_color_summary">Reprendre les couleurs de votre fond d’écran</string>
     <string name="settings_dynamic_color_unavailable">Disponible à partir d’Android 12</string>

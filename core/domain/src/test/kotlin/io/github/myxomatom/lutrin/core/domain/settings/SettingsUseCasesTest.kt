@@ -27,6 +27,20 @@ class SettingsUseCasesTest {
         override suspend fun setIgnoreDocumentRestrictions(enabled: Boolean) {
             (settings as MutableStateFlow).value = settings.value.copy(ignoreDocumentRestrictions = enabled)
         }
+
+        override suspend fun setAppTheme(theme: AppTheme) {
+            (settings as MutableStateFlow).value = settings.value.copy(appTheme = theme)
+        }
+
+        override suspend fun setDocumentColorMode(mode: DocumentColorMode?) {
+            val colors = settings.value.documentColors.copy(chosen = mode)
+            (settings as MutableStateFlow).value = settings.value.copy(documentColors = colors)
+        }
+
+        override suspend fun setFollowDarkTheme(enabled: Boolean) {
+            val colors = settings.value.documentColors.copy(followDarkTheme = enabled)
+            (settings as MutableStateFlow).value = settings.value.copy(documentColors = colors)
+        }
     }
 
     private val repository = InMemorySettings()
@@ -126,5 +140,54 @@ class SettingsUseCasesTest {
         assertThat(respecting.allowsPrinting(documentAllowsPrinting = false)).isFalse()
         assertThat(ignoring.allowsPrinting(documentAllowsPrinting = true)).isTrue()
         assertThat(ignoring.allowsPrinting(documentAllowsPrinting = false)).isTrue()
+    }
+
+    @Test
+    fun `the app theme can be forced light or dark and follow the system again`() = runTest {
+        val setAppTheme = SetAppThemeUseCase(repository)
+
+        setAppTheme(AppTheme.DARK)
+        assertThat(repository.settings.value).isEqualTo(AppSettings(appTheme = AppTheme.DARK))
+
+        setAppTheme(AppTheme.LIGHT)
+        assertThat(repository.settings.value.appTheme).isEqualTo(AppTheme.LIGHT)
+
+        setAppTheme(AppTheme.SYSTEM)
+        assertThat(repository.settings.value).isEqualTo(AppSettings())
+    }
+
+    @Test
+    fun `the colours chosen in the reader are kept as an explicit choice`() = runTest {
+        val setDocumentColorMode = SetDocumentColorModeUseCase(repository)
+
+        setDocumentColorMode(DocumentColorMode.SEPIA)
+        assertThat(repository.settings.value.documentColors).isEqualTo(DocumentColors(chosen = DocumentColorMode.SEPIA))
+
+        // Normal chosen explicitly is a choice too: the dark theme no longer changes it.
+        setDocumentColorMode(DocumentColorMode.NORMAL)
+        assertThat(repository.settings.value.documentColors.chosen).isEqualTo(DocumentColorMode.NORMAL)
+    }
+
+    @Test
+    fun `turning on the dark theme follow forgets the colours chosen so that it applies at once`() = runTest {
+        SetDocumentColorModeUseCase(repository)(DocumentColorMode.SEPIA)
+        val setFollowDarkTheme = SetFollowDarkThemeUseCase(repository)
+
+        setFollowDarkTheme(true)
+
+        assertThat(repository.settings.value.documentColors).isEqualTo(DocumentColors(followDarkTheme = true))
+        val mode = repository.settings.value.documentColors.modeFor(darkTheme = true)
+        assertThat(mode).isEqualTo(DocumentColorMode.NIGHT)
+    }
+
+    @Test
+    fun `turning off the dark theme follow keeps the colours chosen`() = runTest {
+        val setFollowDarkTheme = SetFollowDarkThemeUseCase(repository)
+        setFollowDarkTheme(true)
+        SetDocumentColorModeUseCase(repository)(DocumentColorMode.NIGHT)
+
+        setFollowDarkTheme(false)
+
+        assertThat(repository.settings.value.documentColors).isEqualTo(DocumentColors(chosen = DocumentColorMode.NIGHT))
     }
 }

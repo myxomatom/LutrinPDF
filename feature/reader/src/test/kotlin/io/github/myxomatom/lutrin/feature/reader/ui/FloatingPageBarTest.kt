@@ -26,6 +26,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.A4
@@ -375,7 +376,13 @@ class FloatingPageBarTest {
         val cancelled: MutableList<Int> = CopyOnWriteArrayList()
         val rendered: MutableList<Int> = CopyOnWriteArrayList()
 
-        override suspend fun renderPage(index: Int, target: Bitmap, region: PdfRect, scale: Float, nightMode: Boolean) {
+        override suspend fun renderPage(
+            index: Int,
+            target: Bitmap,
+            region: PdfRect,
+            scale: Float,
+            options: RenderOptions,
+        ) {
             if (target.width < PREVIEW_MAX_WIDTH_PX) {
                 waiting += index
                 try {
@@ -386,7 +393,7 @@ class FloatingPageBarTest {
                 }
                 rendered += index
             }
-            document.renderPage(index, target, region, scale, nightMode)
+            document.renderPage(index, target, region, scale, options)
         }
     }
 

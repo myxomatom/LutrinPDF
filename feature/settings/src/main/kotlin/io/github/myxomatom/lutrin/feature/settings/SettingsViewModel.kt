@@ -8,8 +8,11 @@ import io.github.myxomatom.lutrin.core.domain.dispatchers.ApplicationScope
 import io.github.myxomatom.lutrin.core.domain.recents.ClearRecentDocumentsUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.ObserveRecentDocumentsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetAppThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFollowDarkThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreDocumentRestrictionsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import javax.inject.Inject
@@ -36,6 +39,9 @@ private const val STOP_TIMEOUT_MS = 5_000L
  *   whose author forbids it (ADR 0024, ADR 0026); off by default.
  * @property recentCount number of documents in the recent list; « Vider les récents » is
  *   disabled at 0, and when the list cannot be read.
+ * @property appTheme light, dark or the system theme for the interface (ADR 0028).
+ * @property followDarkTheme whether documents turn to night while the app is dark, until colours
+ *   are chosen in the reader (ADR 0028); off by default.
  */
 data class SettingsUiState(
     val loading: Boolean = true,
@@ -43,6 +49,8 @@ data class SettingsUiState(
     val pagePreview: Boolean = AppSettings.DEFAULT_PAGE_PREVIEW,
     val ignoreDocumentRestrictions: Boolean = AppSettings.DEFAULT_IGNORE_DOCUMENT_RESTRICTIONS,
     val recentCount: Int = 0,
+    val appTheme: AppTheme = AppSettings.DEFAULT_APP_THEME,
+    val followDarkTheme: Boolean = false,
 )
 
 /**
@@ -51,11 +59,13 @@ data class SettingsUiState(
  * @param observeSettings reads the stored settings.
  * @param setDynamicColor stores the dynamic colour choice.
  * @param setPagePreview stores the page preview choice of the reader's slider.
- * @param setIgnoreDocumentRestrictions stores whether the restrictions of documents are ignored.
  * @param observeRecentDocuments counts the recent documents.
  * @param clearRecentDocuments empties the recent list (« Vider les récents », ADR 0016).
  * @param applicationScope where the clearing runs: leaving the screen at once never stops it
  *   half-way.
+ * @param setIgnoreDocumentRestrictions stores whether the restrictions of documents are ignored.
+ * @param setAppTheme stores the theme of the interface (ADR 0028).
+ * @param setFollowDarkTheme stores whether documents follow the dark theme (ADR 0028).
  */
 @Suppress("LongParameterList") // Dependencies injected by Hilt.
 @HiltViewModel
@@ -67,6 +77,8 @@ class SettingsViewModel @Inject constructor(
     private val clearRecentDocuments: ClearRecentDocumentsUseCase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
     private val setIgnoreDocumentRestrictions: SetIgnoreDocumentRestrictionsUseCase,
+    private val setAppTheme: SetAppThemeUseCase,
+    private val setFollowDarkTheme: SetFollowDarkThemeUseCase,
 ) : ViewModel() {
     /** Current state of the screen. */
     val uiState: StateFlow<SettingsUiState> =
@@ -81,6 +93,8 @@ class SettingsViewModel @Inject constructor(
                 pagePreview = settings.pagePreview,
                 ignoreDocumentRestrictions = settings.ignoreDocumentRestrictions,
                 recentCount = recentCount,
+                appTheme = settings.appTheme,
+                followDarkTheme = settings.documentColors.followDarkTheme,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), SettingsUiState())
 
@@ -91,6 +105,26 @@ class SettingsViewModel @Inject constructor(
      */
     fun onDynamicColorChange(enabled: Boolean) {
         viewModelScope.launch { setDynamicColor(enabled) }
+    }
+
+    /**
+     * Chooses the theme of the interface; the whole app follows at once (ADR 0028). The colours
+     * of the documents do not change, unless they follow the dark theme.
+     *
+     * @param theme light, dark or the theme of the system.
+     */
+    fun onAppThemeChange(theme: AppTheme) {
+        viewModelScope.launch { setAppTheme(theme) }
+    }
+
+    /**
+     * Chooses whether documents turn to night while the app is dark (ADR 0028). Turning it on
+     * forgets the colours chosen in the reader, so that it applies at once.
+     *
+     * @param enabled whether documents follow the dark theme of the app.
+     */
+    fun onFollowDarkThemeChange(enabled: Boolean) {
+        viewModelScope.launch { setFollowDarkTheme(enabled) }
     }
 
     /**
