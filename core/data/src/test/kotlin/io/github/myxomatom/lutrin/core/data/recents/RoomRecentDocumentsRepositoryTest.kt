@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.data.db.LutrinDatabase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
@@ -292,6 +293,58 @@ class RoomRecentDocumentsRepositoryTest {
         repository.saveLastPage(uri(1), 6)
 
         assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `a document is not turned until its rotation is saved`() = runTest {
+        val repository = repository()
+
+        assertThat(repository.recordOpening(opening(1))?.rotation).isEqualTo(PageRotation.NONE)
+    }
+
+    @Test
+    fun `saves the rotation of a recorded document and keeps it when it is opened again`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+
+        repository.saveRotation(uri(1), PageRotation.QUARTER)
+        val reopened = repository.recordOpening(opening(1, page = 2))
+
+        assertThat(repository.findByUri(uri(1))?.rotation).isEqualTo(PageRotation.QUARTER)
+        assertThat(reopened?.rotation).isEqualTo(PageRotation.QUARTER)
+        assertThat(reopened?.lastPage).isEqualTo(2)
+    }
+
+    @Test
+    fun `each rotation is read back as saved`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+
+        PageRotation.entries.forEach { rotation ->
+            repository.saveRotation(uri(1), rotation)
+
+            assertThat(repository.findByUri(uri(1))?.rotation).isEqualTo(rotation)
+        }
+    }
+
+    @Test
+    fun `saving the rotation of an unknown document changes nothing`() = runTest {
+        val repository = repository()
+
+        repository.saveRotation(uri(1), PageRotation.HALF)
+
+        assertThat(repository.recentDocuments.first()).isEmpty()
+    }
+
+    @Test
+    fun `a removed document opened again is not turned`() = runTest {
+        val repository = repository()
+        repository.recordOpening(opening(1))
+        repository.saveRotation(uri(1), PageRotation.HALF)
+
+        repository.remove(documentIdFor(uri(1)))
+
+        assertThat(repository.recordOpening(opening(1))?.rotation).isEqualTo(PageRotation.NONE)
     }
 
     @Test

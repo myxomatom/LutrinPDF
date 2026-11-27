@@ -24,6 +24,8 @@ import androidx.room.PrimaryKey
  * @property isProtected whether the document needed a user password at its last opening (F10,
  *   ADR 0017): it never gets a thumbnail. Added by schema version 2; `false` for the entries of
  *   version 1, which could not hold a protected document.
+ * @property rotation rotation of the display chosen for the document, in degrees clockwise (0,
+ *   90, 180 or 270; F27, ADR 0032); 0 for the entries of version 2 and older.
  */
 @Entity(
     tableName = "recent_documents",
@@ -51,4 +53,6 @@ internal data class RecentDocumentEntity(
     val thumbnailDrawnAt: Long?,
     @ColumnInfo(name = "is_protected", defaultValue = "0")
     val isProtected: Boolean = false,
+    @ColumnInfo(name = "rotation", defaultValue = "0")
+    val rotation: Int = 0,
 )

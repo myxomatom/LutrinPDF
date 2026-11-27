@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.domain.recents
 
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -58,6 +59,32 @@ class SaveLastPageUseCase @Inject constructor(private val repository: RecentDocu
     suspend operator fun invoke(uri: String, page: Int) {
         repository.saveLastPage(uri, page.coerceAtLeast(0))
     }
+}
+
+/**
+ * Remembers the rotation of the display chosen for a document (F27, ADR 0032).
+ *
+ * @param repository where the reading positions are stored.
+ */
+class SaveRotationUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
+    /**
+     * @param uri the document URI; nothing is stored for a document that is not in the list.
+     * @param rotation the rotation now shown.
+     */
+    suspend operator fun invoke(uri: String, rotation: PageRotation) {
+        repository.saveRotation(uri, rotation)
+    }
+}
+
+/**
+ * The rotation of the display a document opens with (F27, ADR 0032): the one chosen when it was
+ * last read, otherwise none.
+ *
+ * @param repository where the reading positions are stored.
+ */
+class GetSavedRotationUseCase @Inject constructor(private val repository: RecentDocumentsRepository) {
+    /** @param uri the document URI. */
+    suspend operator fun invoke(uri: String): PageRotation = repository.findByUri(uri)?.rotation ?: PageRotation.NONE
 }
 
 /**

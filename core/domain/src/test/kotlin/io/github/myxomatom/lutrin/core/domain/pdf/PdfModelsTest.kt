@@ -66,4 +66,13 @@ class PdfModelsTest {
         assertThat(night).isNotEqualTo(RenderOptions.ORIGINAL)
         assertThat(night).isEqualTo(RenderOptions(DocumentColorMode.NIGHT))
     }
+
+    @Test
+    fun `render options are not turned by default, and a turned rendering is another rendering`() {
+        val turned = RenderOptions(rotation = PageRotation.QUARTER)
+
+        assertThat(RenderOptions.ORIGINAL.rotation).isEqualTo(PageRotation.NONE)
+        assertThat(turned).isNotEqualTo(RenderOptions.ORIGINAL)
+        assertThat(turned).isNotEqualTo(RenderOptions(rotation = PageRotation.HALF))
+    }
 }

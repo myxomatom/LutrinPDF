@@ -118,6 +118,17 @@ class RecentDocumentDaoTest {
     }
 
     @Test
+    fun `updates the rotation of a known URI only, keeping its page`() = runTest {
+        val dao = dao()
+        dao.upsert(entity("a"))
+
+        assertThat(dao.updateRotation(uri("a"), 270)).isEqualTo(1)
+        assertThat(dao.updateRotation("content://unknown", 90)).isEqualTo(0)
+        assertThat(dao.findById("a")?.rotation).isEqualTo(270)
+        assertThat(dao.findById("a")?.lastPage).isEqualTo(entity("a").lastPage)
+    }
+
+    @Test
     fun `updates the thumbnail of a known entry only`() = runTest {
         val dao = dao()
         dao.upsert(entity("a"))

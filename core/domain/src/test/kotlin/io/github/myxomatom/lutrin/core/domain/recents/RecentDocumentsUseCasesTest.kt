@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.core.domain.recents
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.DocumentNameResolver
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ class RecentDocumentsUseCasesTest {
         val openings = mutableListOf<DocumentOpening>()
         val pages = mutableListOf<Pair<String, Int>>()
         val thumbnails = mutableListOf<Pair<String, Boolean>>()
+        val rotations = mutableListOf<Pair<String, PageRotation>>()
 
         override suspend fun findByUri(uri: String): RecentDocument? =
             recentDocuments.value.firstOrNull { it.uri == uri }
@@ -31,6 +33,10 @@ class RecentDocumentsUseCasesTest {
 
         override suspend fun saveLastPage(uri: String, page: Int) {
             pages += uri to page
+        }
+
+        override suspend fun saveRotation(uri: String, rotation: PageRotation) {
+            rotations += uri to rotation
         }
 
         override suspend fun updateThumbnail(documentId: String, onlyIfOutdated: Boolean): Boolean {
@@ -94,6 +100,29 @@ class RecentDocumentsUseCasesTest {
         val getStartPage = GetStartPageUseCase(InMemoryRecents(listOf(entry(URI, lastPage = 5))))
 
         assertThat(getStartPage(URI, requestedPage = 1, pageCount = 10)).isEqualTo(1)
+    }
+
+    @Test
+    fun `saving a rotation forwards it`() = runTest {
+        val repository = InMemoryRecents()
+
+        SaveRotationUseCase(repository)(URI, PageRotation.HALF)
+
+        assertThat(repository.rotations).containsExactly(URI to PageRotation.HALF)
+    }
+
+    @Test
+    fun `a document opens with its saved rotation, an unknown one with none`() = runTest {
+        val turned = entry(URI, lastPage = 5).copy(rotation = PageRotation.THREE_QUARTERS)
+        val getRotation = GetSavedRotationUseCase(InMemoryRecents(listOf(turned)))
+
+        assertThat(getRotation(URI)).isEqualTo(PageRotation.THREE_QUARTERS)
+        assertThat(getRotation("content://other/doc")).isEqualTo(PageRotation.NONE)
+    }
+
+    @Test
+    fun `a recent document read before the rotation existed is not turned`() {
+        assertThat(entry(URI, lastPage = 0).rotation).isEqualTo(PageRotation.NONE)
     }
 
     @Test

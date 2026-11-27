@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.testing
 
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
@@ -33,6 +34,9 @@ class FakeRecentDocumentsRepository(
 
     /** Every call to [saveLastPage], in order, as `(uri, page)`. */
     val savedPages: MutableList<Pair<String, Int>> = CopyOnWriteArrayList()
+
+    /** Every call to [saveRotation], in order, as `(uri, rotation)`. */
+    val savedRotations: MutableList<Pair<String, PageRotation>> = CopyOnWriteArrayList()
 
     /** Every call to [remove], in order, as `(documentId, openedAt)`. */
     val removals: MutableList<Pair<String, Instant?>> = CopyOnWriteArrayList()
@@ -80,6 +84,7 @@ class FakeRecentDocumentsRepository(
                 thumbnailPath = previous?.thumbnailPath?.takeUnless { opening.isProtected },
                 thumbnailDrawnAt = previous?.thumbnailDrawnAt?.takeUnless { opening.isProtected },
                 isProtected = opening.isProtected,
+                rotation = previous?.rotation ?: PageRotation.NONE,
             )
         state.value = (listOf(entry) + state.value.filterNot { it.uri == opening.uri }).take(RecentDocument.MAX_COUNT)
         return entry
@@ -89,6 +94,12 @@ class FakeRecentDocumentsRepository(
     override suspend fun saveLastPage(uri: String, page: Int) {
         savedPages += uri to page
         state.value = state.value.map { if (it.uri == uri) it.copy(lastPage = page) else it }
+    }
+
+    /** Records the call in [savedRotations] and updates the entry, if any. */
+    override suspend fun saveRotation(uri: String, rotation: PageRotation) {
+        savedRotations += uri to rotation
+        state.value = state.value.map { if (it.uri == uri) it.copy(rotation = rotation) else it }
     }
 
     /** Records the call in [thumbnailRequests] and returns [thumbnailResult]. */

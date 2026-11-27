@@ -10,14 +10,19 @@ import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
  * drawn with other options.
  *
  * Display options only: printing, sharing and the thumbnails of the library always use
- * [ORIGINAL]. The rotation of the display (F27) is meant to join them as another property.
+ * [ORIGINAL].
  *
  * @property colorMode colours of the pages (F13): original, night or sepia.
+ * @property rotation rotation of the display (F27, ADR 0032): the engine draws the page turned, and
+ *   the region it is asked for is in the display space of the turned page ([PageRotation]).
  */
-data class RenderOptions(val colorMode: DocumentColorMode = DocumentColorMode.NORMAL) {
+data class RenderOptions(
+    val colorMode: DocumentColorMode = DocumentColorMode.NORMAL,
+    val rotation: PageRotation = PageRotation.NONE,
+) {
     /** Shared values. */
     companion object {
-        /** The document as it is: original colours. */
+        /** The document as it is: original colours, not turned. */
         val ORIGINAL: RenderOptions = RenderOptions()
     }
 }
