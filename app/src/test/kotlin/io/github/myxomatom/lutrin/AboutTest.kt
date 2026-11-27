@@ -80,9 +80,9 @@ class AboutTest {
         composeRule.onNodeWithContentDescription("Settings").performClick()
         // The settings are read by DataStore on a real I/O thread: wait for their rows.
         composeRule.waitUntil(TIMEOUT_MS) {
-            composeRule.onAllNodesWithText("About and licenses").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithText("About and licences").fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("About and licenses").performScrollTo().performClick()
+        composeRule.onNodeWithText("About and licences").performScrollTo().performClick()
     }
 
     @Test

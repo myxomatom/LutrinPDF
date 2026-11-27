@@ -42,5 +42,5 @@
     <string name="settings_clear_recents_confirm">Clear</string>
     <string name="settings_clear_recents_cancel">Cancel</string>
     <!-- Opens the About screen (E4, ADR 0030). -->
-    <string name="settings_about">About and licenses</string>
+    <string name="settings_about">About and licences</string>
 </resources>

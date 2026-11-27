@@ -155,7 +155,7 @@ class AboutScreenTest {
         show()
 
         scrollTo("MuPDF")
-        composeRule.onNodeWithText("Third-party licenses").assertIsDisplayed()
+        composeRule.onNodeWithText("Third-party licences").assertIsDisplayed()
         composeRule.onNodeWithText("MuPDF").assertIsDisplayed()
         composeRule.onNodeWithText("AGPL-3.0-or-later").assertIsDisplayed()
     }
@@ -180,24 +180,24 @@ class AboutScreenTest {
 
         composeRule.onNodeWithText("alpha").performClick()
 
-        composeRule.onNodeWithText("The text of this license is not available.").assertIsDisplayed()
+        composeRule.onNodeWithText("The text of this licence is not available.").assertIsDisplayed()
     }
 
     @Test
     fun `a list that is read shows no error`() {
         show()
 
-        scrollTo("Third-party licenses")
-        composeRule.onNodeWithText("Third-party licenses").assertIsDisplayed()
-        composeRule.onAllNodesWithText("The list of licenses could not be read.").assertCountEquals(0)
+        scrollTo("Third-party licences")
+        composeRule.onNodeWithText("Third-party licences").assertIsDisplayed()
+        composeRule.onAllNodesWithText("The list of licences could not be read.").assertCountEquals(0)
     }
 
     @Test
     fun `an unreadable list is replaced by a message`() {
         show(FakeLicensesSource(json = null))
 
-        scrollTo("The list of licenses could not be read.")
-        composeRule.onNodeWithText("The list of licenses could not be read.").assertIsDisplayed()
+        scrollTo("The list of licences could not be read.")
+        composeRule.onNodeWithText("The list of licences could not be read.").assertIsDisplayed()
     }
 
     @Test

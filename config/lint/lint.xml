@@ -14,4 +14,9 @@
          lifecycle-runtime checks with AGP 9.5): lint skips them and reports it as an error.
          It is a library packaging issue, not a problem in our code; revisit when upgrading. -->
     <issue id="ObsoleteLintCustomCheck" severity="ignore" />
+    <!-- F19: every string exists in French and in English. Missing and extra translations already
+         fail Lint at error level; the severity is pinned here so that nobody lowers it by accident.
+         StringResourcesTest (app) checks the same, plus the placeholders and the French typography. -->
+    <issue id="MissingTranslation" severity="fatal" />
+    <issue id="ExtraTranslation" severity="fatal" />
 </lint>
