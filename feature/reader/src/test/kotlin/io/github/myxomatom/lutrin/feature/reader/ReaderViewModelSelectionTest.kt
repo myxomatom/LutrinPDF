@@ -11,11 +11,13 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfQuad
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.TextSelection
+import io.github.myxomatom.lutrin.core.domain.recents.GetSavedRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
@@ -71,6 +73,8 @@ class ReaderViewModelSelectionTest {
             SetLockOrientationUseCase(settings),
             ReadingHistory(
                 GetStartPageUseCase(recents),
+                GetSavedRotationUseCase(recents),
+                SaveRotationUseCase(recents),
                 RecordDocumentOpeningUseCase(recents),
                 SaveLastPageUseCase(recents),
                 IsRecentDocumentUseCase(recents),

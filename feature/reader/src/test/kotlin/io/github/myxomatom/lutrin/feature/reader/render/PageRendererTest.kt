@@ -4,6 +4,7 @@ package io.github.myxomatom.lutrin.feature.reader.render
 import android.graphics.Bitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
@@ -127,6 +128,52 @@ class PageRendererTest {
             assertThat(region).isEqualTo(PdfRect(297.5f, 421f, 595f, 842f))
             assertThat(scale).isEqualTo(2f)
         }
+    }
+
+    @Test
+    fun `a page turned a quarter is rendered with its sides swapped, the rotation down to the engine`() = runTest {
+        val bitmap = renderer().renderPage(pageIndex = 1, widthPx = 842, options = QUARTER).bitmapOrNull
+
+        assertThat(bitmap?.width).isEqualTo(842)
+        assertThat(bitmap?.height).isEqualTo(595)
+        with(document.renders.single()) {
+            assertThat(region).isEqualTo(PdfRect(0f, 0f, 842f, 595f))
+            assertThat(scale).isEqualTo(1f)
+            assertThat(options.rotation).isEqualTo(PageRotation.QUARTER)
+        }
+    }
+
+    @Test
+    fun `a page upside down keeps its sides`() = runTest {
+        val bitmap = renderer().renderPage(0, 595, RenderOptions(rotation = PageRotation.HALF)).bitmapOrNull
+
+        assertThat(bitmap?.height).isEqualTo(842)
+        assertThat(document.renders.single().region).isEqualTo(PdfRect(0f, 0f, 595f, 842f))
+    }
+
+    @Test
+    fun `a part of a turned page is a region of the turned page`() = runTest {
+        // Turned page displayed 1684 px wide (scale 2): its bottom-right quarter.
+        renderer().renderPart(0, pageWidthPx = 1684, part = PixelRect(842, 595, 1684, 1190), options = QUARTER)
+
+        with(document.renders.single()) {
+            assertThat(region).isEqualTo(PdfRect(421f, 297.5f, 842f, 595f))
+            assertThat(scale).isEqualTo(2f)
+        }
+    }
+
+    @Test
+    fun `turning the pages empties the caches and renders them again`() = runTest {
+        val renderer = renderer()
+        val straight = renderer.renderPage(0, 300).bitmapOrNull
+        renderer.renderPreview(0, 128)
+
+        val turned = renderer.renderPage(0, 300, QUARTER).bitmapOrNull
+
+        assertThat(turned).isNotSameInstanceAs(straight)
+        assertThat(turned?.height).isEqualTo(212)
+        assertThat(renderer.cachedPreview(0, 128)).isNull()
+        assertThat(renderer.renderPage(0, 300, QUARTER).bitmapOrNull).isSameInstanceAs(turned)
     }
 
     @Test
@@ -254,5 +301,6 @@ class PageRendererTest {
     private companion object {
         val NIGHT = RenderOptions(DocumentColorMode.NIGHT)
         val SEPIA = RenderOptions(DocumentColorMode.SEPIA)
+        val QUARTER = RenderOptions(rotation = PageRotation.QUARTER)
     }
 }

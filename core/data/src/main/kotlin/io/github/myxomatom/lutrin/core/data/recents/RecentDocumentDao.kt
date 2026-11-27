@@ -49,12 +49,6 @@ internal interface RecentDocumentDao {
     suspend fun updateLastPage(uri: String, page: Int): Int
 
     /**
-     * Changes the thumbnail file of an entry and the date it was drawn. A protected entry never
-     * gets one (ADR 0017), even if it became protected while its thumbnail was drawn.
-     *
-     * @return the number of entries changed, 0 when the entry is gone or protected.
-     */
-    /**
      * Sets the rotation of the display of the entry of [uri] (F27, ADR 0032), in degrees.
      *
      * @return the number of entries changed: 0 when the document is not in the list.
@@ -62,6 +56,12 @@ internal interface RecentDocumentDao {
     @Query("UPDATE recent_documents SET rotation = :degrees WHERE uri = :uri")
     suspend fun updateRotation(uri: String, degrees: Int): Int
 
+    /**
+     * Changes the thumbnail file of an entry and the date it was drawn. A protected entry never
+     * gets one (ADR 0017), even if it became protected while its thumbnail was drawn.
+     *
+     * @return the number of entries changed, 0 when the entry is gone or protected.
+     */
     @Query(
         "UPDATE recent_documents SET thumbnail_file = :thumbnailFile, thumbnail_drawn_at = :drawnAt " +
             "WHERE document_id = :documentId AND is_protected = 0",

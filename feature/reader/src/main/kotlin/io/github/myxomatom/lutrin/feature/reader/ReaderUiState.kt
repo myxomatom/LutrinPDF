@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.feature.reader
 
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
@@ -67,6 +68,8 @@ sealed interface ReaderUiState {
      *   settings and followed live.
      * @property lockOrientation whether the reader keeps its orientation (F17, ADR 0029), from the
      *   settings and followed live.
+     * @property rotation rotation of the display of this document (F27, ADR 0032), kept with its
+     *   reading position; [PageRotation.NONE] until the user turns the pages.
      */
     data class Ready(
         val title: String,
@@ -83,7 +86,15 @@ sealed interface ReaderUiState {
         val chosenFitMode: FitMode? = null,
         val keepScreenOn: Boolean = AppSettings.DEFAULT_KEEP_SCREEN_ON,
         val lockOrientation: Boolean = AppSettings.DEFAULT_LOCK_ORIENTATION,
+        val rotation: PageRotation = PageRotation.NONE,
     ) : ReaderUiState {
+        /**
+         * Sizes of the pages as they are shown, turned by [rotation] (F27, ADR 0032): what the views
+         * lay out, fit and render. [pageSizes] stay those of the document, for everything that
+         * speaks to it (text, links, search, printing).
+         */
+        val displayPageSizes: List<PageSize> by lazy { pageSizes.map(rotation::displaySize) }
+
         /**
          * What zoom 1 fits now (F04, ADR 0029): the choice of the user, or the one of the scroll
          * mode (the width scrolling, the whole page page by page) until there is one.
@@ -92,11 +103,13 @@ sealed interface ReaderUiState {
 
         /**
          * How to draw the pages (ADR 0028): with the colours of [documentColors] in a theme that is
-         * dark or not. The theme is known to the screen only, which may force it (E3).
+         * dark or not, turned by [rotation]. The theme is known to the screen only, which may force
+         * it (E3).
          *
          * @param darkTheme whether the interface uses its dark colour scheme.
          */
-        fun renderOptions(darkTheme: Boolean): RenderOptions = RenderOptions(documentColors.modeFor(darkTheme))
+        fun renderOptions(darkTheme: Boolean): RenderOptions =
+            RenderOptions(documentColors.modeFor(darkTheme), rotation)
     }
 }
 

@@ -59,7 +59,9 @@ enum class PageRotation(val degrees: Int) {
 
     /** [rect] of [page] once turned: the turned rectangle, still with its sides along the axes. */
     fun toDisplay(rect: PdfRect, page: PageSize): PdfRect {
-        val corners = listOf(PdfPoint(rect.left, rect.top), PdfPoint(rect.right, rect.bottom)).map { toDisplay(it, page) }
+        val corners = listOf(PdfPoint(rect.left, rect.top), PdfPoint(rect.right, rect.bottom)).map {
+            toDisplay(it, page)
+        }
         return PdfRect.enclosing(corners.map { it.x to it.y })
     }
 

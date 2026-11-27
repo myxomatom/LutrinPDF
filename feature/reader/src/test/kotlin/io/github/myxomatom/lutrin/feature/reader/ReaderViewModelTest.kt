@@ -7,15 +7,18 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
+import io.github.myxomatom.lutrin.core.domain.pdf.PageRotation
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.recents.GetSavedRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.IsRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecordDocumentOpeningUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RemoveRecentDocumentUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.SaveLastPageUseCase
+import io.github.myxomatom.lutrin.core.domain.recents.SaveRotationUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
@@ -82,6 +85,8 @@ class ReaderViewModelTest {
         SetLockOrientationUseCase(settings),
         ReadingHistory(
             GetStartPageUseCase(recents),
+            GetSavedRotationUseCase(recents),
+            SaveRotationUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
             SaveLastPageUseCase(recents),
             IsRecentDocumentUseCase(recents),
@@ -640,6 +645,85 @@ class ReaderViewModelTest {
 
         assertThat(recents.savedPages).isEmpty()
         assertThat(recents.thumbnailRequests).isEmpty()
+    }
+
+    @Test
+    fun `a document is not turned until the user turns it`() = runTest(dispatcher) {
+        val viewModel = openDocument()
+
+        assertThat(viewModel.ready.rotation).isEqualTo(PageRotation.NONE)
+        assertThat(viewModel.ready.renderOptions(darkTheme = false).rotation).isEqualTo(PageRotation.NONE)
+        assertThat(viewModel.ready.displayPageSizes).isEqualTo(viewModel.ready.pageSizes)
+    }
+
+    @Test
+    fun `each turn is a quarter clockwise, saved for the document, and the fourth comes back`() = runTest(dispatcher) {
+        val viewModel = openWithHistory(pageCount = 10)
+
+        val shown = List(4) {
+            viewModel.onRotate()
+            advanceUntilIdle()
+            viewModel.ready.rotation
+        }
+
+        assertThat(shown)
+            .containsExactly(
+                PageRotation.QUARTER,
+                PageRotation.HALF,
+                PageRotation.THREE_QUARTERS,
+                PageRotation.NONE,
+            ).inOrder()
+        assertThat(recents.savedRotations.map { it.second }).isEqualTo(shown)
+        assertThat(recents.findByUri(uri)?.rotation).isEqualTo(PageRotation.NONE)
+    }
+
+    @Test
+    fun `a turned document shows its pages with their sides swapped, the document keeping its sizes`() =
+        runTest(dispatcher) {
+            val viewModel = openDocument(pageCount = 2)
+
+            viewModel.onRotate()
+            advanceUntilIdle()
+
+            assertThat(viewModel.ready.pageSizes).containsExactly(A4, A4)
+            assertThat(
+                viewModel.ready.displayPageSizes,
+            ).containsExactly(PageSize(A4.height, A4.width), PageSize(A4.height, A4.width))
+            assertThat(viewModel.ready.renderOptions(darkTheme = true).rotation).isEqualTo(PageRotation.QUARTER)
+        }
+
+    @Test
+    fun `a document opens with the rotation saved with its reading position`() = runTest(dispatcher) {
+        recents = FakeRecentDocumentsRepository(listOf(recentEntry(lastPage = 3).copy(rotation = PageRotation.HALF)))
+
+        val viewModel = openWithHistory(pageCount = 10)
+
+        assertThat(viewModel.ready.rotation).isEqualTo(PageRotation.HALF)
+        assertThat(viewModel.ready.currentPage).isEqualTo(3)
+        assertThat(recents.findByUri(uri)?.rotation).isEqualTo(PageRotation.HALF)
+    }
+
+    @Test
+    fun `turning before the document is open does nothing`() = runTest(dispatcher) {
+        val viewModel = newViewModel(FakePdfEngine())
+
+        viewModel.onRotate()
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.rotation).isEqualTo(PageRotation.NONE)
+        assertThat(recents.savedRotations).isEmpty()
+    }
+
+    @Test
+    fun `a document the storage could not record still turns, without saving it`() = runTest(dispatcher) {
+        recents.failRecording = true
+        val viewModel = openWithHistory(pageCount = 10)
+
+        viewModel.onRotate()
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.rotation).isEqualTo(PageRotation.QUARTER)
+        assertThat(recents.savedRotations).isEmpty()
     }
 
     @Test
