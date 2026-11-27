@@ -137,8 +137,7 @@ class AboutScreenshotTest {
 
     @Test
     @Config(qualifiers = "+fr")
-    fun componentLicenseFrench() =
-        capture("about_component_light_fr", page = AboutPage.Component("org.example:mupdf"))
+    fun componentLicenseFrench() = capture("about_component_light_fr", page = AboutPage.Component("org.example:mupdf"))
 
     @Test
     fun componentLicenseDark() =

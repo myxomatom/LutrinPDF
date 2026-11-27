@@ -10,6 +10,23 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Accessibilité vérifiée sur tous les écrans** (F18, clôture de M5, audit T1) : un audit JVM
+  (`AccessibilityAudit`, `core:testing`) vérifie, à chaque `check`, que chaque contrôle de la
+  bibliothèque, du lecteur, de la recherche, de la table des matières, des feuilles « Affichage » et
+  « Propriétés », des paramètres, de « À propos » et des dialogues (aller à la page, mot de passe,
+  lien externe, erreurs) a un nom pour TalkBack et une cible tactile de 48 dp, aussi à 200 % de
+  police ; `ThemeContrastTest` vérifie le contraste AA des couleurs des deux thèmes ;
+  `AccessibilityInstrumentedTest` lance les contrôles de l'*Accessibility Test Framework* sur douze
+  écrans et dialogues. Aucun défaut de code n'a été trouvé par l'audit JVM ; les contrôles sur
+  appareil n'ont pas encore été exécutés.
+- **Test des textes** (F19) : `StringResourcesTest` lit tous les `strings.xml` (mêmes clés en français
+  et en anglais dans chaque module, mêmes variables, typographie française, aucun texte visible écrit
+  dans le code) et Lint garde `MissingTranslation` et `ExtraTranslation` au niveau fatal.
+- **Captures d'écran** : état d'erreur de la bibliothèque, lecteur en grande police et en français,
+  écran d'erreur en thème sombre et en grande police, recherche sans résultat, et les variantes
+  manquantes de « À propos » et de la confirmation du code source.
+- **Liste de vérification de M5** : [`docs/verification-appareil-m5.md`](docs/verification-appareil-m5.md)
+  (essais sur téléphone, benchmarks à relancer, état des critères d'acceptation du MVP).
 - **Rotation de l'affichage** (F27, M5 lot 5, ADR 0032) : icône « Tourner » dans la barre du haut du
   lecteur (dans le menu ⋮ quand la barre manque de place, par exemple à 200 % de police) ; chaque
   toucher tourne toutes les pages d'un quart de tour dans le sens horaire (0°, 90°, 180°, 270°).
@@ -404,6 +421,11 @@ changement y est signalé.
   documentation (`docs/dependencies.md` aligné sur le catalogue de versions).
 
 ### Corrigé
+- **Textes** (F19) : typographie française de « À propos » (espaces insécables avant « : ; ? ! » et
+  dans les guillemets) ; orthographe anglaise unifiée (« licences », date « 3 November 2026 »).
+- **Tests instrumentés** : `SearchInstrumentedTest`, `SelectionInstrumentedTest` et
+  `LinksInstrumentedTest` affirment explicitement ce qu'ils attendent (audit T2) ; la copie interdite
+  vérifie que le presse-papiers n'a pas changé.
 - Lecteur : un PDF qui s'ouvre mais dont une page ne se charge pas (par exemple un arbre de pages
   dont `/Count` annonce plus de pages qu'il n'en contient) ne fait plus planter l'application
   (audit du 2026-11-26, constat A1, ADR 0031). La page illisible garde la taille de la page
