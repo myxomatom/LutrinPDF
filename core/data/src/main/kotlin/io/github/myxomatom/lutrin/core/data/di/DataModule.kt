@@ -26,11 +26,13 @@ import io.github.myxomatom.lutrin.core.data.recents.RoomRecentDocumentsRepositor
 import io.github.myxomatom.lutrin.core.data.recents.ThumbnailRenderer
 import io.github.myxomatom.lutrin.core.data.recents.ThumbnailStore
 import io.github.myxomatom.lutrin.core.data.settings.DataStoreSettingsRepository
+import io.github.myxomatom.lutrin.core.data.settings.LocaleManagerAppLanguageController
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
 import io.github.myxomatom.lutrin.core.domain.document.DocumentInfoResolver
 import io.github.myxomatom.lutrin.core.domain.document.DocumentNameResolver
 import io.github.myxomatom.lutrin.core.domain.document.DocumentTypeResolver
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguageController
 import io.github.myxomatom.lutrin.core.domain.settings.SettingsRepository
 import java.io.File
 import java.time.Clock
@@ -46,6 +48,10 @@ internal abstract class DataModule {
     /** Settings stored with DataStore. */
     @Binds
     abstract fun bindSettingsRepository(repository: DataStoreSettingsRepository): SettingsRepository
+
+    /** The language of the app, kept by the system (F19, ADR 0029). */
+    @Binds
+    abstract fun bindAppLanguageController(controller: LocaleManagerAppLanguageController): AppLanguageController
 
     /** MIME types of incoming documents, asked to their providers (ADR 0014). */
     @Binds
