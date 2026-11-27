@@ -19,6 +19,12 @@ package io.github.myxomatom.lutrin.core.domain.settings
  *   system theme by default.
  * @property documentColors the colours of the documents (F13, ADR 0028): original by default,
  *   in the dark theme too.
+ * @property chosenFitMode what the pages are fitted to (F04, ADR 0029) as picked in the reader,
+ *   `null` until the user picks one: the fit is then the one of the scroll mode ([fitMode]).
+ * @property keepScreenOn whether the screen stays on while a document is shown (E3, ADR 0029). Off
+ *   by default.
+ * @property lockOrientation whether the reader keeps the orientation it was opened in instead of
+ *   following the rotation of the device (F17, V6, ADR 0029). Off by default.
  */
 data class AppSettings(
     val dynamicColor: Boolean = DEFAULT_DYNAMIC_COLOR,
@@ -27,7 +33,18 @@ data class AppSettings(
     val ignoreDocumentRestrictions: Boolean = DEFAULT_IGNORE_DOCUMENT_RESTRICTIONS,
     val appTheme: AppTheme = DEFAULT_APP_THEME,
     val documentColors: DocumentColors = DocumentColors(),
+    val chosenFitMode: FitMode? = null,
+    val keepScreenOn: Boolean = DEFAULT_KEEP_SCREEN_ON,
+    val lockOrientation: Boolean = DEFAULT_LOCK_ORIENTATION,
 ) {
+    /**
+     * What the pages are fitted to in a given scroll mode (F04, ADR 0029): the user's choice, or
+     * until there is one the default of the mode ([FitMode.defaultFor]).
+     *
+     * @param scrollMode how the pages are laid out.
+     */
+    fun fitMode(scrollMode: ScrollMode): FitMode = chosenFitMode ?: FitMode.defaultFor(scrollMode)
+
     /**
      * Whether the reader may copy the text of a document (F08, ADR 0024): always when the
      * document allows it, and despite its author's restriction only when the user chose to
@@ -62,5 +79,11 @@ data class AppSettings(
 
         /** The interface follows the theme of the system until the user forces one (ADR 0028). */
         val DEFAULT_APP_THEME: AppTheme = AppTheme.SYSTEM
+
+        /** The screen may go to sleep while reading until the user says otherwise (ADR 0029). */
+        const val DEFAULT_KEEP_SCREEN_ON: Boolean = false
+
+        /** The reader follows the rotation of the device until the user locks it (F17, ADR 0029). */
+        const val DEFAULT_LOCK_ORIENTATION: Boolean = false
     }
 }

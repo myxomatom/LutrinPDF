@@ -156,7 +156,7 @@ private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransitio
     }
 
 /** The pages, in the view of the current scroll mode (F03). */
-@Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
 private fun DocumentPages(
     state: ReaderUiState.Ready,
@@ -179,6 +179,7 @@ private fun DocumentPages(
                 pageSizes = state.pageSizes,
                 renderer = state.renderer,
                 renderOptions = renderOptions,
+                fitMode = state.fitMode,
                 listState = navigator.listState,
                 zoom = zoom,
                 onZoomChange = onZoomChange,
@@ -197,6 +198,7 @@ private fun DocumentPages(
                 pageSizes = state.pageSizes,
                 renderer = state.renderer,
                 renderOptions = renderOptions,
+                fitMode = state.fitMode,
                 pagerState = navigator.pagerState,
                 zoom = zoom,
                 onZoomChange = onZoomChange,

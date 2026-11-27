@@ -54,6 +54,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.ui.theme.LocalDarkTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinReaderColors
@@ -85,6 +86,8 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
         onPageChange = viewModel::onPageChange,
         onScrollModeChange = viewModel::onScrollModeChange,
         onDocumentColorModeChange = viewModel::onDocumentColorModeChange,
+        onFitModeChange = viewModel::onFitModeChange,
+        onLockOrientationChange = viewModel::onLockOrientationChange,
         onRemoveFromRecents = {
             viewModel.onRemoveFromRecents()
             onBack()
@@ -128,6 +131,10 @@ fun ReaderRoute(onBack: () -> Unit, viewModel: ReaderViewModel = hiltViewModel()
  * @param onScrollModeChange called with the scroll mode chosen in the options (V6).
  * @param onDocumentColorModeChange called with the colours of the document chosen in the options
  *   (V6, F13, ADR 0028).
+ * @param onFitModeChange called with what the pages are fitted to, chosen in the options (V6, F04,
+ *   ADR 0029).
+ * @param onLockOrientationChange called with the state of the orientation switch of the options (V6,
+ *   F17, ADR 0029).
  * @param onRemoveFromRecents called when the user removes, from the error screen (V8), a document
  *   of the recent list that cannot be opened; the reader is expected to close.
  * @param onPasswordSubmit called with the password typed in the password dialog (V4); « Annuler »
@@ -162,6 +169,8 @@ fun ReaderScreen(
     onPageChange: (Int) -> Unit = {},
     onScrollModeChange: (ScrollMode) -> Unit = {},
     onDocumentColorModeChange: (DocumentColorMode) -> Unit = {},
+    onFitModeChange: (FitMode) -> Unit = {},
+    onLockOrientationChange: (Boolean) -> Unit = {},
     onRemoveFromRecents: () -> Unit = {},
     onPasswordSubmit: (CharSequence) -> Unit = {},
     documentId: String? = null,
@@ -191,8 +200,13 @@ fun ReaderScreen(
                     state = state,
                     onBack = onBack,
                     onPageChange = onPageChange,
-                    onScrollModeChange = onScrollModeChange,
-                    onDocumentColorModeChange = onDocumentColorModeChange,
+                    display =
+                        ReaderDisplayActions(
+                            onScrollModeChange = onScrollModeChange,
+                            onFitModeChange = onFitModeChange,
+                            onColorModeChange = onDocumentColorModeChange,
+                            onLockOrientationChange = onLockOrientationChange,
+                        ),
                     links = links,
                     pageTransition = pageTransition,
                     onOutlineOpen = onOutlineOpen,
@@ -222,8 +236,7 @@ private fun ReaderContent(
     state: ReaderUiState.Ready,
     onBack: () -> Unit,
     onPageChange: (Int) -> Unit,
-    onScrollModeChange: (ScrollMode) -> Unit,
-    onDocumentColorModeChange: (DocumentColorMode) -> Unit,
+    display: ReaderDisplayActions,
     links: ReaderLinks,
     modifier: Modifier = Modifier,
     pageTransition: DocumentTransition? = null,
@@ -236,8 +249,9 @@ private fun ReaderContent(
     onShare: () -> ShareOutcome = { ShareOutcome.STARTED },
     properties: ReaderProperties = ReaderProperties(),
 ) {
-    // Zoom 1 is "fit width" when scrolling and "whole page" page by page: start again from it.
-    var zoom by rememberSaveable(state.scrollMode) { mutableFloatStateOf(1f) }
+    // Zoom 1 is what the pages are fitted to (the width or the whole page, ADR 0029): start again from it
+    // whenever the layout or the fit changes.
+    var zoom by rememberSaveable(state.scrollMode, state.fitMode) { mutableFloatStateOf(1f) }
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var optionsVisible by rememberSaveable { mutableStateOf(false) }
     var goToPageVisible by rememberSaveable { mutableStateOf(false) }
@@ -249,6 +263,8 @@ private fun ReaderContent(
     val scrubber = remember(navigator, state.pagePreview) { PageScrubber(state.pagePreview) }
     ReportCurrentPage(navigator, onPageChange)
     ImmersiveMode(enabled = !controlsVisible)
+    OrientationLock(state.lockOrientation)
+    KeepScreenOn(state.keepScreenOn)
     OutlineHost(
         state = state,
         navigator = navigator,
@@ -289,10 +305,22 @@ private fun ReaderContent(
     GoToPage(goToPageVisible, navigator, state.pageSizes.size, onDismiss = { goToPageVisible = false })
     if (optionsVisible) {
         ReaderOptionsSheet(
-            scrollMode = state.scrollMode,
-            onScrollModeChange = onScrollModeChange,
-            colorMode = state.renderOptions(LocalDarkTheme.current).colorMode,
-            onColorModeChange = onDocumentColorModeChange,
+            display =
+                ReaderDisplay(
+                    scrollMode = state.scrollMode,
+                    fitMode = state.fitMode,
+                    colorMode = state.renderOptions(LocalDarkTheme.current).colorMode,
+                    fullscreen = !controlsVisible,
+                    lockOrientation = state.lockOrientation,
+                ),
+            // Full screen is the state of the bars, which a tap on the page toggles too (F14).
+            actions = ReaderDisplayActions(
+                display.onScrollModeChange,
+                display.onFitModeChange,
+                display.onColorModeChange,
+                onFullscreenChange = { controlsVisible = !it },
+                onLockOrientationChange = display.onLockOrientationChange,
+            ),
             onDismiss = { optionsVisible = false },
         )
     }

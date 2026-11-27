@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 3 **thèmes et couleurs du document** (F13, ADR 0028) en PR (`feat/themes-document-colors`) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 En cours : lot 4 **options de lecture et langue** (F04, F14, F17, F19, ADR 0029) en PR (`feat/reading-options`) ; lot 3 **thèmes et couleurs du document** (F13, ADR 0028) fusionné (PR #54) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -33,9 +33,9 @@ Ce qui est dans `main` :
   tap, curseur et indicateur de page, reprise de la dernière page, aller à la page (V3), table des
   matières (V2), liens internes et externes (V7), recherche (V1), sélection et copie (F08),
   **impression** depuis la barre flottante (F15, ADR 0026, pas encore essayée sur appareil).
-- **V4** mot de passe, **V8** erreurs, **V6** feuille « Affichage » (section « Défilement »
-  seulement ; l'ajustement à la largeur n'a plus de bouton depuis l'ADR 0026 et y reviendra au
-  lot 4 de M5).
+- **V4** mot de passe, **V8** erreurs, **V6** feuille « Affichage » (sections « Défilement » et
+  « Couleurs du document » ; l'ajustement à la largeur n'a plus de bouton depuis l'ADR 0026 : il est
+  revenu dans la feuille avec le lot 4 de M5, en PR, ADR 0029).
 - **E3 Paramètres** (`feature/settings`) : « Apparence » (couleurs dynamiques), « Lecture »
   (aperçu de la page, « Ignorer les restrictions du document »), « Données et confidentialité »
   (« Vider les récents »).
@@ -97,9 +97,10 @@ Historique des PR (les PR de Dependabot, #5, #20 à #23, #34 à #36, #38, #45, s
       `encrypted_owner_password_only.pdf` ; `ShareInstrumentedTest` ;
    7. **M5 lot 3, thèmes et couleurs du document (F13)** : PR `feat/themes-document-colors`
       (ADR 0028), pas encore essayé sur appareil. Essais dans la liste de M5 ci-dessous (§2 bis) ;
-   8. lots suivants de M5 (voir `ROADMAP.md`) : feuille « Affichage » (lot 4 : ajustement à la
-      largeur, plein écran, orientation ; ouverte par ⋮ › « Affichage » depuis le lot 2), rotation
-      F27 (lot 5 : à ajouter dans `RenderOptions`, ADR 0028).
+   8. **M5 lot 4, options de lecture et langue (F04, F14, F17, F19)** : PR `feat/reading-options`
+      (ADR 0029), pas encore essayé sur appareil. Essais dans la liste de M5 ci-dessous (§2 bis) ;
+   9. lot suivant de M5 (voir `ROADMAP.md`) : rotation F27 (lot 5 : à ajouter dans `RenderOptions`,
+      ADR 0028 ; icône dans la barre du haut).
    - **Dependabot #37 (Robolectric 4.18)** : casse 274 tests sur 379 ; il faut adapter le projet
      ou ignorer cette version (`ignore` dans `.github/dependabot.yml`). Ne pas fusionner en l'état.
    - **Test instable en CI** : `NoSuchMethodException ReaderViewModel.<init>()` (Hilt) dans les
@@ -155,6 +156,47 @@ Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à coc
 
 - **Lot 1, impression** et **lot 2, partage et propriétés** : voir les points 4 et 6 du §2.
 - **E4 « À propos et licences »** : paragraphe « E4 sur appareil » du §2.
+- **Lot 4, options de lecture et langue** (ADR 0029) :
+  - [ ] premier lancement après mise à jour : rien ne change (documents en défilement continu à la
+        largeur, en page par page à la page entière, écran qui s'éteint, orientation libre, langue du
+        système) ;
+  - [ ] ⋮ › « Affichage » › « Ajustement » › « Page entière » en défilement continu : les pages
+        rétrécissent aussitôt pour que la plus haute tienne entière entre les deux bords, toutes
+        de la même largeur (essayer un document de formats mêlés, `large_600pages.pdf`, un PDF
+        paysage) ; double toucher : zoom puis retour à cette taille ; pincer puis rouvrir
+        « Affichage » et choisir « Largeur » : le zoom revient à 100 % ;
+  - [ ] « Largeur » en page par page : la page remplit la largeur, une page haute défile
+        verticalement, le balayage horizontal change de page au zoom de départ, le double toucher et le
+        pincement zooment dans la page, un lien et un appui long sur un mot restent justes sur une page
+        défilée ;
+  - [ ] le choix survit à la fermeture, à un autre document et au redémarrage ; changer de mode de
+        défilement ensuite garde le choix (largeur choisie : largeur dans les deux modes) ;
+  - [ ] rotation du téléphone avec un ajustement choisi, recherche et sélection (surlignage et poignées à
+        la bonne place) dans chaque ajustement ;
+  - [ ] « Plein écran » : l'interrupteur montre l'état (barres visibles = désactivé), l'activer masque les
+        barres du lecteur et du système pendant que la feuille reste ouverte, un toucher sur la page
+        revient et l'interrupteur suit ; rouvrir un document le montre avec ses barres ;
+  - [ ] « Verrouiller l'orientation » : activer en portrait puis tourner le téléphone (rien ne bouge),
+        recommencer en paysage ; quitter vers la bibliothèque : l'écran tourne de nouveau ; rouvrir
+        un document réapplique le verrouillage dans l'orientation du moment ; le désactiver rend la
+        rotation automatique ; la rotation automatique du système éteinte et le verrou éteint : la
+        rotation reste celle du système ;
+  - [ ] Paramètres › Lecture › « Garder l'écran allumé » : un document ouvert garde l'écran allumé
+        au-delà du délai de veille du téléphone, la bibliothèque et les paramètres non ; le
+        désactiver rend le délai ;
+  - [ ] Paramètres › Apparence › « Langue de l'application » (Android 13 et plus) : « Français » puis
+        « English » changent toute l'application aussitôt (bibliothèque, lecteur, E3, E4), la page du
+        document et le zoom sont gardés ; « Système » suit de nouveau la langue du téléphone ; les
+        réglages du système (Applications › Lutrin › Langue) montrent français et anglais et sont
+        suivis par la ligne de Lutrin à la réouverture de Paramètres ; sur Android 12 ou moins, la ligne
+        n'existe pas ;
+  - [ ] grande police (200 %) : « Affichage » montre défilement et ajustement en boutons radio, rien
+        n'est coupé, la feuille défile jusqu'aux deux interrupteurs ; E3 montre thème et langue en
+        boutons radio ;
+  - [ ] TalkBack : chaque choix lu « case d'option », les interrupteurs lus avec leur état, ajustement
+        et défilement atteignables sans les voir ;
+  - [ ] tests instrumentés `ReadingOptionsInstrumentedTest` (orientation verrouillée, langue par
+        application sur API 33 et plus).
 - **Lot 3, thèmes et couleurs du document** (ADR 0028) :
   - [ ] premier lancement après mise à jour : thème « Système », couleurs du document d'origine,
         « Suivre le thème sombre » désactivé ; un document en thème sombre reste **blanc** ;
@@ -191,8 +233,11 @@ Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à coc
 
 ## 3. Décisions à connaître
 
-- Toutes les décisions sont dans `docs/adr/` (0001 à 0028, 0030 et 0031) et dans les points tranchés de
+- Toutes les décisions sont dans `docs/adr/` (0001 à 0031) et dans les points tranchés de
   `docs/open-questions.md`. Les plus récentes :
+  - **ADR 0029** : options de lecture (ajustement largeur ou page entière sans choix tant que
+    l'utilisateur n'en fait pas, plein écran non mémorisé, orientation et écran allumé posés par le
+    lecteur), langue par application du système (Android 13 et plus, rien de stocké) ;
   - **ADR 0028** : thème de l'application (E3), couleurs du document (V6, Normal par défaut),
     « Suivre le thème sombre » facultatif, `RenderOptions` jusqu'au moteur (la rotation F27 s'y
     ajoutera), caches vidés au changement d'options ;

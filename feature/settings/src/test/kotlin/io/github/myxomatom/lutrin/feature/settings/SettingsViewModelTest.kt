@@ -8,16 +8,21 @@ import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.ObserveRecentDocumentsUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguage
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
+import io.github.myxomatom.lutrin.core.domain.settings.GetAppLanguageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetAppLanguageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetAppThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetFollowDarkThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreDocumentRestrictionsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetKeepScreenOnUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
+import io.github.myxomatom.lutrin.core.testing.FakeAppLanguageController
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.testing.FakeSettingsRepository
 import java.io.IOException
@@ -51,6 +56,7 @@ class SettingsViewModelTest {
         repository: FakeSettingsRepository,
         recents: RecentDocumentsRepository = FakeRecentDocumentsRepository(),
         applicationScope: CoroutineScope = CoroutineScope(UnconfinedTestDispatcher()),
+        language: FakeAppLanguageController = FakeAppLanguageController(isSupported = false),
     ) = SettingsViewModel(
         ObserveSettingsUseCase(repository),
         SetDynamicColorUseCase(repository),
@@ -61,6 +67,9 @@ class SettingsViewModelTest {
         SetIgnoreDocumentRestrictionsUseCase(repository),
         SetAppThemeUseCase(repository),
         SetFollowDarkThemeUseCase(repository),
+        SetKeepScreenOnUseCase(repository),
+        GetAppLanguageUseCase(language),
+        SetAppLanguageUseCase(language),
     )
 
     private suspend fun FakeRecentDocumentsRepository.open(vararg ids: Int) = apply {
@@ -77,6 +86,62 @@ class SettingsViewModelTest {
         viewModel(FakeSettingsRepository(AppSettings(dynamicColor = false))).uiState.test {
             assertThat(awaitItem()).isEqualTo(SettingsUiState(loading = false, dynamicColor = false))
         }
+    }
+
+    @Test
+    fun `the screen may sleep by default and the switch stores the choice`() = runTest {
+        val repository = FakeSettingsRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            assertThat(awaitItem().keepScreenOn).isFalse()
+            viewModel.onKeepScreenOnChange(true)
+            assertThat(awaitItem().keepScreenOn).isTrue()
+        }
+        assertThat(repository.settings.value.keepScreenOn).isTrue()
+        assertThat(repository.settings.value.dynamicColor).isTrue()
+    }
+
+    @Test
+    fun `there is no language to choose where the system does not offer it`() = runTest {
+        val language = FakeAppLanguageController(isSupported = false, initial = AppLanguage.FRENCH)
+
+        viewModel(FakeSettingsRepository(), language = language).uiState.test {
+            assertThat(awaitItem().appLanguage).isNull()
+        }
+    }
+
+    @Test
+    fun `shows the language chosen in the system settings`() = runTest {
+        val language = FakeAppLanguageController(isSupported = true, initial = AppLanguage.FRENCH)
+
+        viewModel(FakeSettingsRepository(), language = language).uiState.test {
+            assertThat(expectMostRecentItem().appLanguage).isEqualTo(AppLanguage.FRENCH)
+        }
+    }
+
+    @Test
+    fun `choosing a language shows it and hands it to the system`() = runTest {
+        val language = FakeAppLanguageController(isSupported = true)
+        val viewModel = viewModel(FakeSettingsRepository(), language = language)
+
+        viewModel.uiState.test {
+            assertThat(expectMostRecentItem().appLanguage).isEqualTo(AppLanguage.SYSTEM)
+            viewModel.onAppLanguageChange(AppLanguage.ENGLISH)
+            assertThat(awaitItem().appLanguage).isEqualTo(AppLanguage.ENGLISH)
+        }
+        assertThat(language.changes).containsExactly(AppLanguage.ENGLISH)
+    }
+
+    @Test
+    fun `choosing a language where the system does not offer it changes nothing`() = runTest {
+        val language = FakeAppLanguageController(isSupported = false)
+        val viewModel = viewModel(FakeSettingsRepository(), language = language)
+
+        viewModel.onAppLanguageChange(AppLanguage.FRENCH)
+
+        assertThat(language.changes).isEmpty()
+        assertThat(viewModel.uiState.value.appLanguage).isNull()
     }
 
     @Test

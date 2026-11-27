@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguage
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 
@@ -87,6 +88,8 @@ fun SettingsRoute(
         onOpenAbout = onOpenAbout,
         onAppThemeChange = viewModel::onAppThemeChange,
         onFollowDarkThemeChange = viewModel::onFollowDarkThemeChange,
+        onKeepScreenOnChange = viewModel::onKeepScreenOnChange,
+        onAppLanguageChange = viewModel::onAppLanguageChange,
     )
 }
 
@@ -111,7 +114,11 @@ fun SettingsRoute(
  * @param onOpenAbout called when the user opens « À propos et licences » (E4), the last row.
  * @param onAppThemeChange called with the theme chosen for the app (ADR 0028).
  * @param onFollowDarkThemeChange called with the new value of « Suivre le thème sombre ».
+ * @param onKeepScreenOnChange called with the new value of « Garder l'écran allumé » (ADR 0029).
+ * @param onAppLanguageChange called with the language chosen for the app (F19, ADR 0029); the row
+ *   exists only when [SettingsUiState.appLanguage] is known.
  */
+@Suppress("LongMethod") // Plain wiring of the state and of one callback per setting.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -126,6 +133,8 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit = {},
     onAppThemeChange: (AppTheme) -> Unit = {},
     onFollowDarkThemeChange: (Boolean) -> Unit = {},
+    onKeepScreenOnChange: (Boolean) -> Unit = {},
+    onAppLanguageChange: (AppLanguage) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -151,7 +160,14 @@ fun SettingsScreen(
             SettingsContent(
                 state = state,
                 dynamicColorSupported = dynamicColorSupported,
-                appearance = AppearanceActions(onAppThemeChange, onDynamicColorChange, onFollowDarkThemeChange),
+                appearance =
+                    AppearanceActions(
+                        onAppThemeChange,
+                        onAppLanguageChange,
+                        onDynamicColorChange,
+                        onFollowDarkThemeChange,
+                    ),
+                onKeepScreenOnChange = onKeepScreenOnChange,
                 onPagePreviewChange = onPagePreviewChange,
                 onIgnoreDocumentRestrictionsChange = onIgnoreDocumentRestrictionsChange,
                 onClearRecents = onClearRecents,
@@ -168,6 +184,7 @@ private fun SettingsContent(
     state: SettingsUiState,
     dynamicColorSupported: Boolean,
     appearance: AppearanceActions,
+    onKeepScreenOnChange: (Boolean) -> Unit,
     onPagePreviewChange: (Boolean) -> Unit,
     onIgnoreDocumentRestrictionsChange: (Boolean) -> Unit,
     onClearRecents: () -> Unit,
@@ -178,6 +195,12 @@ private fun SettingsContent(
         AppearanceSection(state, dynamicColorSupported, appearance)
         HorizontalDivider()
         SectionTitle(stringResource(R.string.settings_section_reading))
+        SwitchItem(
+            title = stringResource(R.string.settings_keep_screen_on),
+            summary = stringResource(R.string.settings_keep_screen_on_summary),
+            checked = state.keepScreenOn,
+            onCheckedChange = onKeepScreenOnChange,
+        )
         SwitchItem(
             title = stringResource(R.string.settings_page_preview),
             summary = stringResource(R.string.settings_page_preview_summary),
@@ -198,15 +221,16 @@ private fun SettingsContent(
     }
 }
 
-/** What the « Appearance » section changes: the theme, dynamic colours, the dark theme follow. */
+/** What the « Appearance » section changes: the theme, the language, dynamic colours, the dark theme follow. */
 private class AppearanceActions(
     val onAppThemeChange: (AppTheme) -> Unit,
+    val onAppLanguageChange: (AppLanguage) -> Unit,
     val onDynamicColorChange: (Boolean) -> Unit,
     val onFollowDarkThemeChange: (Boolean) -> Unit,
 )
 
 /**
- * « Apparence »: the theme of the app (mockup E3), dynamic colours (ADR 0010), and whether the
+ * « Apparence »: the theme of the app (mockup E3), its language (ADR 0029), dynamic colours (ADR 0010), and whether the
  * documents follow the dark theme (ADR 0028). The colours of the documents themselves are chosen
  * in the reader (V6), not here, unlike the mockup.
  */
@@ -215,6 +239,8 @@ private fun AppearanceSection(state: SettingsUiState, dynamicColorSupported: Boo
     Column {
         SectionTitle(stringResource(R.string.settings_section_appearance))
         AppThemeChoice(state.appTheme, actions.onAppThemeChange)
+        // Only where the system lets the app choose its own language (Android 13 and later, ADR 0029).
+        state.appLanguage?.let { AppLanguageChoice(it, actions.onAppLanguageChange) }
         SwitchItem(
             title = stringResource(R.string.settings_dynamic_color),
             summary =

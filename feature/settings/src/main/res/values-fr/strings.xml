@@ -9,6 +9,8 @@
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
     <string name="settings_theme_system">Système</string>
+    <string name="settings_app_language">Langue de l’application</string>
+    <string name="settings_language_system">Système</string>
     <!-- Documents turn to night mode while the app is dark; off by default (ADR 0028). -->
     <string name="settings_follow_dark_theme">Suivre le thème sombre</string>
     <string name="settings_follow_dark_theme_summary">Mode nuit pour les documents quand l’application est sombre, tant que vous ne choisissez pas leurs couleurs dans le lecteur</string>
@@ -16,6 +18,8 @@
     <string name="settings_dynamic_color_summary">Reprendre les couleurs de votre fond d’écran</string>
     <string name="settings_dynamic_color_unavailable">Disponible à partir d’Android 12</string>
     <string name="settings_section_reading">Lecture</string>
+    <string name="settings_keep_screen_on">Garder l’écran allumé</string>
+    <string name="settings_keep_screen_on_summary">Pendant la lecture d’un document</string>
     <!-- Preview while dragging the page slider of the reader (ADR 0018). -->
     <string name="settings_page_preview">Aperçu de la page</string>
     <string name="settings_page_preview_summary">Montre la page pendant que vous faites glisser le curseur du lecteur ; le document s’y rend quand vous relâchez.</string>

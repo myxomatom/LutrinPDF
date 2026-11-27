@@ -29,7 +29,7 @@ Principes non négociables :
 | F01 | Ouvrir un PDF | Via le sélecteur système (SAF), via « Ouvrir avec » (intent `ACTION_VIEW`, MIME `application/pdf`), via partage (`ACTION_SEND`). |
 | F02 | Affichage des pages | Rendu net à tous les niveaux de zoom (rendu en tuiles à haute résolution lors du zoom). |
 | F03 | Navigation | Défilement vertical continu ; mode page par page horizontal (option). |
-| F04 | Zoom | Pincer pour zoomer, double tap (zoom / dézoom), ajustement largeur / page entière. Zoom 25 % à 800 %. |
+| F04 | Zoom | Pincer pour zoomer, double tap (zoom / dézoom), ajustement largeur / page entière. Zoom 25 % à 800 %. L'ajustement se choisit dans « Affichage » ; il est le « 100 % » du zoom (zoom de départ, cible du double tap), en défilement continu comme en page par page ; sans choix, largeur en continu et page entière page par page (ADR 0029). |
 | F05 | Aller à la page | Saisie d'un numéro de page, barre de défilement rapide avec indicateur de page. |
 | F06 | Table des matières | Affichage de l'arborescence (outline) du PDF si présente, navigation au clic. |
 | F07 | Recherche de texte | Recherche dans tout le document, surlignage des résultats, navigation suivant / précédent, nombre d'occurrences. Insensible à la casse et aux accents (option). |
@@ -39,12 +39,12 @@ Principes non négociables :
 | F11 | Fichiers récents | Liste des documents récents (URI persistés via `takePersistableUriPermission`), avec vignette, possibilité de retirer un élément ou de vider la liste. |
 | F12 | Reprise de lecture | Mémorisation de la dernière page par document. Le zoom n'est pas mémorisé (décision du mainteneur du 2026-11-25 : jugé inutile). |
 | F13 | Thèmes | Clair, sombre, suivre le système. Couleurs dynamiques (Material You, Android 12+) désactivables, activées par défaut (ADR 0010). **Mode nuit du document** (inversion des couleurs du rendu) et mode sépia. Thème choisi dans les paramètres, « Système » par défaut ; couleurs du document choisies dans « Affichage », **couleurs d'origine par défaut, y compris en thème sombre** ; option « Suivre le thème sombre », désactivée par défaut (ADR 0028). |
-| F14 | Plein écran | Mode immersif (barres masquées), réaffichage au tap. |
+| F14 | Plein écran | Mode immersif (barres masquées), réaffichage au tap ; un interrupteur de « Affichage » reflète et pilote cet état, qui n'est pas mémorisé (ADR 0029). |
 | F15 | Partager / imprimer | Partage du fichier via intent ; impression via `PrintManager`. |
 | F16 | Propriétés | Titre, auteur, nombre de pages, taille, version PDF, dates. |
-| F17 | Orientation | Rotation automatique, verrouillage d'orientation (option). |
+| F17 | Orientation | Rotation automatique, verrouillage d'orientation (option « Verrouiller l'orientation » de « Affichage » : garde l'orientation du moment tant que le lecteur est affiché ; désactivée par défaut, mémorisée) ; option « Garder l'écran allumé » des paramètres pendant la lecture (ADR 0029). |
 | F18 | Accessibilité | Compatible TalkBack (contenus décrits), tailles de cible ≥ 48 dp, contraste AA. |
-| F19 | Internationalisation | Français et anglais au minimum ; toutes les chaînes dans `strings.xml`. |
+| F19 | Internationalisation | Français et anglais au minimum ; toutes les chaînes dans `strings.xml`. Langue de l'application : système, français ou anglais, choisie dans les paramètres par la langue par application du système (Android 13 et plus) ; avant, la langue du système s'applique (ADR 0029). |
 | F27 | Rotation de l'affichage | Tourner l'affichage des pages par quarts de tour (90°, 180°, 270°), par exemple pour lire une page numérisée à l'envers ou un tableau en paysage. **Affichage seulement** : le fichier n'est jamais modifié. Rotation retenue par document (comme la dernière page lue). Ajoutée le 2026-11-21 à la demande du mainteneur ; l'enregistrement d'un PDF tourné relèverait des outils (M6), non prévu. |
 
 ### 2.2 v1.x — souhaitable

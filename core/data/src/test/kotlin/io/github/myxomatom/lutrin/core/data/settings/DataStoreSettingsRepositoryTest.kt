@@ -12,6 +12,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -339,5 +340,74 @@ class DataStoreSettingsRepositoryTest {
         }
 
         assertThat(DataStoreSettingsRepository(dataStore).settings.first()).isEqualTo(AppSettings())
+    }
+
+    @Test
+    fun `stores the fit mode, the screen and the orientation and keeps the other settings`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repository = repository()
+
+            repository.setFitMode(FitMode.PAGE)
+            repository.setKeepScreenOn(true)
+            repository.setLockOrientation(true)
+
+            assertThat(repository.settings.first())
+                .isEqualTo(AppSettings(chosenFitMode = FitMode.PAGE, keepScreenOn = true, lockOrientation = true))
+        }
+
+    @Test
+    fun `no fit mode is chosen, the screen sleeps and the orientation is free until the user decides`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val settings = repository().settings.first()
+
+            assertThat(settings.chosenFitMode).isNull()
+            assertThat(settings.keepScreenOn).isFalse()
+            assertThat(settings.lockOrientation).isFalse()
+        }
+
+    @Test
+    fun `keeps the reading options in the file`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "reading.preferences_pb")
+        val firstScope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+        DataStoreSettingsRepository(PreferenceDataStoreFactory.create(scope = firstScope, produceFile = { file }))
+            .run {
+                setFitMode(FitMode.WIDTH)
+                setKeepScreenOn(true)
+                setLockOrientation(true)
+            }
+        firstScope.cancel()
+
+        val settings = repository(file).settings.first()
+
+        assertThat(settings.chosenFitMode).isEqualTo(FitMode.WIDTH)
+        assertThat(settings.keepScreenOn).isTrue()
+        assertThat(settings.lockOrientation).isTrue()
+    }
+
+    @Test
+    fun `reading options are stored under stable keys and values`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "reading-stable.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit {
+            it[stringPreferencesKey("fit_mode")] = "page"
+            it[booleanPreferencesKey("keep_screen_on")] = true
+            it[booleanPreferencesKey("lock_orientation")] = true
+        }
+
+        val settings = DataStoreSettingsRepository(dataStore).settings.first()
+
+        assertThat(settings.chosenFitMode).isEqualTo(FitMode.PAGE)
+        assertThat(settings.keepScreenOn).isTrue()
+        assertThat(settings.lockOrientation).isTrue()
+        assertThat(FitMode.entries.map { it.storedValue }).containsExactly("width", "page").inOrder()
+    }
+
+    @Test
+    fun `an unknown stored fit mode reads as no choice`() = runTest(UnconfinedTestDispatcher()) {
+        val file = File(folder.root, "fit-unknown.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+        dataStore.edit { it[stringPreferencesKey("fit_mode")] = "fill" }
+
+        assertThat(DataStoreSettingsRepository(dataStore).settings.first().chosenFitMode).isNull()
     }
 }

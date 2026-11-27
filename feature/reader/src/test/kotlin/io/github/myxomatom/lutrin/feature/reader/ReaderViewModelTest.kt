@@ -20,9 +20,12 @@ import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetLockOrientationUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
@@ -75,6 +78,8 @@ class ReaderViewModelTest {
         ObserveSettingsUseCase(settings),
         SetScrollModeUseCase(settings),
         SetDocumentColorModeUseCase(settings),
+        SetFitModeUseCase(settings),
+        SetLockOrientationUseCase(settings),
         ReadingHistory(
             GetStartPageUseCase(recents),
             RecordDocumentOpeningUseCase(recents),
@@ -244,6 +249,70 @@ class ReaderViewModelTest {
 
         assertThat(settings.settings.value.scrollMode).isEqualTo(ScrollMode.PAGED)
         assertThat(viewModel.ready.scrollMode).isEqualTo(ScrollMode.PAGED)
+    }
+
+    @Test
+    fun `the pages fill the width when scrolling and show whole page by page until a fit is chosen`() =
+        runTest(dispatcher) {
+            val settings = FakeSettingsRepository()
+            val viewModel = openDocument(settings = settings)
+
+            assertThat(viewModel.ready.chosenFitMode).isNull()
+            assertThat(viewModel.ready.fitMode).isEqualTo(FitMode.WIDTH)
+
+            viewModel.onScrollModeChange(ScrollMode.PAGED)
+            advanceUntilIdle()
+
+            assertThat(viewModel.ready.fitMode).isEqualTo(FitMode.PAGE)
+        }
+
+    @Test
+    fun `choosing a fit stores it and applies it in both scroll modes`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        viewModel.onFitModeChange(FitMode.PAGE)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.chosenFitMode).isEqualTo(FitMode.PAGE)
+        assertThat(viewModel.ready.fitMode).isEqualTo(FitMode.PAGE)
+
+        viewModel.onScrollModeChange(ScrollMode.PAGED)
+        viewModel.onFitModeChange(FitMode.WIDTH)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.fitMode).isEqualTo(FitMode.WIDTH)
+    }
+
+    @Test
+    fun `the screen sleeps and the orientation is free by default`() = runTest(dispatcher) {
+        val ready = openDocument().ready
+
+        assertThat(ready.keepScreenOn).isFalse()
+        assertThat(ready.lockOrientation).isFalse()
+    }
+
+    @Test
+    fun `locking the orientation stores it and shows it`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        viewModel.onLockOrientationChange(true)
+        advanceUntilIdle()
+
+        assertThat(settings.settings.value.lockOrientation).isTrue()
+        assertThat(viewModel.ready.lockOrientation).isTrue()
+    }
+
+    @Test
+    fun `keeping the screen on is followed live from the settings`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository()
+        val viewModel = openDocument(settings = settings)
+
+        settings.setKeepScreenOn(true)
+        advanceUntilIdle()
+
+        assertThat(viewModel.ready.keepScreenOn).isTrue()
     }
 
     @Test

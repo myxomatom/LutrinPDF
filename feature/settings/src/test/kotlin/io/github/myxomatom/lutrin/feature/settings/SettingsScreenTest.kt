@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -24,6 +25,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguage
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import org.junit.Rule
@@ -44,6 +46,8 @@ class SettingsScreenTest {
     private var aboutRequests = 0
     private val themeChanges = mutableListOf<AppTheme>()
     private val followChanges = mutableListOf<Boolean>()
+    private val keepOnChanges = mutableListOf<Boolean>()
+    private val languageChanges = mutableListOf<AppLanguage>()
 
     private fun show(state: SettingsUiState, supported: Boolean = true) {
         composeRule.setContent {
@@ -59,6 +63,8 @@ class SettingsScreenTest {
                     onOpenAbout = { aboutRequests++ },
                     onAppThemeChange = { themeChanges += it },
                     onFollowDarkThemeChange = { followChanges += it },
+                    onKeepScreenOnChange = { keepOnChanges += it },
+                    onAppLanguageChange = { languageChanges += it },
                 )
             }
         }
@@ -384,5 +390,104 @@ class SettingsScreenTest {
         composeRule.onNode(hasText("Light") and isSelectable()).assertIsNotSelected().performClick()
 
         assertThat(themeChanges).containsExactly(AppTheme.LIGHT)
+    }
+
+    @Test
+    fun `keeping the screen on is in the reading section, off by default`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Keep the screen on"))
+            .performScrollTo()
+            .assertIsOff()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+        composeRule.onNodeWithText("While you read a document").assertExists()
+    }
+
+    @Test
+    fun `tapping the row keeps the screen on, without touching the other settings`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNode(isToggleable() and hasText("Keep the screen on")).performScrollTo().performClick()
+
+        assertThat(keepOnChanges).containsExactly(true)
+        assertThat(changes).isEmpty()
+        assertThat(previewChanges).isEmpty()
+        assertThat(copyChanges).isEmpty()
+    }
+
+    @Test
+    fun `the stored keep screen on choice is shown and can be turned off`() {
+        show(SettingsUiState(loading = false, keepScreenOn = true))
+
+        composeRule
+            .onNode(isToggleable() and hasText("Keep the screen on"))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+
+        assertThat(keepOnChanges).containsExactly(false)
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `keeping the screen on is translated in French`() {
+        show(SettingsUiState(loading = false))
+
+        composeRule.onNode(isToggleable() and hasText("Garder l’écran allumé")).performScrollTo().assertIsOff()
+        composeRule.onNodeWithText("Pendant la lecture d’un document").assertExists()
+    }
+
+    @Test
+    fun `there is no language row where the system does not offer the choice`() {
+        show(SettingsUiState(loading = false, appLanguage = null))
+
+        composeRule.onNodeWithText("App language").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the app language is a choice between the system, French and English`() {
+        show(SettingsUiState(loading = false, appLanguage = AppLanguage.SYSTEM))
+
+        composeRule.onNodeWithText("App language").assertIsDisplayed()
+        composeRule.onAllNodes(hasText("System") and isSelectable()).assertCountEquals(2)
+        composeRule.onNode(hasText("Français") and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText("English") and isSelectable()).assertIsNotSelected().performClick()
+
+        assertThat(languageChanges).containsExactly(AppLanguage.ENGLISH)
+        assertThat(themeChanges).isEmpty()
+    }
+
+    @Test
+    fun `the stored app language is shown selected`() {
+        show(SettingsUiState(loading = false, appLanguage = AppLanguage.FRENCH))
+
+        composeRule.onNode(hasText("Français") and isSelectable()).assertIsSelected()
+        composeRule.onNode(hasText("English") and isSelectable()).assertIsNotSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the app language is translated in French and the languages keep their own names`() {
+        show(SettingsUiState(loading = false, appLanguage = AppLanguage.ENGLISH))
+
+        composeRule.onNodeWithText("Langue de l’application").assertIsDisplayed()
+        composeRule.onNode(hasText("Français") and isSelectable()).assertIsNotSelected()
+        composeRule.onNode(hasText("English") and isSelectable()).assertIsSelected()
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `with a large font the app language is a list of radio buttons`() {
+        show(SettingsUiState(loading = false, appLanguage = AppLanguage.SYSTEM))
+
+        composeRule
+            .onNode(hasText("English") and isSelectable())
+            .performScrollTo()
+            .assertIsNotSelected()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+            .performClick()
+
+        assertThat(languageChanges).containsExactly(AppLanguage.ENGLISH)
     }
 }

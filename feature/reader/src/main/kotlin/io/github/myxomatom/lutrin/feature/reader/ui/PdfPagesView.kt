@@ -34,14 +34,17 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.feature.reader.render.ListPosition
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.render.PinchTransform
 import io.github.myxomatom.lutrin.feature.reader.render.clampZoom
+import io.github.myxomatom.lutrin.feature.reader.render.continuousFitWidth
 import io.github.myxomatom.lutrin.feature.reader.render.listPositionAfterGesture
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
 import io.github.myxomatom.lutrin.feature.reader.render.scrollAfterGesture
+import io.github.myxomatom.lutrin.feature.reader.render.tallestAspect
 
 /** Gap between two pages at zoom 1; scaled with the zoom so that zooming keeps its focal point. */
 internal val PAGE_SPACING = 8.dp
@@ -57,12 +60,14 @@ internal val PAGE_GUTTER = 16.dp
  * once, when the fingers lift, with the list scrolled so that the pages stay where the gesture
  * left them. Relaying out the list at every move made the zoom stutter and the page jump.
  *
- * @param zoom current zoom, 1 = fit width; hoisted so that the screen can reset it.
+ * @param zoom current zoom, 1 = the fit of [fitMode]; hoisted so that the screen can reset it.
  * @param onZoomChange called with the new, clamped zoom.
  * @param onTap called on a single tap with the page and the point tapped, `null` outside every
  *   page: to activate a link (F09) or else show or hide the controls (F14).
  * @param contentDescription what TalkBack announces for the document area (F18).
  * @param renderOptions how the pages are drawn: their colours (F13, ADR 0028).
+ * @param fitMode what zoom 1 fits (F04, ADR 0029): the pages fill the width, or the tallest page shows
+ *   whole in the screen, every page having the same width.
  * @param bottomClearance extra free space after the last page, so that it can scroll above the
  *   floating bar laid over the bottom of the list (ADR 0018); not scaled by the zoom.
  * @param sharedPage the page that is the shared element of the thumbnail transition, if any.
@@ -84,6 +89,7 @@ internal fun PdfPagesView(
     contentDescription: String,
     modifier: Modifier = Modifier,
     renderOptions: RenderOptions = RenderOptions.ORIGINAL,
+    fitMode: FitMode = FitMode.WIDTH,
     bottomClearance: Dp = 0.dp,
     sharedPage: SharedPage? = null,
     linkActions: List<CustomAccessibilityAction> = emptyList(),
@@ -96,7 +102,9 @@ internal fun PdfPagesView(
     var pendingHorizontal by remember { mutableStateOf<Int?>(null) }
     PendingHorizontalScroll(zoom, pendingHorizontal, horizontal, onDone = { pendingHorizontal = null })
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val layout = pagesLayout(constraints.maxWidth, zoom, bottomClearance)
+        val aspect = remember(pageSizes) { tallestAspect(pageSizes) }
+        val viewportSize = IntSize(constraints.maxWidth, constraints.maxHeight)
+        val layout = pagesLayout(viewportSize, zoom, fitMode, aspect, bottomClearance)
         val commit = rememberCommit(zoom, onZoomChange, listState, horizontal) { newZoom ->
             { index: Int -> layout.itemExtent(pageSizes[index], newZoom) }
         }
@@ -170,9 +178,10 @@ private fun PendingHorizontalScroll(zoom: Float, pending: Int?, horizontal: Scro
 }
 
 /**
- * Sizes of the pages for a viewport width and a zoom.
+ * Sizes of the pages for a viewport and a zoom.
  *
- * @property fitWidth page width at zoom 1: the viewport minus a margin on both sides.
+ * @property fitWidth page width at zoom 1: the viewport minus a margin on both sides, or less when
+ *   the whole of the tallest page must show ([FitMode.PAGE]).
  * @property contentWidth width of the scrollable content, at least the viewport.
  * @property spacingPx gap between pages at zoom 1, in pixels.
  * @property bottomClearance free space after the last page, above the floating bar.
@@ -189,13 +198,29 @@ private data class PagesLayout(
 }
 
 @Composable
-private fun pagesLayout(viewportWidth: Int, zoom: Float, bottomClearance: Dp): PagesLayout {
+private fun pagesLayout(
+    viewport: IntSize,
+    zoom: Float,
+    fit: FitMode,
+    tallestAspect: Float,
+    bottomClearance: Dp,
+): PagesLayout {
     val density = LocalDensity.current
     val gutterPx = with(density) { PAGE_GUTTER.roundToPx() }
-    // "Fit width" leaves a margin on both sides: pages are sized against the remaining width.
-    val fitWidth = (viewportWidth - 2 * gutterPx).coerceAtLeast(1)
-    val contentWidth = maxOf(viewportWidth, pageWidthPx(fitWidth, zoom) + (2 * gutterPx * zoom).toInt())
-    return PagesLayout(fitWidth, contentWidth, with(density) { PAGE_SPACING.toPx() }, bottomClearance)
+    val spacingPx = with(density) { PAGE_SPACING.toPx() }
+    // The fit leaves a margin on both sides: pages are sized against the remaining width.
+    val fitWidth =
+        continuousFitWidth(
+            viewportWidth = viewport.width,
+            viewportHeight = viewport.height,
+            fit = fit,
+            gutter = gutterPx,
+            spacing = spacingPx.toInt(),
+            clearance = with(density) { bottomClearance.roundToPx() },
+            tallestAspect = tallestAspect,
+        )
+    val contentWidth = maxOf(viewport.width, pageWidthPx(fitWidth, zoom) + (2 * gutterPx * zoom).toInt())
+    return PagesLayout(fitWidth, contentWidth, spacingPx, bottomClearance)
 }
 
 /** The list of pages, drawn with the [pinch] transform while a pinch is in progress. */

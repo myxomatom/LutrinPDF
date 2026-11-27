@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
@@ -48,6 +49,7 @@ class PdfPagerViewTest {
         pageSizes: List<PageSize> = List(3) { A4 },
         initialPage: Int = 0,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+        fitMode: FitMode = FitMode.PAGE,
     ) {
         document = FakePdfDocument(pageSizes)
         composeRule.setContent {
@@ -63,6 +65,7 @@ class PdfPagerViewTest {
                         onZoomChange = { zoom = it },
                         onTap = {},
                         contentDescription = DOCUMENT,
+                        fitMode = fitMode,
                     )
                 }
             }
@@ -145,6 +148,40 @@ class PdfPagerViewTest {
     }
 
     @Test
+    fun `fit width renders a tall page as wide as the screen even if it overflows the height`() {
+        show(pageSizes = List(3) { PageSize(100f, 1000f) }, fitMode = FitMode.WIDTH)
+        val screen = composeRule.onRoot().fetchSemanticsNode().size
+
+        val render = document.renders.first()
+        assertThat(render.pageIndex).isEqualTo(0)
+        assertThat(render.height).isGreaterThan(screen.height)
+        assertThat(render.width).isLessThan(screen.width)
+        assertThat(render.width).isGreaterThan((screen.width * MOST_OF_THE_WIDTH).toInt())
+    }
+
+    @Test
+    fun `fit width at zoom 1 still changes page with a swipe`() {
+        show(pageSizes = List(3) { PageSize(100f, 1000f) }, fitMode = FitMode.WIDTH)
+
+        swipe(left = true)
+
+        assertThat(pagerState.currentPage).isEqualTo(1)
+    }
+
+    @Test
+    fun `fit width, a double tap zooms in and a second one comes back to the width`() {
+        show(fitMode = FitMode.WIDTH)
+
+        composeRule.onNodeWithContentDescription(DOCUMENT).performTouchInput { doubleClick(center) }
+        composeRule.waitForIdle()
+        assertThat(zoom).isEqualTo(DOUBLE_TAP_ZOOM)
+
+        composeRule.onNodeWithContentDescription(DOCUMENT).performTouchInput { doubleClick(center) }
+        composeRule.waitForIdle()
+        assertThat(zoom).isEqualTo(1f)
+    }
+
+    @Test
     fun `a pinch zooms within the page`() {
         show()
 
@@ -216,6 +253,9 @@ class PdfPagerViewTest {
 
     private companion object {
         const val DOCUMENT = "Document"
+
+        /** A page fitted to the width is wider than this share of the screen: only margins are left. */
+        const val MOST_OF_THE_WIDTH = 0.8f
 
         /** Longer than the delay of the detail rendering after the last gesture. */
         const val DETAIL_WAIT_MS = 500L

@@ -58,4 +58,25 @@ interface SettingsRepository {
      * @param enabled whether the dark theme of the app is followed.
      */
     suspend fun setFollowDarkTheme(enabled: Boolean)
+
+    /**
+     * Chooses what the pages are fitted to, for every document (F04, ADR 0029).
+     *
+     * @param mode the page fills the width, or is shown whole.
+     */
+    suspend fun setFitMode(mode: FitMode)
+
+    /**
+     * Chooses whether the screen stays on while a document is shown (ADR 0029).
+     *
+     * @param enabled whether the screen is kept awake in the reader.
+     */
+    suspend fun setKeepScreenOn(enabled: Boolean)
+
+    /**
+     * Chooses whether the reader keeps its current orientation (F17, ADR 0029).
+     *
+     * @param enabled whether the orientation is locked while a document is shown.
+     */
+    suspend fun setLockOrientation(enabled: Boolean)
 }

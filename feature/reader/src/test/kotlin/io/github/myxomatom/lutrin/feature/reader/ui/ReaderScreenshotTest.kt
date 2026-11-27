@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,6 +21,7 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.RenderOptions
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
@@ -57,12 +59,16 @@ class ReaderScreenshotTest {
         scrollMode: ScrollMode = ScrollMode.CONTINUOUS,
         document: FakePdfDocument = FakePdfDocument(),
         colors: DocumentColors = DocumentColors(),
+        fit: FitMode? = null,
+        lockOrientation: Boolean = false,
     ): ReaderUiState = ReaderUiState.Ready(
         "Contrat de location",
         document.pageSizes,
         PageRenderer(document, document.pageSizes, Dispatchers.Unconfined),
         scrollMode,
         documentColors = colors,
+        chosenFitMode = fit,
+        lockOrientation = lockOrientation,
     )
 
     /** The display options sheet (V6) over the reader; the sheet is a separate window. */
@@ -72,15 +78,20 @@ class ReaderScreenshotTest {
         darkTheme: Boolean,
         colors: DocumentColors = DocumentColors(),
         label: String = "Display",
+        fit: FitMode? = null,
+        lockOrientation: Boolean = false,
+        scrollTo: String? = null,
     ) {
         composeRule.setContent {
             LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
-                ReaderScreen(ready(colors = colors), onBack = {})
+                ReaderScreen(ready(colors = colors, fit = fit, lockOrientation = lockOrientation), onBack = {})
             }
         }
         composeRule.onNodeWithContentDescription(if (label == "Display") "More options" else "Plus d’options")
             .performClick()
         composeRule.onNodeWithText(label).performClick()
+        // Under a large font the sheet scrolls: show its last rows, as a user would.
+        scrollTo?.let { composeRule.onNodeWithText(it).performScrollTo() }
         composeRule.waitForIdle()
         captureScreenRoboImage("src/test/screenshots/$name.png")
     }
@@ -137,7 +148,7 @@ class ReaderScreenshotTest {
     fun options() = captureOptions("reader_options_light", darkTheme = false)
 
     @Test
-    fun optionsDark() = captureOptions("reader_options_dark", darkTheme = true)
+    fun optionsDark() = captureOptions("reader_options_dark", darkTheme = true, fit = FitMode.PAGE)
 
     // Colours of the document (F13, ADR 0028): the choice in V6, and the pages drawn with it.
 
@@ -151,12 +162,27 @@ class ReaderScreenshotTest {
 
     @Test
     @Config(qualifiers = "+fr")
-    fun optionsFrench() = captureOptions("reader_options_fr", darkTheme = false, colors = NIGHT, label = "Affichage")
+    fun optionsFrench() = captureOptions(
+        "reader_options_fr",
+        darkTheme = false,
+        colors = NIGHT,
+        label = "Affichage",
+        lockOrientation = true,
+    )
 
     // The sheet is another window: the font scale is the configuration's, not LocalDensity's.
     @Test
     @Config(fontScale = 2f)
     fun optionsLargeFont() = captureOptions("reader_options_light_font200", darkTheme = false)
+
+    /** The same sheet scrolled to its end: the fit as radio buttons, the two switches. */
+    @Test
+    @Config(fontScale = 2f)
+    fun optionsLargeFontEnd() = captureOptions(
+        "reader_options_light_font200_end",
+        darkTheme = false,
+        scrollTo = "Lock orientation",
+    )
 
     @Test
     fun readerNight() = capture("reader_night_light", ready(colors = NIGHT))

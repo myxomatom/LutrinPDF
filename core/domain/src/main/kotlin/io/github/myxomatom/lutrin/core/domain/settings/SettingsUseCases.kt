@@ -106,3 +106,41 @@ class SetFollowDarkThemeUseCase @Inject constructor(private val repository: Sett
         if (enabled) repository.setDocumentColorMode(null)
     }
 }
+
+/**
+ * Chooses what the pages are fitted to in the reader: the width or the whole page (F04, V6,
+ * ADR 0029). The open document follows at once.
+ *
+ * @param repository where the settings are stored.
+ */
+class SetFitModeUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param mode the fit to use for every document from now on. */
+    suspend operator fun invoke(mode: FitMode) {
+        repository.setFitMode(mode)
+    }
+}
+
+/**
+ * Chooses whether the screen stays on while a document is shown (E3, ADR 0029).
+ *
+ * @param repository where the settings are stored.
+ */
+class SetKeepScreenOnUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param enabled whether the reader keeps the screen awake from now on. */
+    suspend operator fun invoke(enabled: Boolean) {
+        repository.setKeepScreenOn(enabled)
+    }
+}
+
+/**
+ * Chooses whether the reader keeps the orientation it shows in, instead of rotating with the
+ * device (F17, V6, ADR 0029).
+ *
+ * @param repository where the settings are stored.
+ */
+class SetLockOrientationUseCase @Inject constructor(private val repository: SettingsRepository) {
+    /** @param enabled whether the orientation is locked from now on. */
+    suspend operator fun invoke(enabled: Boolean) {
+        repository.setLockOrientation(enabled)
+    }
+}

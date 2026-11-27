@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguage
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import org.junit.Rule
@@ -22,7 +23,8 @@ import org.robolectric.annotation.GraphicsMode
  * Screenshot references of the settings screen (E3), light, dark and French, with an empty recent
  * list (« Vider les récents » disabled); and the confirmation of « Vider les récents » (ADR 0016),
  * light, dark, large font and French; the theme of the app forced dark, with documents following
- * it (ADR 0028), and the screen at 200 %.
+ * it (ADR 0028), and the screen at 200 %. The language of the app (ADR 0029) is shown, as on Android 13 and
+ * later; the reading section is captured scrolled to « Garder l'écran allumé ».
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -48,6 +50,7 @@ class SettingsScreenshotTest {
                         recentCount = recentCount,
                         appTheme = appTheme,
                         followDarkTheme = followDarkTheme,
+                        appLanguage = AppLanguage.SYSTEM,
                     ),
                     dynamicColorSupported = true,
                     onDynamicColorChange = {},
@@ -101,6 +104,28 @@ class SettingsScreenshotTest {
     @Config(fontScale = 2f)
     fun largeFont() = capture("settings_light_font200")
 
+    /** The reading section, scrolled to its first row: « Garder l'écran allumé » (ADR 0029). */
+    private fun captureReading(name: String, label: String, darkTheme: Boolean = false) {
+        show(recentCount = 0, darkTheme = darkTheme)
+        composeRule.onNodeWithText(label).performScrollTo()
+        composeRule.waitForIdle()
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    }
+
+    @Test
+    fun reading() = captureReading("settings_reading_light", KEEP_ON_EN)
+
+    @Test
+    fun readingDark() = captureReading("settings_reading_dark", KEEP_ON_EN, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "+fr")
+    fun readingFrench() = captureReading("settings_reading_light_fr", KEEP_ON_FR)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun readingLargeFont() = captureReading("settings_reading_light_font200", KEEP_ON_EN)
+
     @Test
     fun clearRecents() = captureClear("settings_clear_recents_light", CLEAR_EN)
 
@@ -120,5 +145,7 @@ class SettingsScreenshotTest {
         const val RECENT_COUNT = 6
         const val CLEAR_EN = "Clear recent documents"
         const val CLEAR_FR = "Vider les récents"
+        const val KEEP_ON_EN = "Keep the screen on"
+        const val KEEP_ON_FR = "Garder l’écran allumé"
     }
 }

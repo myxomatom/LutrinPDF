@@ -8,7 +8,9 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfDestination
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
+import io.github.myxomatom.lutrin.core.domain.settings.FitMode
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
+import kotlin.math.roundToInt
 import org.junit.Test
 
 class PageHitTestTest {
@@ -138,6 +140,57 @@ class PageHitTestTest {
         val placement = layout.placement(0, page, 2f, 366, 232)
 
         assertPoint(pageHit(0f, 0f, placement, page), 0, 200f * 200f / 868f, 200f * 400f / 1736f)
+    }
+
+    @Test
+    fun `paged, fit page leaves nothing to scroll at zoom 1`() {
+        val layout = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f, FitMode.PAGE)
+
+        assertThat(layout.scrollsVertically).isFalse()
+        assertThat(layout.areaHeight).isEqualTo(900)
+    }
+
+    @Test
+    fun `paged, fit width fills the width and a tall page scrolls`() {
+        // Viewport 600 x 1000, clearance 100: the page is 568 wide and 1136 high, in an area of 900.
+        val layout = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f, FitMode.WIDTH)
+        val placement = layout.placement(0, page, 1f, 0, 0)
+
+        assertThat(layout.fitWidth).isEqualTo(568)
+        assertThat(layout.areaHeight).isEqualTo(1136 + 32)
+        assertThat(layout.scrollsVertically).isTrue()
+        assertThat(placement.left).isEqualTo(16f)
+        assertThat(placement.top).isEqualTo(16f)
+        assertThat(placement.width).isEqualTo(568)
+    }
+
+    @Test
+    fun `paged, fit width finds the point under a tap in the scrolled page`() {
+        val layout = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 1f, FitMode.WIDTH)
+        // Scrolled 268 px down: a tap at y = 500 is 768 px below the top of the area.
+        val placement = layout.placement(0, page, 1f, 0, 268)
+
+        assertPoint(pageHit(300f, 500f, placement, page), 0, 100f, (500f + 268f - 16f) * 400f / 1136f)
+    }
+
+    @Test
+    fun `paged, fit width of a short page needs no scroll`() {
+        // A landscape page 400 x 200 in the same area is 568 x 284: it fits in the height.
+        val wide = PageSize(400f, 200f)
+        val layout = pagedPageLayout(wide, IntSize(600, 1000), 100, 16, 1f, FitMode.WIDTH)
+
+        assertThat(layout.scrollsVertically).isFalse()
+        assertThat(layout.areaHeight).isEqualTo(900)
+        assertThat(layout.placement(0, wide, 1f, 0, 0).top).isEqualTo(((900 - 284) / 2f).roundToInt().toFloat())
+    }
+
+    @Test
+    fun `paged, zooming in scales the whole area of a page fitted to its width`() {
+        val layout = pagedPageLayout(page, IntSize(600, 1000), 100, 16, 2f, FitMode.WIDTH)
+
+        assertThat(layout.areaWidth).isEqualTo(1200)
+        assertThat(layout.areaHeight).isEqualTo(2 * (1136 + 32))
+        assertThat(layout.placement(0, page, 2f, 0, 0).width).isEqualTo(1136)
     }
 
     @Test
