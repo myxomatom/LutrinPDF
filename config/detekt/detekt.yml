@@ -43,3 +43,7 @@ Compose:
     allowedCompositionLocals:
       - LocalDocumentTransitionHost
       - LocalDestinationVisibilityScope
+      # Whether the interface is dark, as chosen in the settings (ADR 0028): set by LutrinTheme,
+      # read by the reader to resolve the colours of the document. isSystemInDarkTheme() would
+      # ignore the theme forced by the user.
+      - LocalDarkTheme

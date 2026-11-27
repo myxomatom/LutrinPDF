@@ -9,8 +9,13 @@ import io.github.myxomatom.lutrin.core.domain.recents.ObserveRecentDocumentsUseC
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocument
 import io.github.myxomatom.lutrin.core.domain.recents.RecentDocumentsRepository
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
+import io.github.myxomatom.lutrin.core.domain.settings.DocumentColors
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetAppThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetFollowDarkThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreDocumentRestrictionsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import io.github.myxomatom.lutrin.core.testing.FakeRecentDocumentsRepository
@@ -54,6 +59,8 @@ class SettingsViewModelTest {
         ClearRecentDocumentsUseCase(recents),
         applicationScope,
         SetIgnoreDocumentRestrictionsUseCase(repository),
+        SetAppThemeUseCase(repository),
+        SetFollowDarkThemeUseCase(repository),
     )
 
     private suspend fun FakeRecentDocumentsRepository.open(vararg ids: Int) = apply {
@@ -187,5 +194,44 @@ class SettingsViewModelTest {
         viewModel(FakeSettingsRepository(AppSettings(dynamicColor = false)), failing).uiState.test {
             assertThat(awaitItem()).isEqualTo(SettingsUiState(loading = false, dynamicColor = false, recentCount = 0))
         }
+    }
+
+    @Test
+    fun `the app follows the system theme, and documents do not follow it, by default`() = runTest {
+        viewModel(FakeSettingsRepository()).uiState.test {
+            val state = awaitItem()
+            assertThat(state.appTheme).isEqualTo(AppTheme.SYSTEM)
+            assertThat(state.followDarkTheme).isFalse()
+        }
+    }
+
+    @Test
+    fun `choosing the app theme stores it`() = runTest {
+        val repository = FakeSettingsRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            assertThat(awaitItem().appTheme).isEqualTo(AppTheme.SYSTEM)
+            viewModel.onAppThemeChange(AppTheme.DARK)
+            assertThat(awaitItem().appTheme).isEqualTo(AppTheme.DARK)
+        }
+        assertThat(repository.settings.value.appTheme).isEqualTo(AppTheme.DARK)
+    }
+
+    @Test
+    fun `following the dark theme stores it and forgets the colours chosen in the reader`() = runTest {
+        val colors = DocumentColors(chosen = DocumentColorMode.SEPIA)
+        val repository = FakeSettingsRepository(AppSettings(documentColors = colors))
+        val viewModel = viewModel(repository)
+
+        viewModel.uiState.test {
+            assertThat(awaitItem().followDarkTheme).isFalse()
+            viewModel.onFollowDarkThemeChange(true)
+            assertThat(expectMostRecentItem().followDarkTheme).isTrue()
+        }
+        assertThat(repository.settings.value.documentColors).isEqualTo(DocumentColors(followDarkTheme = true))
+
+        viewModel.onFollowDarkThemeChange(false)
+        assertThat(repository.settings.value.documentColors.followDarkTheme).isFalse()
     }
 }

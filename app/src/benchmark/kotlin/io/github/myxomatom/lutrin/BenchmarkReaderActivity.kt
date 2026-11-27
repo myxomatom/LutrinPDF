@@ -24,10 +24,10 @@ import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
-import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import io.github.myxomatom.lutrin.core.ui.transition.DocumentTransitionLayout
 import io.github.myxomatom.lutrin.feature.reader.navigateToReader
 import io.github.myxomatom.lutrin.feature.reader.readerScreen
+import io.github.myxomatom.lutrin.ui.SettingsTheme
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -66,7 +66,7 @@ class BenchmarkReaderActivity : ComponentActivity() {
             val document = withContext(ioDispatcher) { bundledDocument() }
             setContent {
                 val settings by observeSettings().collectAsStateWithLifecycle(initialValue = AppSettings())
-                LutrinTheme(dynamicColor = settings.dynamicColor) {
+                SettingsTheme(settings) {
                     BenchmarkReader(Uri.fromFile(document), onExit = ::finish)
                 }
             }

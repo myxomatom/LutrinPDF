@@ -12,9 +12,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
-import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import io.github.myxomatom.lutrin.feature.library.LibraryViewModel
 import io.github.myxomatom.lutrin.ui.LutrinApp
+import io.github.myxomatom.lutrin.ui.SettingsTheme
 import javax.inject.Inject
 
 /**
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
             // The defaults match what is stored on a fresh install: no colour change at start-up.
             val settings by observeSettings().collectAsStateWithLifecycle(initialValue = AppSettings())
             val incomingRequest by viewModel.incomingRequest.collectAsStateWithLifecycle()
-            LutrinTheme(dynamicColor = settings.dynamicColor) {
+            SettingsTheme(settings) {
                 LutrinApp(
                     libraryState = libraryViewModel.uiState,
                     loadThumbnail = libraryViewModel::loadThumbnail,

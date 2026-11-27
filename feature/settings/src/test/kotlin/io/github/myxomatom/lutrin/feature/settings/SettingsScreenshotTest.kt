@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 import org.junit.Rule
 import org.junit.Test
@@ -20,7 +21,8 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Screenshot references of the settings screen (E3), light, dark and French, with an empty recent
  * list (« Vider les récents » disabled); and the confirmation of « Vider les récents » (ADR 0016),
- * light, dark, large font and French.
+ * light, dark, large font and French; the theme of the app forced dark, with documents following
+ * it (ADR 0028), and the screen at 200 %.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -29,7 +31,13 @@ class SettingsScreenshotTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private fun show(recentCount: Int, darkTheme: Boolean, ignoreDocumentRestrictions: Boolean = false) {
+    private fun show(
+        recentCount: Int,
+        darkTheme: Boolean,
+        ignoreDocumentRestrictions: Boolean = false,
+        appTheme: AppTheme = AppTheme.SYSTEM,
+        followDarkTheme: Boolean = false,
+    ) {
         composeRule.setContent {
             LutrinTheme(darkTheme = darkTheme, dynamicColor = false) {
                 SettingsScreen(
@@ -38,6 +46,8 @@ class SettingsScreenshotTest {
                         dynamicColor = true,
                         ignoreDocumentRestrictions = ignoreDocumentRestrictions,
                         recentCount = recentCount,
+                        appTheme = appTheme,
+                        followDarkTheme = followDarkTheme,
                     ),
                     dynamicColorSupported = true,
                     onDynamicColorChange = {},
@@ -78,6 +88,18 @@ class SettingsScreenshotTest {
         show(recentCount = 0, darkTheme = false, ignoreDocumentRestrictions = true)
         composeRule.onRoot().captureRoboImage("src/test/screenshots/settings_document_restrictions_ignored_light.png")
     }
+
+    /** Dark theme forced, documents following it (ADR 0028). */
+    @Test
+    fun darkThemeForced() {
+        show(recentCount = 0, darkTheme = true, appTheme = AppTheme.DARK, followDarkTheme = true)
+        composeRule.onRoot().captureRoboImage("src/test/screenshots/settings_theme_dark_follow.png")
+    }
+
+    /** At 200 %, the three theme buttons and the long summaries still fit (ADR 0028). */
+    @Test
+    @Config(fontScale = 2f)
+    fun largeFont() = capture("settings_light_font200")
 
     @Test
     fun clearRecents() = captureClear("settings_clear_recents_light", CLEAR_EN)

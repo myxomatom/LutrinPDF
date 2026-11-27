@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
 import io.github.myxomatom.lutrin.core.ui.theme.LutrinTheme
 
 /** Horizontal margin of the settings content (E3 mockup: 24 dp). */
@@ -84,12 +85,15 @@ fun SettingsRoute(
         onPagePreviewChange = viewModel::onPagePreviewChange,
         onIgnoreDocumentRestrictionsChange = viewModel::onIgnoreDocumentRestrictionsChange,
         onOpenAbout = onOpenAbout,
+        onAppThemeChange = viewModel::onAppThemeChange,
+        onFollowDarkThemeChange = viewModel::onFollowDarkThemeChange,
     )
 }
 
 /**
  * Settings screen (E3, `docs/design/png/E3-Parametres.png`). For now the « Appearance » section
- * with dynamic colours (ADR 0010), the « Reading » section with the page preview of the reader's
+ * with the theme of the app, dynamic colours (ADR 0010) and whether documents follow the dark
+ * theme (ADR 0028), the « Reading » section with the page preview of the reader's
  * slider (ADR 0018) and the switch that ignores the copy and print restrictions of documents
  * (ADR 0024, ADR 0026), and « Vider les récents » in « Data and privacy », confirmed by a dialog and disabled while
  * the list is empty (ADR 0016); the other settings come with milestone M5.
@@ -105,6 +109,8 @@ fun SettingsRoute(
  * @param onIgnoreDocumentRestrictionsChange called with the new value of « Ignorer les restrictions
  *   du document ».
  * @param onOpenAbout called when the user opens « À propos et licences » (E4), the last row.
+ * @param onAppThemeChange called with the theme chosen for the app (ADR 0028).
+ * @param onFollowDarkThemeChange called with the new value of « Suivre le thème sombre ».
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +124,8 @@ fun SettingsScreen(
     onPagePreviewChange: (Boolean) -> Unit = {},
     onIgnoreDocumentRestrictionsChange: (Boolean) -> Unit = {},
     onOpenAbout: () -> Unit = {},
+    onAppThemeChange: (AppTheme) -> Unit = {},
+    onFollowDarkThemeChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -143,7 +151,7 @@ fun SettingsScreen(
             SettingsContent(
                 state = state,
                 dynamicColorSupported = dynamicColorSupported,
-                onDynamicColorChange = onDynamicColorChange,
+                appearance = AppearanceActions(onAppThemeChange, onDynamicColorChange, onFollowDarkThemeChange),
                 onPagePreviewChange = onPagePreviewChange,
                 onIgnoreDocumentRestrictionsChange = onIgnoreDocumentRestrictionsChange,
                 onClearRecents = onClearRecents,
@@ -159,7 +167,7 @@ fun SettingsScreen(
 private fun SettingsContent(
     state: SettingsUiState,
     dynamicColorSupported: Boolean,
-    onDynamicColorChange: (Boolean) -> Unit,
+    appearance: AppearanceActions,
     onPagePreviewChange: (Boolean) -> Unit,
     onIgnoreDocumentRestrictionsChange: (Boolean) -> Unit,
     onClearRecents: () -> Unit,
@@ -167,21 +175,7 @@ private fun SettingsContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.verticalScroll(rememberScrollState())) {
-        SectionTitle(stringResource(R.string.settings_section_appearance))
-        SwitchItem(
-            title = stringResource(R.string.settings_dynamic_color),
-            summary =
-                stringResource(
-                    if (dynamicColorSupported) {
-                        R.string.settings_dynamic_color_summary
-                    } else {
-                        R.string.settings_dynamic_color_unavailable
-                    },
-                ),
-            checked = state.dynamicColor && dynamicColorSupported,
-            enabled = dynamicColorSupported,
-            onCheckedChange = onDynamicColorChange,
-        )
+        AppearanceSection(state, dynamicColorSupported, appearance)
         HorizontalDivider()
         SectionTitle(stringResource(R.string.settings_section_reading))
         SwitchItem(
@@ -201,6 +195,46 @@ private fun SettingsContent(
         ClearRecentsItem(state.recentCount, onClearRecents)
         HorizontalDivider()
         AboutItem(onOpenAbout)
+    }
+}
+
+/** What the « Appearance » section changes: the theme, dynamic colours, the dark theme follow. */
+private class AppearanceActions(
+    val onAppThemeChange: (AppTheme) -> Unit,
+    val onDynamicColorChange: (Boolean) -> Unit,
+    val onFollowDarkThemeChange: (Boolean) -> Unit,
+)
+
+/**
+ * « Apparence »: the theme of the app (mockup E3), dynamic colours (ADR 0010), and whether the
+ * documents follow the dark theme (ADR 0028). The colours of the documents themselves are chosen
+ * in the reader (V6), not here, unlike the mockup.
+ */
+@Composable
+private fun AppearanceSection(state: SettingsUiState, dynamicColorSupported: Boolean, actions: AppearanceActions) {
+    Column {
+        SectionTitle(stringResource(R.string.settings_section_appearance))
+        AppThemeChoice(state.appTheme, actions.onAppThemeChange)
+        SwitchItem(
+            title = stringResource(R.string.settings_dynamic_color),
+            summary =
+                stringResource(
+                    if (dynamicColorSupported) {
+                        R.string.settings_dynamic_color_summary
+                    } else {
+                        R.string.settings_dynamic_color_unavailable
+                    },
+                ),
+            checked = state.dynamicColor && dynamicColorSupported,
+            enabled = dynamicColorSupported,
+            onCheckedChange = actions.onDynamicColorChange,
+        )
+        SwitchItem(
+            title = stringResource(R.string.settings_follow_dark_theme),
+            summary = stringResource(R.string.settings_follow_dark_theme_summary),
+            checked = state.followDarkTheme,
+            onCheckedChange = actions.onFollowDarkThemeChange,
+        )
     }
 }
 
