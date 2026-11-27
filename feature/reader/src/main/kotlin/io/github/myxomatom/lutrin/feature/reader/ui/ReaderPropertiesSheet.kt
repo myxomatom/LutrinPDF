@@ -131,6 +131,7 @@ internal fun ReaderPropertiesSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle = { SheetDragHandle() },
     ) {
         ReaderPropertiesContent(properties, canPrint, onShare, onPrint)
     }

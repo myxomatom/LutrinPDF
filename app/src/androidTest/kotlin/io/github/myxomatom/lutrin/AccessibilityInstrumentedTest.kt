@@ -72,9 +72,10 @@ class AccessibilityInstrumentedTest {
         composeRule.onNodeWithText(text).assertExists()
     }
 
-    private fun waitForDescription(description: String) {
+    private fun waitForDescription(description: String, substring: Boolean = false) {
         composeRule.waitUntil(TIMEOUT_MS) {
-            composeRule.onAllNodesWithContentDescription(description).fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithContentDescription(description, substring, ignoreCase = true)
+                .fetchSemanticsNodes().isNotEmpty()
         }
     }
 
@@ -99,7 +100,8 @@ class AccessibilityInstrumentedTest {
         launch(TestFiles.Pdf.SIMPLE).use { waitForTheDocument(pages = 1) }
 
         ActivityScenario.launch(MainActivity::class.java).use {
-            waitForText(text(LibraryR.string.library_resume))
+            // The card is read as « Reprendre la lecture ... » (its title is drawn in capitals).
+            waitForDescription(text(LibraryR.string.library_resume), substring = true)
 
             checkEveryWindow()
         }
