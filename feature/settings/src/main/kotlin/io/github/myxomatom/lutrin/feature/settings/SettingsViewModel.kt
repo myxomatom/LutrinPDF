@@ -7,16 +7,21 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.ApplicationScope
 import io.github.myxomatom.lutrin.core.domain.recents.ClearRecentDocumentsUseCase
 import io.github.myxomatom.lutrin.core.domain.recents.ObserveRecentDocumentsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.AppLanguage
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.AppTheme
+import io.github.myxomatom.lutrin.core.domain.settings.GetAppLanguageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetAppLanguageUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetAppThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetDynamicColorUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetFollowDarkThemeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetIgnoreDocumentRestrictionsUseCase
+import io.github.myxomatom.lutrin.core.domain.settings.SetKeepScreenOnUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetPagePreviewUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -42,6 +47,11 @@ private const val STOP_TIMEOUT_MS = 5_000L
  * @property appTheme light, dark or the system theme for the interface (ADR 0028).
  * @property followDarkTheme whether documents turn to night while the app is dark, until colours
  *   are chosen in the reader (ADR 0028); off by default.
+ * @property keepScreenOn whether the screen stays on while a document is shown (ADR 0029); off by
+ *   default.
+ * @property appLanguage the language chosen for the app (F19, ADR 0029); `null` while it is read,
+ *   and when the system does not let the app choose its language (before Android 13): the row is
+ *   then not shown.
  */
 data class SettingsUiState(
     val loading: Boolean = true,
@@ -51,6 +61,8 @@ data class SettingsUiState(
     val recentCount: Int = 0,
     val appTheme: AppTheme = AppSettings.DEFAULT_APP_THEME,
     val followDarkTheme: Boolean = false,
+    val keepScreenOn: Boolean = AppSettings.DEFAULT_KEEP_SCREEN_ON,
+    val appLanguage: AppLanguage? = null,
 )
 
 /**
@@ -66,6 +78,9 @@ data class SettingsUiState(
  * @param setIgnoreDocumentRestrictions stores whether the restrictions of documents are ignored.
  * @param setAppTheme stores the theme of the interface (ADR 0028).
  * @param setFollowDarkTheme stores whether documents follow the dark theme (ADR 0028).
+ * @param setKeepScreenOn stores whether the screen stays on in the reader (ADR 0029).
+ * @param getAppLanguage reads the language chosen for the app, kept by the system (ADR 0029).
+ * @param setAppLanguage changes the language of the app (ADR 0029).
  */
 @Suppress("LongParameterList") // Dependencies injected by Hilt.
 @HiltViewModel
@@ -79,14 +94,21 @@ class SettingsViewModel @Inject constructor(
     private val setIgnoreDocumentRestrictions: SetIgnoreDocumentRestrictionsUseCase,
     private val setAppTheme: SetAppThemeUseCase,
     private val setFollowDarkTheme: SetFollowDarkThemeUseCase,
+    private val setKeepScreenOn: SetKeepScreenOnUseCase,
+    private val getAppLanguage: GetAppLanguageUseCase,
+    private val setAppLanguage: SetAppLanguageUseCase,
 ) : ViewModel() {
+    /** The language of the app, kept by the system; `null` until read, and when it cannot be chosen. */
+    private val appLanguage = MutableStateFlow<AppLanguage?>(null)
+
     /** Current state of the screen. */
     val uiState: StateFlow<SettingsUiState> =
         combine(
             observeSettings(),
             // A list that cannot be read cannot be cleared either: the action is disabled.
             observeRecentDocuments().map { it.size }.catch { emit(0) },
-        ) { settings, recentCount ->
+            appLanguage,
+        ) { settings, recentCount, language ->
             SettingsUiState(
                 loading = false,
                 dynamicColor = settings.dynamicColor,
@@ -95,8 +117,14 @@ class SettingsViewModel @Inject constructor(
                 recentCount = recentCount,
                 appTheme = settings.appTheme,
                 followDarkTheme = settings.documentColors.followDarkTheme,
+                keepScreenOn = settings.keepScreenOn,
+                appLanguage = language,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), SettingsUiState())
+
+    init {
+        viewModelScope.launch { appLanguage.value = getAppLanguage() }
+    }
 
     /**
      * Turns dynamic colours on or off; the whole app follows at once.
@@ -125,6 +153,30 @@ class SettingsViewModel @Inject constructor(
      */
     fun onFollowDarkThemeChange(enabled: Boolean) {
         viewModelScope.launch { setFollowDarkTheme(enabled) }
+    }
+
+    /**
+     * Chooses whether the screen stays on while a document is shown (ADR 0029); an open reader
+     * follows at once.
+     *
+     * @param enabled whether the reader keeps the screen awake.
+     */
+    fun onKeepScreenOnChange(enabled: Boolean) {
+        viewModelScope.launch { setKeepScreenOn(enabled) }
+    }
+
+    /**
+     * Chooses the language of the app (F19, ADR 0029): the system keeps the choice and restarts the
+     * screens of the app in it. Ignored when the language cannot be chosen (before Android 13).
+     *
+     * @param language French, English or the language of the system.
+     */
+    fun onAppLanguageChange(language: AppLanguage) {
+        // Shown at once; the system then restarts the screens of the app in the new language. The
+        // ViewModel survives that restart, so the call below is not cut short.
+        if (appLanguage.value == null) return
+        appLanguage.value = language
+        viewModelScope.launch { setAppLanguage(language) }
     }
 
     /**
