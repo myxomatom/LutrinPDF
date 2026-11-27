@@ -160,8 +160,8 @@ class FakePdfDocument(val pageSizes: List<PageSize> = List(3) { A4 }, title: Str
     /** Number of [pageSizes]. */
     override val pageCount: Int = pageSizes.size
 
-    /** Metadata with the given title. */
-    override val metadata: PdfMetadata = PdfMetadata(pageCount = pageCount, title = title)
+    /** Metadata with the given title; a test may replace it to give the document more properties. */
+    override var metadata: PdfMetadata = PdfMetadata(pageCount = pageCount, title = title)
 
     /** Returns the configured size of the page. */
     override suspend fun pageSize(index: Int): PageSize {

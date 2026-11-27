@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import io.github.myxomatom.lutrin.core.domain.document.GetDocumentNameUseCase
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
 import io.github.myxomatom.lutrin.core.domain.recents.GetStartPageUseCase
@@ -22,6 +23,7 @@ import io.github.myxomatom.lutrin.core.domain.settings.SetScrollModeUseCase
 import io.github.myxomatom.lutrin.core.pdf.DocumentSource
 import io.github.myxomatom.lutrin.core.testing.A4
 import io.github.myxomatom.lutrin.core.testing.FAKE_NOW
+import io.github.myxomatom.lutrin.core.testing.FakeDocumentInfoResolver
 import io.github.myxomatom.lutrin.core.testing.FakeDocumentNameResolver
 import io.github.myxomatom.lutrin.core.testing.FakePdfDocument
 import io.github.myxomatom.lutrin.core.testing.FakePdfEngine
@@ -78,6 +80,7 @@ class ReaderViewModelTest {
             // A child of the test, so that advanceUntilIdle runs the write done on closing.
             this,
         ),
+        GetDocumentPropertiesUseCase(FakeDocumentInfoResolver()),
     )
 
     private fun TestScope.viewModel(

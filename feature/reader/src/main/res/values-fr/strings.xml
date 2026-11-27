@@ -21,6 +21,25 @@
     <string name="reader_error_unreadable">Le fichier est peut-être endommagé ou incomplet.</string>
     <string name="reader_error_unsupported">Ce fichier n’est pas un PDF.</string>
     <string name="reader_error_not_accessible">Le fichier a été déplacé ou supprimé, ou l’accès à ce fichier a été retiré.</string>
+    <!-- Partage et propriétés (F15, F16, V5, ADR 0027) : entrées du menu « Plus d’options ». -->
+    <string name="reader_menu_share">Partager</string>
+    <string name="reader_menu_properties">Propriétés</string>
+    <!-- Bouton « Partager » de la feuille des propriétés, et titre du sélecteur du système. -->
+    <string name="reader_share">Partager</string>
+    <string name="reader_share_chooser_title">Partager le document</string>
+    <string name="reader_share_no_app">Aucune application ne peut recevoir ce fichier</string>
+    <string name="reader_share_unavailable">Ce fichier ne peut pas être partagé</string>
+    <!-- Feuille des propriétés (V5, F16). -->
+    <string name="reader_properties_title">Propriétés</string>
+    <string name="reader_properties_file">Fichier</string>
+    <string name="reader_properties_document_title">Titre</string>
+    <string name="reader_properties_author">Auteur</string>
+    <string name="reader_properties_pages">Pages</string>
+    <string name="reader_properties_size">Taille</string>
+    <string name="reader_properties_version">Version PDF</string>
+    <string name="reader_properties_created">Créé le</string>
+    <string name="reader_properties_modified">Modifié le</string>
+    <string name="reader_properties_unknown">Non renseigné</string>
     <!-- Dialogue de mot de passe (V4, F10) ; %s est le nom du document. -->
     <string name="reader_password_title">Document protégé</string>
     <string name="reader_password_message">« %s » est chiffré. Saisissez son mot de passe pour l’ouvrir.</string>

@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.myxomatom.lutrin.core.domain.dispatchers.DefaultDispatcher
 import io.github.myxomatom.lutrin.core.domain.dispatchers.IoDispatcher
+import io.github.myxomatom.lutrin.core.domain.document.DocumentProperties
+import io.github.myxomatom.lutrin.core.domain.document.GetDocumentPropertiesUseCase
 import io.github.myxomatom.lutrin.core.domain.links.CheckExternalLinkUseCase
 import io.github.myxomatom.lutrin.core.domain.pdf.PageSize
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfError
@@ -28,11 +30,14 @@ import io.github.myxomatom.lutrin.feature.reader.print.PrintSource
 import io.github.myxomatom.lutrin.feature.reader.render.PageRenderer
 import io.github.myxomatom.lutrin.feature.reader.search.SearchController
 import io.github.myxomatom.lutrin.feature.reader.selection.SelectionController
+import io.github.myxomatom.lutrin.feature.reader.share.ShareRequest
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -67,12 +72,16 @@ import kotlinx.coroutines.withContext
  *   settings, shared by every document (ADR 0011, ADR 0018, ADR 0024).
  * @param setScrollMode stores the scroll mode chosen in the reader options.
  * @param history the recent list and the reading position of this document.
+ * @param getDocumentProperties gathers the properties of the document for the « Propriétés »
+ *   sheet (F16, V5, ADR 0027).
  * @param checkExternalLink decides which external links may be offered to another app (ADR 0022).
  *
  * The links of the document (F09, ADR 0022) are followed by [linkController]; their effects
  * are handled by the screen, since the ViewModel never sees a `Context`. The search (F07, ADR
  * 0023) is run by [searchController], the text selection and its copy (F08, ADR 0024) by
- * [selectionController]. Printing (F15, ADR 0026) is started by the screen with [printJob].
+ * [selectionController]. Printing (F15, ADR 0026) is started by the screen with [printJob], and
+ * sharing (F15, ADR 0027) with [shareRequest]. The properties sheet (F16, V5) is driven by
+ * [properties], [onPropertiesRequested] and [onPropertiesDismissed].
  */
 @Suppress("LongParameterList", "TooManyFunctions") // Hilt dependencies; one short handler per user action.
 @HiltViewModel
@@ -86,6 +95,7 @@ constructor(
     observeSettings: ObserveSettingsUseCase,
     private val setScrollMode: SetScrollModeUseCase,
     private val history: ReadingHistory,
+    private val getDocumentProperties: GetDocumentPropertiesUseCase,
     private val checkExternalLink: CheckExternalLinkUseCase = CheckExternalLinkUseCase(),
 ) : ViewModel() {
     private val uri: String = checkNotNull(savedStateHandle[READER_URI_ARG]) { "Missing $READER_URI_ARG argument" }
@@ -94,6 +104,8 @@ constructor(
     private val currentPage = MutableStateFlow(0)
     private val outline = MutableStateFlow(ReaderOutline())
     private var document: PdfDocument? = null
+    private val propertiesState = MutableStateFlow<DocumentProperties?>(null)
+    private var propertiesJob: Job? = null
 
     /**
      * Whether the document was opened with its password: its copied text is flagged sensitive, and
@@ -137,6 +149,12 @@ constructor(
             canCopy = { canCopyText() },
             isProtected = { isProtected },
         )
+
+    /**
+     * The properties of the document (F16, V5, ADR 0027) while the sheet that shows them is open;
+     * `null` otherwise. Kept here so that the sheet survives a rotation of the screen.
+     */
+    val properties: StateFlow<DocumentProperties?> = propertiesState.asStateFlow()
 
     /**
      * Identifier of the document in the recent list (`documentIdFor`, ADR 0015), known before it
@@ -243,6 +261,38 @@ constructor(
         if (!error.inRecents) return
         history.remove(uri)
         documentState.value = error.copy(inRecents = false)
+    }
+
+    /**
+     * The user asked for the properties of the document (F16): gathers them, off the main thread
+     * for the file information, and publishes them in [properties] for the sheet to open. Ignored
+     * before the document is open, and while another request is being answered.
+     */
+    fun onPropertiesRequested() {
+        val metadata = document?.metadata ?: return
+        if (propertiesJob?.isActive == true || propertiesState.value != null) return
+        propertiesJob = viewModelScope.launch { propertiesState.value = getDocumentProperties(uri, metadata) }
+    }
+
+    /** The properties sheet was closed: forgets them, and gives up a request still being answered. */
+    fun onPropertiesDismissed() {
+        propertiesJob?.cancel()
+        propertiesJob = null
+        propertiesState.value = null
+    }
+
+    /**
+     * What to share (F15, ADR 0027): the document as it was given to Lutrin, from its `content://`
+     * URI, protected or not (a protected document stays encrypted, nothing decrypted is ever
+     * written). Display options, such as the rotation of F27, are never applied. The screen hands
+     * the request to the system chooser: the ViewModel never sees a `Context`.
+     *
+     * @return the request, or `null` when the document is not open or its URI is not a
+     *   `content://` one, which another app could not be granted.
+     */
+    internal fun shareRequest(): ShareRequest? {
+        val shared = uri.toUri().takeIf { document != null && CONTENT_SCHEME.equals(it.scheme, ignoreCase = true) }
+        return shared?.let { ShareRequest(it, printName) }
     }
 
     /**
@@ -353,6 +403,9 @@ constructor(
  * recent entry when its provider gives none.
  */
 internal fun displayName(uri: String): String = Uri.decode(uri.substringAfterLast('/').substringAfterLast("%2F"))
+
+/** The only scheme a document is shared with: a grant can be given on it (ADR 0027). */
+private const val CONTENT_SCHEME = "content"
 
 /** Extension removed from a name taken from the URI, as the library does (ADR 0015). */
 private const val PDF_EXTENSION = ".pdf"

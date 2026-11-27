@@ -236,6 +236,7 @@ class ReaderScreenTest {
         show(ready())
 
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
 
         composeRule.onNodeWithText("Display").assertIsDisplayed()
         composeRule.onNodeWithText("Scrolling").assertIsDisplayed()
@@ -253,6 +254,7 @@ class ReaderScreenTest {
         }
 
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
         composeRule.onNodeWithText("Page by page").performClick()
 
         assertThat(chosen).containsExactly(ScrollMode.PAGED)
@@ -265,6 +267,7 @@ class ReaderScreenTest {
         composeRule.onNodeWithText("2 / 3").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
         composeRule.onNodeWithText("Page by page").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Page by page").assertIsSelected()
@@ -282,6 +285,7 @@ class ReaderScreenTest {
         composeRule.onNodeWithText("3 / 3").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
         composeRule.onNodeWithText("Continuous").performClick()
         composeRule.waitForIdle()
 
@@ -332,6 +336,7 @@ class ReaderScreenTest {
         show(ready())
 
         composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithText("Display").performClick()
 
         composeRule.onNodeWithText("Display").assertIsDisplayed()
         composeRule.onNodeWithText("Continuous").assertIsDisplayed()
@@ -351,6 +356,7 @@ class ReaderScreenTest {
         show(ready())
 
         composeRule.onNodeWithContentDescription("Plus d’options").performClick()
+        composeRule.onNodeWithText("Affichage").performClick()
 
         composeRule.onNodeWithText("Affichage").assertIsDisplayed()
         composeRule.onNodeWithText("Défilement").assertIsDisplayed()

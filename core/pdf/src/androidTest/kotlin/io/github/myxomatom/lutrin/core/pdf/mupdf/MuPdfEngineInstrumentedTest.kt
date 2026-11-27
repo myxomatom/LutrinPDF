@@ -20,6 +20,7 @@ import io.github.myxomatom.lutrin.core.pdf.PdfDocument
 import io.github.myxomatom.lutrin.core.testing.TestFiles
 import java.io.File
 import java.io.FileNotFoundException
+import java.time.Instant
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -69,6 +70,31 @@ class MuPdfEngineInstrumentedTest {
             engine.open(DocumentSource.FromFile(copyAsset(path))).getOrThrow().use {
                 assertThat(it.pageCount).isEqualTo(pages)
             }
+        }
+    }
+
+    @Test
+    fun readsThePropertiesOfTheDocument() = runTest {
+        engine.open(DocumentSource.FromFile(copyAsset(TestFiles.Pdf.MIXED_PAGE_SIZES))).getOrThrow().use { document ->
+            with(document.metadata) {
+                assertThat(title).isEqualTo("mixed_page_sizes.pdf")
+                assertThat(author).isEqualTo("Lutrin test suite")
+                assertThat(pageCount).isEqualTo(5)
+                assertThat(format).isEqualTo("PDF 1.7")
+                assertThat(creationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
+                assertThat(modificationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
+                assertThat(isEncrypted).isFalse()
+            }
+        }
+    }
+
+    @Test
+    fun readsThePropertiesOfAnEncryptedDocumentOpenedWithItsPassword() = runTest {
+        val source = DocumentSource.FromFile(copyAsset(TestFiles.Pdf.ENCRYPTED))
+        engine.open(source, password = TestFiles.Pdf.ENCRYPTED_PASSWORD).getOrThrow().use { document ->
+            assertThat(document.metadata.isEncrypted).isTrue()
+            assertThat(document.metadata.format).startsWith("PDF")
+            assertThat(document.metadata.pageCount).isEqualTo(document.pageCount)
         }
     }
 

@@ -59,9 +59,24 @@ class MuPdfDocumentTest {
                 assertThat(title).isEqualTo("simple_1page.pdf")
                 assertThat(author).isEqualTo("Lutrin test suite")
                 assertThat(creationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
-                assertThat(format).startsWith("PDF")
+                assertThat(modificationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
+                assertThat(format).isEqualTo("PDF 1.7")
                 assertThat(isEncrypted).isFalse()
                 assertThat(subject).isNull()
+            }
+        }
+    }
+
+    @Test
+    fun `gives every property the properties sheet shows, in the form the domain reads`() = runTest {
+        openTestPdf("pdfs/mixed_page_sizes.pdf").use { document ->
+            with(document.metadata) {
+                assertThat(title).isEqualTo("mixed_page_sizes.pdf")
+                assertThat(author).isEqualTo("Lutrin test suite")
+                assertThat(pageCount).isEqualTo(5)
+                assertThat(format).isEqualTo("PDF 1.7")
+                assertThat(creationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
+                assertThat(modificationDate).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"))
             }
         }
     }
