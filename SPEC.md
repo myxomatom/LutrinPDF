@@ -45,7 +45,7 @@ Principes non négociables :
 | F17 | Orientation | Rotation automatique, verrouillage d'orientation (option « Verrouiller l'orientation » de « Affichage » : garde l'orientation du moment tant que le lecteur est affiché ; désactivée par défaut, mémorisée) ; option « Garder l'écran allumé » des paramètres pendant la lecture (ADR 0029). |
 | F18 | Accessibilité | Compatible TalkBack (contenus décrits), tailles de cible ≥ 48 dp, contraste AA. |
 | F19 | Internationalisation | Français et anglais au minimum ; toutes les chaînes dans `strings.xml`. Langue de l'application : système, français ou anglais, choisie dans les paramètres par la langue par application du système (Android 13 et plus) ; avant, la langue du système s'applique (ADR 0029). |
-| F27 | Rotation de l'affichage | Tourner l'affichage des pages par quarts de tour (90°, 180°, 270°), par exemple pour lire une page numérisée à l'envers ou un tableau en paysage. **Affichage seulement** : le fichier n'est jamais modifié. Rotation retenue par document (comme la dernière page lue). Ajoutée le 2026-11-21 à la demande du mainteneur ; l'enregistrement d'un PDF tourné relèverait des outils (M6), non prévu. |
+| F27 | Rotation de l'affichage | Tourner l'affichage des pages par quarts de tour (90°, 180°, 270°), par exemple pour lire une page numérisée à l'envers ou un tableau en paysage. **Affichage seulement** : le fichier n'est jamais modifié. Rotation retenue par document (comme la dernière page lue), du document entier, par l'icône « Tourner » de la barre du haut (+90° par toucher ; dans ⋮ quand la place manque) ; impression, partage et vignettes ignorent la rotation (ADR 0032). Ajoutée le 2026-11-21 à la demande du mainteneur ; l'enregistrement d'un PDF tourné relèverait des outils (M6), non prévu. |
 
 ### 2.2 v1.x — souhaitable
 
@@ -238,7 +238,7 @@ Les opérations longues des outils s'exécutent dans un **WorkManager** (ou un s
 | Entité | Champs |
 |--------|--------|
 | `RecentDocument` | uri, nom affiché, taille, nombre de pages, date d'ouverture, chemin vignette |
-| `ReadingPosition` | uri (ou empreinte du fichier, point ouvert 16), page ; le zoom n'est pas mémorisé (F12) ; le décalage dans la page est reporté (ADR 0015) |
+| `ReadingPosition` | uri (ou empreinte du fichier, point ouvert 16), page, rotation de l'affichage (0, 90, 180 ou 270°, F27, ADR 0032) ; le zoom n'est pas mémorisé (F12) ; le décalage dans la page est reporté (ADR 0015) |
 | `Bookmark` (v1.x) | id, documentId, page, libellé, date |
 | Préférences (DataStore) | thème, couleurs dynamiques, aperçu de la page (ADR 0018), ignorer les restrictions du document (ADR 0024, 0026), mode nuit, mode défilement, écran allumé, orientation, dossier de sortie, autorisations assistants |
 | `AssistantAction` (v1.1) | id, fonction, paquet appelant, date, résultat (sans contenu de document) |

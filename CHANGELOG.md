@@ -10,6 +10,14 @@ changement y est signalé.
 ## [Non publié]
 
 ### Ajouté
+- **Rotation de l'affichage** (F27, M5 lot 5, ADR 0032) : icône « Tourner » dans la barre du haut du
+  lecteur (dans le menu ⋮ quand la barre manque de place, par exemple à 200 % de police) ; chaque
+  toucher tourne toutes les pages d'un quart de tour dans le sens horaire (0°, 90°, 180°, 270°).
+  Affichage seulement : le fichier n'est jamais modifié, l'impression, le partage et les vignettes
+  restent droits. La rotation est retenue par document, comme la dernière page (schéma Room 3,
+  migration automatique, 0° pour les documents déjà dans les récents). Rendu, détails nets, aperçu du
+  curseur, ajustement Largeur / Page entière, zoom, liens, surlignages de recherche et sélection
+  suivent la rotation ; la page affichée reste à l'écran.
 - **Options de lecture, feuille « Affichage » et langue** (F04, F14, F17, F19, M5 lot 4, ADR 0029) :
   la feuille « Affichage » (V6) gagne « Ajustement » (**Largeur** ou **Page entière**, appliqué
   aussitôt au zoom, point de départ à l'ouverture et cible du double toucher, en défilement continu

@@ -14,7 +14,7 @@
 | M2 Lecteur de base | ✅ Terminé : benchmarks mesurés sur appareil le 2026-11-08 (P90 4,0 ms en défilement continu), Baseline Profile committé (ADR 0012) |
 | M3 Fichiers et récents | ✅ Terminé le 2026-11-10 : « Ouvrir avec » et partage entrant (ADR 0014), récents, vignettes et reprise de la dernière page (ADR 0015), retrait et vidage des récents (ADR 0016), mot de passe des documents protégés (ADR 0017) |
 | M4 Navigation, recherche, sélection | ✅ Terminé le 2026-11-21 (ADR 0020 à 0025) : table des matières, aller à la page, liens, recherche, sélection et copie, polices CJK du système |
-| M5 Finitions MVP | 🟡 En cours : lot 4 **options de lecture et langue** (F04, F14, F17, F19, ADR 0029) en PR (`feat/reading-options`) ; lot 3 **thèmes et couleurs du document** (F13, ADR 0028) fusionné (PR #54) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
+| M5 Finitions MVP | 🟡 En cours : lot 5 **rotation de l'affichage** (F27, ADR 0032) en PR (`feat/page-rotation`) ; lot 4 **options de lecture et langue** (F04, F14, F17, F19, ADR 0029) en PR (`feat/reading-options`) ; lot 3 **thèmes et couleurs du document** (F13, ADR 0028) fusionné (PR #54) ; lot 2 **partage et propriétés** (F15, F16, ADR 0027) en PR ; lot 1 **impression** (F15, ADR 0026) fusionné dans `main` (PR #50), pas encore essayé sur appareil ; E4 **« À propos et licences »** fusionnée (ADR 0030, PR #49), pas encore essayée sur appareil ; **corrections de l'audit du 2026-11-26 à faire avant les lots suivants** (§2) |
 | M6 à M8 | ⏳ À faire |
 
 M0 à M4 ont été validés sur un Xiaomi 23013PC75G (Android 15 / HyperOS) : tests instrumentés de
@@ -156,6 +156,33 @@ Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à coc
 
 - **Lot 1, impression** et **lot 2, partage et propriétés** : voir les points 4 et 6 du §2.
 - **E4 « À propos et licences »** : paragraphe « E4 sur appareil » du §2.
+- **Lot 5, rotation de l'affichage** (F27, ADR 0032) :
+  - [ ] premier lancement après mise à jour : la migration Room 2 → 3 garde les récents et leur page,
+        aucun document n'est tourné ;
+  - [ ] icône « Tourner » entre « Rechercher » et la table des matières ; chaque toucher tourne de
+        90° dans le sens horaire, le quatrième revient droit ; TalkBack lit « Tourner les pages,
+        actuellement à 90° » ;
+  - [ ] police à 200 % (et écran étroit) : l'icône disparaît de la barre, « Tourner les pages (0°) » est
+        en tête du menu ⋮ et fait la même chose ;
+  - [ ] à 90°, 180° et 270°, en continu puis en page par page : le texte est net (zoom à 400 %, détail
+        aux bons endroits), la page affichée reste à l'écran après chaque toucher, « Largeur » et
+        « Page entière » ajustent la page tournée (un portrait tourné de 90° remplit la largeur en
+        paysage), double toucher et pincement zooment autour du doigt ;
+  - [ ] liens : un toucher sur un lien d'une page tournée ouvre ce lien-là (essayer deux liens voisins),
+        y compris en page par page sur une page autre que la première ; une entrée de sommaire mène
+        au haut de la page tournée (ADR 0032) ;
+  - [ ] recherche : surlignages sur les bons mots à chaque angle, « suivant » amène le résultat au
+        milieu de l'écran ;
+  - [ ] sélection : appui long sur un mot, poignées aux deux bouts, déplacer une poignée étend la
+        sélection dans le sens du texte tourné, « Copier » copie le bon texte ;
+  - [ ] aller à une page, curseur avec aperçu (l'aperçu est tourné), page illisible
+        (`page_tree_count_mismatch.pdf`) tournée, mode nuit et sépia tournés ;
+  - [ ] fermer, rouvrir le document (par la bibliothèque et par « Ouvrir avec ») : il revient avec sa
+        rotation et sa page ; un autre document reste droit ; retirer le document des récents puis le
+        rouvrir : il est droit ;
+  - [ ] l'impression et le partage d'un document tourné sont droits ; sa vignette aussi ;
+  - [ ] un PDF dont les pages ont déjà un `/Rotate` (paysage) : la rotation s'ajoute à celle du fichier ;
+  - [ ] tests instrumentés `MuPdfEngineInstrumentedTest.rendersTurnedPages`.
 - **Lot 4, options de lecture et langue** (ADR 0029) :
   - [ ] premier lancement après mise à jour : rien ne change (documents en défilement continu à la
         largeur, en page par page à la page entière, écran qui s'éteint, orientation libre, langue du
@@ -567,6 +594,16 @@ Pas de liste séparée comme pour M4 : les essais de chaque lot sont ici, à coc
     garder que celles que `verify` signalait, plus les nouvelles ;
   - sous Git Bash, un `python - <<'EOF'` dont le texte contient certaines apostrophes a échoué
     (« unexpected EOF while looking for matching `'` ») : écrire le script dans un fichier.
+
+- **Rotation de l'affichage** (M5 lot 5, ADR 0032) :
+  - deux espaces de coordonnées : celui du document (`pageSizes`, texte, liens, recherche, sélection)
+    et celui de la page affichée (`displayPageSizes`, vues, rendu). Toute nouvelle donnée du document
+    dessinée sur une page passe par `PageFrames` (`toDisplay`), tout geste par `toPage` ;
+  - une méthode ajoutée entre une KDoc et sa fonction par un script la « vole » : ktlint signale
+    alors « A KDoc is not allowed inside 'class_body' » ;
+  - une classe de test Roborazzi sans `@GraphicsMode(GraphicsMode.Mode.NATIVE)` produit une image de
+    « dump » (arbre sémantique) au lieu de la capture ;
+  - l'icône « Tourner » a changé toutes les captures du lecteur avec sa barre du haut, réenregistrées.
 
 - **Les tests en page par page n'appuyaient que sur la page d'index 0** : `hitTest` cherchait la
   taille de la page par `PagePlacement.pageIndex` dans la liste reçue, et le mode page par page

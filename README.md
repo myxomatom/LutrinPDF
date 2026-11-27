@@ -46,7 +46,8 @@ PDFs, and let AI assistants drive it on your device. Built with Kotlin and Jetpa
 - **v1.0** — ouverture (sélecteur, « Ouvrir avec », partage), rendu net à tout zoom,
   défilement continu ou page par page, table des matières, recherche, sélection et
   copie, liens, PDF protégés, récents et reprise de lecture, thèmes et mode nuit /
-  sépia du document, plein écran, partage, impression, propriétés.
+  sépia du document, rotation de l'affichage, plein écran, partage, impression,
+  propriétés.
 - **v1.1** — outils hors ligne : fusion, extraction de pages, images / texte / HTML
   local vers PDF ; intégration aux assistants IA (AppFunctions, avec repli par
   intents et raccourcis), lecture du contenu **désactivée par défaut**.
