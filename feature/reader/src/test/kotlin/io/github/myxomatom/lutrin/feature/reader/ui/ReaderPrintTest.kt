@@ -74,13 +74,11 @@ class ReaderPrintTest {
             ReaderViewModel(
                 SavedStateHandle(mapOf(READER_URI_ARG to "content://com.example.provider/document/a.pdf")),
                 FakePdfEngine(Result.success(document)),
-                Dispatchers.Unconfined,
-                Dispatchers.Unconfined,
+                Dispatchers.Unconfined, Dispatchers.Unconfined,
                 ObserveSettingsUseCase(settings),
                 SetScrollModeUseCase(settings),
                 SetDocumentColorModeUseCase(settings),
-                SetFitModeUseCase(settings),
-                SetLockOrientationUseCase(settings),
+                SetFitModeUseCase(settings), SetLockOrientationUseCase(settings),
                 ReadingHistory(
                     GetStartPageUseCase(recents),
                     RecordDocumentOpeningUseCase(recents),

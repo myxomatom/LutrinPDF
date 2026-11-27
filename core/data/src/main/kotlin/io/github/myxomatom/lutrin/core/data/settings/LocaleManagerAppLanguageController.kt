@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.myxomatom.lutrin.core.data.settings
 
+import android.annotation.SuppressLint
 import android.app.LocaleManager
 import android.content.Context
 import android.os.Build
@@ -38,12 +39,15 @@ internal class LocaleManagerAppLanguageController(
 
     override val isSupported: Boolean = sdkInt >= Build.VERSION_CODES.TIRAMISU
 
+    // Lint cannot see that isSupported is the API level check: the calls are guarded by it.
+    @SuppressLint("NewApi")
     override suspend fun current(): AppLanguage = if (isSupported) {
         withContext(ioDispatcher) { currentApplicationLocales() }
     } else {
         AppLanguage.SYSTEM
     }
 
+    @SuppressLint("NewApi") // Guarded by isSupported, as above.
     override suspend fun set(language: AppLanguage) {
         if (isSupported) withContext(ioDispatcher) { setApplicationLocales(language) }
     }

@@ -59,8 +59,11 @@ class FitGeometryTest {
 
     @Test
     fun `fit page never gives an empty width`() {
-        assertThat(continuousFitWidth(10, 10, FitMode.PAGE, gutter = 20, spacing = 20, clearance = 5, 1000f)).isEqualTo(1)
-        assertThat(continuousFitWidth(10, 10, FitMode.WIDTH, gutter = 20, spacing = 20, clearance = 5, 1f)).isEqualTo(1)
+        val tall = continuousFitWidth(10, 10, FitMode.PAGE, gutter = 20, spacing = 20, clearance = 5, 1000f)
+        val wide = continuousFitWidth(10, 10, FitMode.WIDTH, gutter = 20, spacing = 20, clearance = 5, 1f)
+
+        assertThat(tall).isEqualTo(1)
+        assertThat(wide).isEqualTo(1)
     }
 
     @Test

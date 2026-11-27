@@ -156,7 +156,7 @@ private fun sharedPage(page: Int, zoom: Float, pageTransition: DocumentTransitio
     }
 
 /** The pages, in the view of the current scroll mode (F03). */
-@Suppress("LongParameterList") // Plain wiring of the state hoisted in ReaderContent.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in ReaderContent.
 @Composable
 private fun DocumentPages(
     state: ReaderUiState.Ready,

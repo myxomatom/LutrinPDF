@@ -137,7 +137,7 @@ private fun ResetZoomOnPageChange(pagerState: PagerState, zoom: Float, onZoomCha
  * One page, fitted to the screen at zoom 1. Zoomed in, the page area grows with the zoom and
  * scrolls in both directions; during a pinch it is only scaled visually ([pinchLayer]).
  */
-@Suppress("LongParameterList") // Plain wiring of the state hoisted in PdfPagerView.
+@Suppress("LongParameterList", "LongMethod") // Plain wiring of the state hoisted in PdfPagerView.
 @Composable
 private fun ZoomablePage(
     pageIndex: Int,

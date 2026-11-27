@@ -7,9 +7,9 @@ import io.github.myxomatom.lutrin.core.domain.pdf.PdfLink
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfPoint
 import io.github.myxomatom.lutrin.core.domain.pdf.PdfRect
 import io.github.myxomatom.lutrin.core.domain.settings.FitMode
-import io.github.myxomatom.lutrin.feature.reader.render.pagedFitWidth
 import io.github.myxomatom.lutrin.feature.reader.render.pageHeightPx
 import io.github.myxomatom.lutrin.feature.reader.render.pageWidthPx
+import io.github.myxomatom.lutrin.feature.reader.render.pagedFitWidth
 import io.github.myxomatom.lutrin.feature.reader.render.zoomedExtent
 import kotlin.math.hypot
 import kotlin.math.roundToInt

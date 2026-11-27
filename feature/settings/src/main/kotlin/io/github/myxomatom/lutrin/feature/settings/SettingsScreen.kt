@@ -118,6 +118,7 @@ fun SettingsRoute(
  * @param onAppLanguageChange called with the language chosen for the app (F19, ADR 0029); the row
  *   exists only when [SettingsUiState.appLanguage] is known.
  */
+@Suppress("LongMethod") // Plain wiring of the state and of one callback per setting.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(

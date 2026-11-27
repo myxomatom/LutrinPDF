@@ -18,8 +18,8 @@ import io.github.myxomatom.lutrin.core.domain.recents.DocumentOpening
 import io.github.myxomatom.lutrin.core.domain.recents.documentIdFor
 import io.github.myxomatom.lutrin.core.domain.settings.AppSettings
 import io.github.myxomatom.lutrin.core.domain.settings.DocumentColorMode
-import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.FitMode
+import io.github.myxomatom.lutrin.core.domain.settings.ObserveSettingsUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.ScrollMode
 import io.github.myxomatom.lutrin.core.domain.settings.SetDocumentColorModeUseCase
 import io.github.myxomatom.lutrin.core.domain.settings.SetFitModeUseCase
